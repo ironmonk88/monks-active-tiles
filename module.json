@@ -1,0 +1,27 @@
+{
+  "name": "monks-active-tiles",
+  "title": "Monk's Active Tiles",
+  "description": "Set a tile to do things when a token walks over them.  Mostly for traps or teleports.  Can stop the token from moving any further, and integrated with Monk's TokenBar to prompt for a saving throw roll",
+  "version": "1.0.0",
+  "author": "IronMonk, ironmonk88#4075",
+  "socket": true,
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "esmodules": [
+    "monks-active-tiles.js"
+  ],
+  "styles": [],
+  "packs": [],
+  "url": "https://github.com/ironmonk88/monks-active-tiles",
+  "download": "https://github.com/ironmonk88/monks-active-tiles/archive/1.0.0.zip",
+  "manifest": "https://github.com/ironmonk88/monks-active-tiles/releases/latest/download/module.json",
+  "bugs": "https://github.com/ironmonk88/monks-active-tiles/issues",
+  "allowBugReporter": true,
+  "minimumCoreVersion": "0.7.0",
+  "compatibleCoreVersion": "0.7.9"
+}
