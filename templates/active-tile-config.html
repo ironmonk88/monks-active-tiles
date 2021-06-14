@@ -1,0 +1,204 @@
+<form autocomplete="off">
+
+    <!-- Tile Configuration Tabs -->
+    <nav class="sheet-tabs tabs">
+        <a class="item" data-tab="basic"><i class="fas fa-cubes"></i> {{localize "TILE.BasicHeader" }}</a>
+        <a class="item" data-tab="overhead"><i class="fas fa-home"></i> {{ localize "TILE.OverheadHeader" }}</a>
+        <a class="item" data-tab="animation"><i class="fas fa-play"></i> {{ localize "TILE.AnimationHeader" }}</a>
+        <a class="item" data-tab="triggers"><i class="fas fa-running"></i> {{ localize "MonksActiveTiles.Triggers" }}</a>
+    </nav>
+
+    <!-- Basic Configuration Tab -->
+    <div class="tab" data-tab="basic">
+        <p class="notes">{{ localize "TILE.BasicHint" }}</p>
+
+        <div class="form-group">
+            <label for="img">{{ localize "TILE.Image"}}</label>
+            <div class="form-fields">
+                {{filePicker target="img" type="imagevideo"}}
+                <input class="image" type="text" name="img" placeholder="path/image.png" value="{{data.img}}" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="x">{{ localize "XCoord" }} <span class="units">({{ localize "Pixels" }})</span></label>
+            <div class="form-fields">
+                <input type="number" name="x" value="{{data.x}}" step="1" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="y">{{ localize "YCoord" }} <span class="units">({{ localize "Pixels" }})</span></label>
+            <div class="form-fields">
+                <input type="number" name="y" value="{{data.y}}" step="1" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="z">{{ localize "DRAWING.ZIndex" }}</label>
+            <div class="form-fields">
+                <input type="number" name="z" value="{{data.z}}" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="width">{{ localize "Width" }} <span class="units">({{ localize "Pixels" }})</span></label>
+            <div class="form-fields">
+                <input type="number" name="width" value="{{data.width}}" step="1" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="height">{{ localize "Height" }} <span class="units">({{ localize "Pixels" }})</span></label>
+            <div class="form-fields">
+                <input type="number" name="height" value="{{data.height}}" step="1" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="height">{{ localize "Rotation" }} <span class="units">({{ localize "Degrees" }})</span></label>
+            <div class="form-fields">
+                <input type="number" name="rotation" value="{{data.rotation}}" step="any" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>{{localize "TILE.Opacity"}}</label>
+            <div class="form-fields">
+                {{ rangePicker name="alpha" value=data.alpha min="0" max="1" step="0.05" }}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>{{ localize "TILE.Tint" }}</label>
+            <div class="form-fields">
+                {{ colorPicker name="tint" value=data.tint }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Overhead Tab -->
+    <div class="tab" data-tab="overhead">
+        <p class="notes">{{ localize "TILE.OverheadHint" }}</p>
+
+        <div class="form-group">
+            <label>{{localize "TILE.Overhead"}}</label>
+            <div class="form-fields">
+                <input type="checkbox" name="overhead" {{ checked data.overhead }}>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>{{localize "TILE.OcclusionMode"}}</label>
+            <div class="form-fields">
+                <select name="occlusion.mode" data-dtype="Number">
+                    {{ selectOptions occlusionModes selected=data.occlusion.mode }}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>{{localize "TILE.OcclusionAlpha"}}</label>
+            <div class="form-fields">
+                {{ rangePicker name="occlusion.alpha" value=data.occlusion.alpha min="0" max="1" step="0.05" }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Tab -->
+    <div class="tab" data-tab="animation">
+        <p class="notes">{{ localize "TILE.AnimationHint" }}</p>
+
+        <div class="form-group">
+            <label>{{localize "TILE.VideoLoop"}}</label>
+            <div class="form-fields">
+                <input type="checkbox" name="video.loop" {{ checked data.video.loop }}>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>{{localize "TILE.VideoAutoplay"}}</label>
+            <div class="form-fields">
+                <input type="checkbox" name="video.autoplay" {{ checked data.video.autoplay }}>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>{{localize "TILE.VideoVolume"}}</label>
+            <div class="form-fields">
+                {{ rangePicker name="video.volume" value=data.video.volume min="0" max="1" step="0.05" }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Triggers Tab -->
+    <div class="tab" data-tab="triggers">
+        <p class="notes">{{ localize "MonksActiveTiles.TriggersHint" }}</p>
+
+        <div class="form-group">
+            <label>Active</label>
+            <div class="form-fields">
+                <input type="checkbox" name="flags.monks-active-tiles.active" {{ checked data.flags.monks-active-tiles.active }}>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Restricted To</label>
+            <div class="form-fields">
+                <select name="flags.monks-active-tiles.restriction" data-dtype="String">
+                    {{ selectOptions triggerRestriction selected=data.flags.monks-active-tiles.restriction }}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Trigger</label>
+            <div class="form-fields">
+                <select name="flags.monks-active-tiles.trigger" data-dtype="String">
+                    {{ selectOptions triggerModes selected=data.flags.monks-active-tiles.trigger }}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>% Chance to trigger</label>
+            <div class="form-fields">
+                {{ rangePicker name="flags.monks-active-tiles.chance" value=data.flags.monks-active-tiles.chance min="0" max="100" step="1" }}
+            </div>
+        </div>
+
+        <ol class="items-list action-items">
+            <li class="items-header flexrow">
+                <h3 class="item-name flexrow">Actions</h3>
+
+                <div class="item-controls flexrow">
+                    <a class="item-control action-create" title="Create New Action" data-type="objective">
+                        <i class="fas fa-plus"></i> Add
+                    </a>
+                </div>
+            </li>
+
+            <ol class="item-list">
+                {{#each actions}}
+                <li class="item flexrow " data-id="{{this.id}}" draggable="true">
+                    <div class="item-name flexrow">
+                        <h4 style="white-space: normal;">{{this.content}}</h4>
+                    </div>
+
+                    <div class="item-controls flexrow">
+                        <a class="item-control action-edit" title="Edit Objective"><i class="fas fa-edit"></i></a>
+                        <a class="item-control action-delete" title="Delete Action"><i class="fas fa-trash"></i></a>
+                    </div>
+                </li>
+                {{/each}}
+            </ol>
+        </ol>
+    </div>
+
+    <!-- Sheet Footer -->
+    <footer class="sheet-footer flexrow">
+        <button type="submit" name="submit">
+            <i class="far fa-save"></i> {{submitText}}
+        </button>
+    </footer>
+</form>

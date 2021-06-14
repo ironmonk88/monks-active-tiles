@@ -1,2 +1,4 @@
 {
+  "MonksActiveTiles.Triggers": "Triggers",
+  "MonksActiveTiles.TriggersHint":  "Actions to take when a token walks over this tile"
 }
