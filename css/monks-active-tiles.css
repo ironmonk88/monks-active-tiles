@@ -90,3 +90,17 @@
     text-align: left;
     font-size: 16px;
 }
+
+.action-sheet .display-value {
+    display: block;
+    height: 24px;
+    color: #191813;
+    font-family: inherit;
+    font-size: inherit;
+    text-align: inherit;
+    line-height: 22px;
+    border: 1px solid #7a7971;
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 1px 5px;
+}
