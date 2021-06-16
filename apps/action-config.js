@@ -20,7 +20,7 @@ export class ActionConfig extends FormApplication {
     getData(options) {
         let availableActions = {};
         for (let [k, v] of Object.entries(MonksActiveTiles.triggerActions))
-            availableActions[k] = v.name;
+            availableActions[k] = i18n(v.name);
 
         return mergeObject(super.getData(options), {
             availableActions: availableActions
@@ -160,7 +160,7 @@ export class ActionConfig extends FormApplication {
 
             $('<div>')
                 .addClass('form-group')
-                .append($('<label>').html(ctrl.name))
+                .append($('<label>').html(i18n(ctrl.name)))
                 .append(field)
                 .appendTo($('.action-controls', this.element));
         }

@@ -41,15 +41,25 @@ export class MonksActiveTiles {
 
     static triggerActions = {
         'pause': {
-            name: 'Pause Game',
+            name: "MonksActiveTiles.action.pause",
             fn: (tile, token, action) => { game.togglePause(true, true); }
         },
         'movement': {
-            name: 'Stop Triggering Token Movement',
-            stop: true //Just having the stop flag is enough for this action to work
+            name: "MonksActiveTiles.action.movement",
+            stop: true,
+            ctrls: [
+                {
+                    id: "snap",
+                    name: "MonksActiveTiles.ctrl.snap",
+                    type: "checkbox"
+                }
+            ],
+            content: (trigger, action) => {
+                return trigger.name + (action.data.snap ? ' (' + i18n("MonksActiveTiles.ctrl.snap").toLowerCase() + ')' : '');
+            }
         },
         'teleport': {
-            name: 'Teleport',
+            name: "MonksActiveTiles.action.teleport",
             stop:true,
             ctrls: [
                 {
@@ -59,10 +69,15 @@ export class MonksActiveTiles {
                     subtype: "location"
                 },
                 {
+                    id: "remotesnap",   //using remote snap because I don't want this to trigger the token to be snapped to the grid on the tile
+                    name: "Snap to grid",
+                    type: "checkbox"
+                }/*,
+                {
                     id: "addmovement",
                     name: "Add bit of movement",
                     type: "checkbox"
-                }
+                }*/
             ],
             fn: async (tile, token, action) => {
                 //move the token to the new square
@@ -72,12 +87,26 @@ export class MonksActiveTiles {
                 };
                 if (action.data.location.sceneId == undefined || action.data.location.sceneId == canvas.scene.id) {
                     await token.stopAnimation();
+                    if (!canvas.grid.hitArea.contains(newPos.x, newPos.y)) {
+                        //+++find the closest spot on the edge
+                        ui.notifications.error('Teleporting off the map has been prevented');
+                        return;
+                    }
+                    if (action.data.remotesnap)
+                        newPos = canvas.grid.getSnappedPosition(newPos.x, newPos.y);
+
                     await token.document.update({ x: newPos.x, y: newPos.y }, { ignore: true, animate: false });
                     canvas.pan(newPos.x, newPos.y);
                 } else {
                     //if the end spot is on a different scene then hide this token, check the new scene for a token for that actor and move it, otherwise create the token on the new scene
                     let scene = game.scenes.get(action.data.location.sceneId);
                     let xtoken = (token.actor?.id ? scene.tokens.find(t => { return t.actor?.id == token.actor?.id }) : null);
+
+                    if (action.data.remotesnap) {
+                        newPos.x = newPos.x.toNearest(scene.data.size);
+                        newPos.y = newPos.y.toNearest(scene.data.size);
+                    }
+
                     if (xtoken) {
                         xtoken.update({ x: newPos.x, y: newPos.y, hidden: token.data.hidden }, { ignore: true, animate: false });
                     }
@@ -559,10 +588,31 @@ export class MonksActiveTiles {
                         log(`trigger passed with ${chance}% out of ${triggerData.chance}%`);
                 }
 
-                //+++ make sure this satisfies the on enter/on exit setting, and if it does, what was the point that triggered it.
-                let newPos = collision[0];
+                //sort by closest
+                let sorted = collision.sort((c1, c2) => (c1.t0 > c2.t0) ? 1 : -1);
+
+                //clear out any duplicate corners
+                let filtered = sorted.filter((value, index, self) => {
+                    return self.findIndex(v => v.t0 === value.t0) === index;
+                })
+
+                //is the token currently in the tile
+                let tokenPos = { x: token.x + (token.w / 2), y: token.y + (token.h / 2) };
+                let inTile = !(tokenPos.x < this.object.x || tokenPos.x > this.object.x + this.object.width || tokenPos.y < this.object.y || tokenPos.y > this.object.y + this.object.height);
+
+                //go through the list, alternating in/out until we find one that satisfies the on enter/on exit setting, and if it does, return the trigger point.
+                let when = this.getFlag('monks-active-tiles', 'trigger');   //+++ need to do something different if movement is called for
+                let idx = ((inTile ? 0 : 1) - (when == 'enter' ? 1 : 0));
+
+                log(collision, sorted, filtered, inTile, when, idx);
+
+                if (idx < 0 || idx >= filtered.length)
+                    return;
+
+                let newPos = filtered[idx];
                 newPos.x -= (token.w / 2);
                 newPos.y -= (token.h / 2);
+
                 return newPos;
             }
         }
@@ -590,44 +640,46 @@ export class MonksActiveTiles {
         TileDocument.prototype.checkCollision = function (token, update) {
             // 1. Get all the tile's vertices. X and Y are position at top-left corner
             // of tile.
-            const tileX1 = this.data.x;
-            const tileY1 = this.data.y;
-            const tileX2 = this.data.x + this.data.width;
-            const tileY2 = this.data.y + this.data.height;
+            let when = this.getFlag('monks-active-tiles', 'trigger');   //+++ need to do something different if movement is called for
+            let buffer = (canvas.grid.size / 4) * (when == 'enter' ? 1 : (when == 'exit' ? -1 : 0));
+            const tileX1 = this.data.x + buffer;
+            const tileY1 = this.data.y + buffer;
+            const tileX2 = this.data.x + this.data.width - buffer;
+            const tileY2 = this.data.y + this.data.height - buffer;
 
-            const tokenCanvasWidth = token.data.width * canvas.grid.size;
-            const tokenCanvasHeight = token.data.height * canvas.grid.size;
-            const tokenX1 = token.data.x + tokenCanvasWidth / 2;
-            const tokenY1 = token.data.y + tokenCanvasHeight / 2;
-            const tokenX2 = update.x + tokenCanvasWidth / 2;
-            const tokenY2 = update.y + tokenCanvasHeight / 2;
+            const tokenOffsetW = token.object.w / 2;
+            const tokenOffsetH = token.object.h / 2;
+            const tokenX1 = token.data.x + tokenOffsetW;
+            const tokenY1 = token.data.y + tokenOffsetH;
+            const tokenX2 = update.x + tokenOffsetW;
+            const tokenY2 = update.y + tokenOffsetH;
 
             // 2. Create a new Ray for the token, from its starting position to its
             // destination.
 
-            const tokenRay = new Ray({
-                x: tokenX1,
-                y: tokenY1
-            }, {
-                x: tokenX2,
-                y: tokenY2
-            }); // 3. Create four intersection checks, one for each line making up the
+            const tokenRay = new Ray({ x: tokenX1, y: tokenY1 }, { x: tokenX2, y: tokenY2 });
+            // 3. Create four intersection checks, one for each line making up the
             // tile rectangle. If any of these pass, that means it has intersected at
             // some point.
+
+            let i1 = tokenRay.intersectSegment([tileX1, tileY1, tileX2, tileY1]);
+            //let i2 = tokenRay.intersectSegment([tileX2, tileY1, tileX2, tileY2]);
+            //let i3 = tokenRay.intersectSegment([tileX1, tileY2, tileX2, tileY2]);
+            let i4 = tokenRay.intersectSegment([tileX1, tileY1, tileX1, tileY2]);
 
             let intersect = [
                 tokenRay.intersectSegment([tileX1, tileY1, tileX2, tileY1]),
                 tokenRay.intersectSegment([tileX2, tileY1, tileX2, tileY2]),
-                tokenRay.intersectSegment([tileX2, tileY2, tileX1, tileY2]),
-                tokenRay.intersectSegment([tileX1, tileY2, tileX1, tileY1])
+                tokenRay.intersectSegment([tileX1, tileY2, tileX2, tileY2]),
+                tokenRay.intersectSegment([tileX1, tileY1, tileX1, tileY2])
             ].filter(i => i);
 
             return intersect;
         }
 
         TileDocument.prototype.checkStop = function () {
-            let stoppage = this.data.flags['monks-active-tiles'].actions.find(a => { return MonksActiveTiles.triggerActions[a.action].stop === true });
-            return stoppage;
+            let stoppage = this.data.flags['monks-active-tiles'].actions.filter(a => { return MonksActiveTiles.triggerActions[a.action].stop === true });
+            return (stoppage.length == 0 ? false : (stoppage.find(a => a.data.snap) ? 'snap' : true));
         }
     }
 }
@@ -657,7 +709,12 @@ Hooks.on('preUpdateToken', (document, update, options, userId) => {
                             //if it does and the token needs to stop, then modify the end position in update
                             let ray = new Ray({ x: token.data.x, y: token.data.y }, { x: triggerPt.x, y: triggerPt.y });
 
-                            if (tile.document.checkStop()) {
+                            let stop = tile.document.checkStop();
+                            if (stop) {
+                                //check for snapping to the closest grid spot
+                                if (stop == 'snap')
+                                    triggerPt = canvas.grid.getSnappedPosition(triggerPt.x, triggerPt.y);
+
                                 //if this token needs to be stopped, then we need to adjust the path, and force close the movement animation
                                 let oldPos = { x: update.x, y: update.y };
                                 delete update.x;
@@ -671,7 +728,7 @@ Hooks.on('preUpdateToken', (document, update, options, userId) => {
                                     if (sa || checkcount > 20) {
                                         window.clearInterval(stopanimate);
                                         //add a new animation to the new spot
-                                        document.object.setPosition(triggerPt.x, triggerPt.y);
+                                        document.update({ x: triggerPt.x, y: triggerPt.y });
                                     }
                                 }, 10);
                             }
