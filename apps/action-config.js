@@ -80,6 +80,11 @@ export class ActionConfig extends FormApplication {
         if (formData['data.entity'])
             formData['data.entity'] = (formData['data.entity'].startsWith('{') ? JSON.parse(formData['data.entity']) : formData['data.entity']);
 
+        //make sure delay is not set for one of the controls that can't delay
+        let trigger = MonksActiveTiles.triggerActions[formData.action];
+        if (!trigger.options?.allowDelay)
+            formData["delay"] = null;
+
         if (this.object.id == undefined) {
             mergeObject(this.object, formData);
             this.object.id = makeid();
@@ -105,6 +110,7 @@ export class ActionConfig extends FormApplication {
         let data = this.object.data || {};
 
         for (let ctrl of (action.ctrls || [])) {
+            let options = mergeObject({ showTile: true, showToken: true, showPlayers: true, allowDelay: false }, ctrl.options);
             let field = $('<div>').addClass('form-fields');
             let id = 'data.' + ctrl.id;
 
@@ -125,13 +131,12 @@ export class ActionConfig extends FormApplication {
                         field.append($('<select>').attr({ name: id, 'data-dtype': 'String' }).append(
                             (list instanceof Array
                                 ? list.map(g => { return $('<optgroup>').attr('label', i18n(g.text)).append(Object.entries(g.groups).map(([k, v]) => { return $('<option>').attr('value', g.id + ":" + k).html(i18n(v)).prop('selected', (g.id + ":" + k) == data[ctrl.id]) })) })
-                                : Object.entries(list).map(([k, v]) => { return $('<option>').attr('value', k).html(v).prop('selected', k == data[ctrl.id]) }))
+                                : Object.entries(list).map(([k, v]) => { return $('<option>').attr('value', k).html(i18n(v)).prop('selected', k == data[ctrl.id]) }))
                         ));
                     }
                     break;
                 case 'select':
                     //so this is the fun one, when the button is pressed, I need to minimize the windows, and wait for a selection
-                    let options = mergeObject({showTile: true, showToken: true, showPlayers: true}, ctrl.options);
                     if (ctrl.subtype == 'location') {
                         let scene = (data[ctrl.id]?.sceneId ? game.scenes.get(data[ctrl.id].sceneId) : null);
                         field
@@ -163,6 +168,8 @@ export class ActionConfig extends FormApplication {
                 .append($('<label>').html(i18n(ctrl.name)))
                 .append(field)
                 .appendTo($('.action-controls', this.element));
+
+            $('[data-type="delay"]', this.element).toggle(options.allowDelay);
         }
 
         if(this.rendered)

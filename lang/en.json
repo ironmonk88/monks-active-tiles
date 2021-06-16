@@ -5,6 +5,35 @@
   "MonksActiveTiles.action.pause": "Pause Game",
   "MonksActiveTiles.action.movement": "Stop Triggering Token Movement",
   "MonksActiveTiles.action.teleport": "Teleport",
+  "MonksActiveTiles.action.showhide": "Show/Hide",
+  "MonksActiveTiles.action.activate": "Activate/Deactivate Tile",
+  "MonksActiveTiles.action.alter": "Alter",
+  "MonksActiveTiles.action.playsound": "Play sound",
+  "MonksActiveTiles.action.changedoor": "Change door state",
 
-  "MonksActiveTiles.ctrl.snap": "Snap to grid"
+  "MonksActiveTiles.ctrl.snap": "Snap to grid",
+  "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
+  "MonksActiveTiles.ctrl.select-entity": "Select Entity",
+  "MonksActiveTiles.ctrl.state": "State",
+  "MonksActiveTiles.ctrl.attribute": "Attribute",
+  "MonksActiveTiles.ctrl.value": "Value",
+  "MonksActiveTiles.ctrl.audiofile": "Sound File",
+  "MonksActiveTiles.ctrl.for": "For",
+  "MonksActiveTiles.ctrl.selectdoor": "Select Door",
+
+  "MonksActiveTiles.hidden.show": "Show",
+  "MonksActiveTiles.hidden.hide": "Hide",
+  "MonksActiveTiles.hidden.toggle": "Toggle",
+
+  "MonksActiveTiles.activate.activate": "Activate",
+  "MonksActiveTiles.activate.deactivate": "Deactivate",
+
+  "MonksActiveTiles.audiofor.all": "Everyone",
+  "MonksActiveTiles.audiofor.gm": "GM Only",
+
+  "MonksActiveTiles.state.open": "Open",
+  "MonksActiveTiles.state.close": "Closed",
+  "MonksActiveTiles.state.lock": "Locked",
+
+  "MonksActiveTiles.msg.prevent-teleport": "Teleporting off the map has been prevented"
 }

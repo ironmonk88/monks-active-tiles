@@ -23,7 +23,7 @@ export const WithActiveTileConfig = (TileConfig) => {
 
             data.actions = this.object.data.flags['monks-active-tiles'].actions.map(a => {
                 let trigger = MonksActiveTiles.triggerActions[a.action];
-                let content = (trigger == undefined ? 'Unknown' : (trigger.content ? trigger.content(trigger, a) : trigger.name) + (a.action.delay > 0 ? ' after ' + a.action.delay + ' seconds' : ''));
+                let content = (trigger == undefined ? 'Unknown' : (trigger.content ? trigger.content(trigger, a) : i18n(trigger.name)) + (a.action.delay > 0 ? ' after ' + a.action.delay + ' seconds' : ''));
                 return {
                     id: a.id,
                     content: content
