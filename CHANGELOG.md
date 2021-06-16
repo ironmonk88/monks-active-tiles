@@ -1,3 +1,11 @@
+## Version 1.0.5
+
+Added localization text
+
+Fixing issues with the standard ruler.
+
+Trying to fix issues with cancelling the rest of a multi-part path.
+
 ## Version 1.0.4
 
 Getting close to releasing!! Yayy!!

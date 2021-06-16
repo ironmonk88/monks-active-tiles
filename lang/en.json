@@ -1,6 +1,23 @@
 {
   "MonksActiveTiles.Triggers": "Triggers",
   "MonksActiveTiles.TriggersHint": "Actions to take when a token walks over this tile",
+  "MonksActiveTiles.TriggerAction": "Trigger Action",
+
+  "MonksActiveTiles.ThisTile": "This Tile",
+  "MonksActiveTiles.TriggeringToken": "Triggering Token",
+  "MonksActiveTiles.PlayerTokens": "Player Tokens",
+
+  "MonksActiveTiles.After": "After",
+  "MonksActiveTiles.Action": "Action",
+  "MonksActiveTiles.Update": "Update",
+  "MonksActiveTiles.Seconds": "seconds",
+  "MonksActiveTiles.CreateNewAction": "Create New Action",
+  "MonksActiveTiles.Active": "Active",
+  "MonksActiveTiles.RestrictedTo": "Restricted To",
+  "MonksActiveTiles.When": "When",
+  "MonksActiveTiles.ChanceTrigger": "% Chance to trigger",
+  "MonksActiveTiles.Add": "Add",
+  "MonksActiveTiles.ToggleActive": "Toggle Active State",
 
   "MonksActiveTiles.action.pause": "Pause Game",
   "MonksActiveTiles.action.movement": "Stop Triggering Token Movement",
@@ -10,6 +27,10 @@
   "MonksActiveTiles.action.alter": "Alter",
   "MonksActiveTiles.action.playsound": "Play sound",
   "MonksActiveTiles.action.changedoor": "Change door state",
+  "MonksActiveTiles.action.notification": "Send Notification",
+  "MonksActiveTiles.action.chatmessage": "Chat Message",
+  "MonksActiveTiles.action.runmacro": "Run Macro",
+  "MonksActiveTiles.action.rolltable": "Roll Table",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
@@ -20,6 +41,17 @@
   "MonksActiveTiles.ctrl.audiofile": "Sound File",
   "MonksActiveTiles.ctrl.for": "For",
   "MonksActiveTiles.ctrl.selectdoor": "Select Door",
+  "MonksActiveTiles.ctrl.selectrolltable": "Select Roll Table",
+  "MonksActiveTiles.ctrl.type": "Type",
+  "MonksActiveTiles.ctrl.text": "Text",
+  "MonksActiveTiles.ctrl.macro": "Macro",
+
+  "MonksActiveTiles.mode.enter": "On Enter",
+  "MonksActiveTiles.mode.exit": "On Exit",
+
+  "MonksActiveTiles.restrict.all": "Everyone",
+  "MonksActiveTiles.restrict.player": "Player Only",
+  "MonksActiveTiles.restrict.gm": "GM Only",
 
   "MonksActiveTiles.hidden.show": "Show",
   "MonksActiveTiles.hidden.hide": "Hide",
@@ -28,12 +60,25 @@
   "MonksActiveTiles.activate.activate": "Activate",
   "MonksActiveTiles.activate.deactivate": "Deactivate",
 
-  "MonksActiveTiles.audiofor.all": "Everyone",
-  "MonksActiveTiles.audiofor.gm": "GM Only",
+  "MonksActiveTiles.for.all": "Everyone",
+  "MonksActiveTiles.for.gm": "GM Only",
+  "MonksActiveTiles.for.token": "Token Owner",
 
   "MonksActiveTiles.state.open": "Open",
   "MonksActiveTiles.state.close": "Closed",
   "MonksActiveTiles.state.lock": "Locked",
 
-  "MonksActiveTiles.msg.prevent-teleport": "Teleporting off the map has been prevented"
+  "MonksActiveTiles.notification.info": "Info",
+  "MonksActiveTiles.notification.warning": "Warning",
+  "MonksActiveTiles.notification.error": "Error",
+
+  "MonksActiveTiles.msg.prevent-teleport": "Teleporting off the map has been prevented",
+  "MonksActiveTiles.msg.invalid-entity": "Invalid Entity Type",
+  "MonksActiveTiles.msg.select-location": "Please select a location on this scene or a different scene",
+  "MonksActiveTiles.msg.select-entity": "Please select an entity",
+  "MonksActiveTiles.msg.selectlocation": "Select a location",
+  "MonksActiveTiles.msg.selectentity": "Select an entity",
+  "MonksActiveTiles.msg.usetile": "Use this Tile",
+  "MonksActiveTiles.msg.usetoken": "Use the triggering token",
+  "MonksActiveTiles.msg.useplayers": "Use player tokens"
 }

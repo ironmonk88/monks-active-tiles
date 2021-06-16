@@ -1,6 +1,6 @@
 <form class="trigger-action" autocomplete="off" onsubmit="event.preventDefault();">
     <div class="form-group">
-        <label for="action">Action</label>
+        <label for="action">{{localize "MonksActiveTiles.Action"}}</label>
         <div class="form-fields">
             <select name="action" data-dtype="String">
                 {{ selectOptions availableActions selected=object.action }}
@@ -8,13 +8,13 @@
         </div>
     </div>
     <div class="form-group" data-type="delay">
-        <label for="action">After</label>
+        <label for="action">{{localize "MonksActiveTiles.After"}}</label>
         <div class="form-fields">
             <input type="number" name="delay" placeholder="delay" value="{{object.delay}}" style="flex:0 0 75px;">
-            <label class="grid-label">seconds</label>
+            <label class="grid-label">{{localize "MonksActiveTiles.Seconds"}}</label>
         </div>
     </div>
     <div class="action-controls">
     </div>
-    <button type="submit" name="submit" value="1"><i class="far fa-save"></i> Update</button>
+    <button type="submit" name="submit" value="1"><i class="far fa-save"></i> {{localize "MonksActiveTiles.Update"}}</button>
 </form>

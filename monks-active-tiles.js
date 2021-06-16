@@ -38,6 +38,7 @@ export let oldObjectClass = () => {
 export class MonksActiveTiles {
     static _oldSheetClass;
     //static _oldObjectClass;
+    static _rejectRemaining = {};
 
     static triggerActions = {
         'pause': {
@@ -97,7 +98,7 @@ export class MonksActiveTiles {
                     if (action.data.remotesnap)
                         newPos = canvas.grid.getSnappedPosition(newPos.x, newPos.y);
 
-                    await token.document.update({ x: newPos.x, y: newPos.y }, { ignore: true, animate: false });
+                    await token.document.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false });
                     canvas.pan(newPos.x, newPos.y);
                 } else {
                     //if the end spot is on a different scene then hide this token, check the new scene for a token for that actor and move it, otherwise create the token on the new scene
@@ -110,7 +111,7 @@ export class MonksActiveTiles {
                     }
 
                     if (xtoken) {
-                        xtoken.update({ x: newPos.x, y: newPos.y, hidden: token.data.hidden }, { ignore: true, animate: false });
+                        xtoken.update({ x: newPos.x, y: newPos.y, hidden: token.data.hidden }, { bypass: true, animate: false });
                     }
                     else {
                         const td = await token.actor.getTokenData({ x: newPos.x, y: newPos.y });
@@ -317,8 +318,8 @@ export class MonksActiveTiles {
             ],
             values: {
                 'audiofor': {
-                    'all': "MonksActiveTiles.audiofor.all",
-                    'gm': "MonksActiveTiles.audiofor.gm"
+                    'all': "MonksActiveTiles.for.all",
+                    'gm': "MonksActiveTiles.for.gm"
                 }
             },
             fn: (tile, token, action) => {
@@ -366,26 +367,26 @@ export class MonksActiveTiles {
             }
         },
         'notification': {
-            name: 'Send Notification',
+            name: "MonksActiveTiles.action.notification",
             options: { allowDelay: true },
             ctrls: [
                 {
                     id: "text",
-                    name: "Text",
+                    name: "MonksActiveTiles.ctrl.text",
                     type: "text"
                 },
                 {
                     id: "type",
-                    name: "Type",
+                    name: "MonksActiveTiles.ctrl.type",
                     list: "type",
                     type: "list"
                 }
             ],
             values: {
                 'type': {
-                    'info': 'Info',
-                    'warning': 'Warning',
-                    'error': 'Error'
+                    'info': "MonksActiveTiles.notification.info",
+                    'warning': "MonksActiveTiles.notification.warning",
+                    'error': "MonksActiveTiles.notification.error"
                 }
             },
             fn: (tile, token, action) => {
@@ -394,27 +395,27 @@ export class MonksActiveTiles {
             }
         },
         'chatmessage': {
-            name: 'Chat Message',
+            name: "MonksActiveTiles.action.chatmessage",
             options: { allowDelay: true },
             ctrls: [
                 {
                     id: "text",
-                    name: "Text",
+                    name: "MonksActiveTiles.ctrl.text",
                     type: "text",
                     subtype: "multiline"
                 },
                 {
                     id: "for",
-                    name: "For",
+                    name: "MonksActiveTiles.ctrl.for",
                     list: "for",
                     type: "list"
                 }
             ],
             values: {
                 'for': {
-                    'all': 'Everyone',
-                    'gm': 'GM Only',
-                    'token': 'Token Owner'
+                    'all': "MonksActiveTiles.for.all",
+                    'gm': "MonksActiveTiles.for.gm",
+                    'token': "MonksActiveTiles.for.token"
                 }
             },
             fn: (tile, token, action) => {
@@ -448,12 +449,12 @@ export class MonksActiveTiles {
             }
         }*/
         'runmacro': {
-            name: 'Run Macro',
+            name: "MonksActiveTiles.action.runmacro",
             options: { allowDelay: true },
             ctrls: [
                 {
                     id: "macroid",
-                    name: "Macro",
+                    name: "MonksActiveTiles.ctrl.macro",
                     list: () => {
                         let result = {};
                         for (let macro of game.macros.contents) {
@@ -479,12 +480,12 @@ export class MonksActiveTiles {
             }
         },
         'rolltable': {
-            name: 'Roll Table',
+            name: "MonksActiveTiles.action.rolltable",
             options: { allowDelay: true },
             ctrls: [
                 {
                     id: "rolltableid",
-                    name: "Select Roll Table",
+                    name: "MonksActiveTiles.ctrl.selectrolltable",
                     list: () => {
                         let result = {};
                         for (let table of game.tables.contents) {
@@ -532,35 +533,6 @@ export class MonksActiveTiles {
 
         MonksActiveTiles.setupTile();
 
-        /*
-        let oldMoveToken = Ruler.prototype.moveToken;
-        Ruler.prototype.moveToken = async function (event) {
-            const rays = this._getRaysFromWaypoints(this.waypoints, this.destination);
-            log('Rays:', rays);
-            oldMoveToken.call(this, event);
-        }
-
-        let oldSetPosition = Token.prototype.setPosition;
-        Token.prototype.setPosition = async function (x, y, { animate = true } = {}) {
-            if (animate) {
-                let origin = this._movement ? this.position : this._validPosition,
-                    target = { x: x, y: y },
-                    isVisible = this.isVisible;
-
-                // Create the movement ray
-                let ray = new Ray(origin, target);
-
-                log('Ray:', ray);
-
-                //check and see if the ray crosses a tile
-                //if it does and the token needs to stop, then modify the end position
-                //either way, set the trigger to fire once the token animates to the tile
-
-                oldSetPosition.call(this, x, y, { animate: animate });
-            } else
-                oldSetPosition.call(this, x, y, { animate: animate });
-        }*/
-
         let oldClickLeft = Canvas.prototype._onClickLeft;
         Canvas.prototype._onClickLeft = function (event) {
             if (MonksActiveTiles.waitingInput && MonksActiveTiles.waitingInput.waitingfield.data('type') == 'location') {
@@ -596,7 +568,7 @@ export class MonksActiveTiles {
         if (MonksActiveTiles.waitingInput && MonksActiveTiles.waitingInput.waitingfield.data('type') == 'entity') {
             let restrict = MonksActiveTiles.waitingInput.waitingfield.data('restrict');
             if (restrict && !restrict(entity)) {
-                ui.notifications.error('Invalid entity type');
+                ui.notifications.error(i18n("MonksActiveTiles.msg.invalid-entity"));
                 return;
             }
             MonksActiveTiles.waitingInput.updateSelection({ id: entity.document.uuid, name: entity.document.name || (entity.document.documentName + ": " + entity.document.id) });
@@ -751,9 +723,16 @@ Hooks.on('canvasInit', () => {
     canvas.hud.tile = new activehud();
 });
 
-Hooks.on('preUpdateToken', (document, update, options, userId) => { 
-    //make sure to ignore if the token is being dropped somewhere, otherwise we could end up triggering a lot of tiles
-    if ((update.x != undefined || update.y != undefined) && options.ignore !== true && options.animate) {
+Hooks.on('preUpdateToken', async (document, update, options, userId) => { 
+    log('preupdate token', document, update, options, MonksActiveTiles._rejectRemaining);
+
+    if (MonksActiveTiles._rejectRemaining[document.id] && options.bypass !== true) {
+        update.x = MonksActiveTiles._rejectRemaining[document.id].x;
+        update.y = MonksActiveTiles._rejectRemaining[document.id].y;
+        options.animate = false;
+    }
+    //make sure to bypass if the token is being dropped somewhere, otherwise we could end up triggering a lot of tiles
+    if ((update.x != undefined || update.y != undefined) && options.bypass !== true && (!game.modules.get("drag-ruler")?.active || options.animate)) {
         let token = document.object;
         //Does this cross a tile
         for (let layer of [canvas.background.tiles, canvas.foreground.tiles]) {
@@ -777,18 +756,25 @@ Hooks.on('preUpdateToken', (document, update, options, userId) => {
                                 let oldPos = { x: update.x, y: update.y };
                                 delete update.x;
                                 delete update.y;
-                                
-                                let checkcount = 0;
-                                let stopanimate = window.setInterval(function () {
-                                    checkcount++;
-                                    let sa = CanvasAnimation.animations[`Token.${document.id}.animateMovement`] != undefined;
-                                    token.stopAnimation();
-                                    if (sa || checkcount > 20) {
-                                        window.clearInterval(stopanimate);
-                                        //add a new animation to the new spot
-                                        document.update({ x: triggerPt.x, y: triggerPt.y });
-                                    }
-                                }, 10);
+
+                                //try to disrupt the remaining path if there is one, by setting an update
+                                MonksActiveTiles._rejectRemaining[document.id] = { x: triggerPt.x, y: triggerPt.y };
+                                window.setTimeout(function () { delete MonksActiveTiles._rejectRemaining[document.id]; }, 500); //Hopefully half a second is enough to clear any of the remaining animations
+
+                                if (game.modules.get("drag-ruler")?.active) {
+                                    let checkcount = 0;
+                                    let stopanimate = window.setInterval(function () {
+                                        checkcount++;
+                                        let sa = CanvasAnimation.animations[`Token.${document.id}.animateMovement`] != undefined;
+                                        token.stopAnimation();
+                                        if (sa || checkcount > 20) {
+                                            window.clearInterval(stopanimate);
+                                            //add a new animation to the new spot
+                                            document.update({ x: triggerPt.x, y: triggerPt.y }, { bypass: true });
+                                        }
+                                    }, 10);
+                                } else
+                                    await document.update({ x: triggerPt.x, y: triggerPt.y }, { bypass: true });
                             }
 
                             //if there's a scene to teleport to, then preload it.

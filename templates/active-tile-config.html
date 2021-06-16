@@ -136,14 +136,14 @@
         <p class="notes">{{ localize "MonksActiveTiles.TriggersHint" }}</p>
 
         <div class="form-group">
-            <label>Active</label>
+            <label>{{ localize "MonksActiveTiles.Active" }}</label>
             <div class="form-fields">
                 <input type="checkbox" name="flags.monks-active-tiles.active" {{ checked data.flags.monks-active-tiles.active }}>
             </div>
         </div>
 
         <div class="form-group">
-            <label>Restricted To</label>
+            <label>{{ localize "MonksActiveTiles.RestrictedTo" }}</label>
             <div class="form-fields">
                 <select name="flags.monks-active-tiles.restriction" data-dtype="String">
                     {{ selectOptions triggerRestriction selected=data.flags.monks-active-tiles.restriction }}
@@ -152,7 +152,7 @@
         </div>
 
         <div class="form-group">
-            <label>Trigger</label>
+            <label>{{ localize "MonksActiveTiles.When" }}</label>
             <div class="form-fields">
                 <select name="flags.monks-active-tiles.trigger" data-dtype="String">
                     {{ selectOptions triggerModes selected=data.flags.monks-active-tiles.trigger }}
@@ -161,7 +161,7 @@
         </div>
 
         <div class="form-group">
-            <label>% Chance to trigger</label>
+            <label>{{ localize "MonksActiveTiles.ChanceTrigger" }}</label>
             <div class="form-fields">
                 {{ rangePicker name="flags.monks-active-tiles.chance" value=data.flags.monks-active-tiles.chance min="0" max="100" step="1" }}
             </div>
@@ -172,8 +172,8 @@
                 <h3 class="item-name flexrow">Actions</h3>
 
                 <div class="item-controls flexrow">
-                    <a class="item-control action-create" title="Create New Action" data-type="objective">
-                        <i class="fas fa-plus"></i> Add
+                    <a class="item-control action-create" title="{{ localize "MonksActiveTiles.CreateNewAction" }}" data-type="objective">
+                        <i class="fas fa-plus"></i> {{ localize "MonksActiveTiles.Add" }}
                     </a>
                 </div>
             </li>

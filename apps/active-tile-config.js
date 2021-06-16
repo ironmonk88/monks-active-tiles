@@ -18,8 +18,8 @@ export const WithActiveTileConfig = (TileConfig) => {
             this.object._normalize();
             const data = super.getData(options);
 
-            data.triggerModes = { 'enter': 'On Enter', 'exit': 'On Exit' };
-            data.triggerRestriction = { 'all': 'Everyone', 'player': 'Player Only', 'gm': 'GM Only' };
+            data.triggerModes = { 'enter': i18n("MonksActiveTiles.mode.enter"), 'exit': i18n("MonksActiveTiles.mode.exit") };
+            data.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
 
             data.actions = this.object.data.flags['monks-active-tiles'].actions.map(a => {
                 let trigger = MonksActiveTiles.triggerActions[a.action];
