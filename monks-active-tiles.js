@@ -826,7 +826,3 @@ Hooks.on('controlTile', (tile, control) => {
     if(control)
         MonksActiveTiles.controlEntity(tile);
 })
-
-Hooks.on('updateScene', () => {
-    log('scene updated');
-})
