@@ -1,3 +1,9 @@
+## Version 1.0.6
+
+Added libWrapper support
+
+Overrode Ruler moveToken so that I can easily cancel pending movements.
+
 ## Version 1.0.5
 
 Added localization text

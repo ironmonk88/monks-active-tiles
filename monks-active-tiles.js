@@ -533,14 +533,23 @@ export class MonksActiveTiles {
 
         MonksActiveTiles.setupTile();
 
-        let oldClickLeft = Canvas.prototype._onClickLeft;
-        Canvas.prototype._onClickLeft = function (event) {
+        let updateSelection = function (wrapped, ...args) {
+            let event = args[0];
             if (MonksActiveTiles.waitingInput && MonksActiveTiles.waitingInput.waitingfield.data('type') == 'location') {
                 let pos = event.data.getLocalPosition(canvas.app.stage);
-                let update = { x: parseInt(pos.x), y: parseInt(pos.y), sceneId: (canvas.scene.id != MonksActiveTiles.waitingInput.options.parent.object.parent.id ? canvas.scene.id : null ) };
+                let update = { x: parseInt(pos.x), y: parseInt(pos.y), sceneId: (canvas.scene.id != MonksActiveTiles.waitingInput.options.parent.object.parent.id ? canvas.scene.id : null) };
                 MonksActiveTiles.waitingInput.updateSelection(update);
             }
-            oldClickLeft.call(this, event);
+            wrapped(...args);
+        }
+
+        if (game.modules.get("lib-wrapper")?.active) {
+            libWrapper.register("monks-active-tiles", "Canvas.prototype._onClickLeft", updateSelection, "WRAPPER");
+        } else {
+            const oldClickLeft = Canvas.prototype._onClickLeft;
+            Canvas.prototype._onClickLeft = function (event) {
+                return updateSelection.call(this, oldClickLeft.bind(this), [event]);
+            }
         }
     }
 
@@ -707,6 +716,93 @@ export class MonksActiveTiles {
             let stoppage = this.data.flags['monks-active-tiles'].actions.filter(a => { return MonksActiveTiles.triggerActions[a.action].stop === true });
             return (stoppage.length == 0 ? false : (stoppage.find(a => a.data.snap) ? 'snap' : true));
         }
+
+        if (!game.modules.get("drag-ruler")?.active) {
+            let clear = function (wrapped, ...args) {
+                this.cancelMovement = false;
+                wrapped(...args);
+            }
+
+            if (game.modules.get("lib-wrapper")?.active) {
+                libWrapper.register("monks-active-tiles", "Ruler.prototype.clear", clear, "WRAPPER");
+            } else {
+                const oldClear = Ruler.prototype.clear;
+                Ruler.prototype.clear = function (event) {
+                    return clear.call(this, oldClear.bind(this));
+                }
+            }
+
+            let moveToken = async function (wrapped, ...args) {
+                let wasPaused = game.paused;
+                if (wasPaused && !game.user.isGM) {
+                    ui.notifications.warn("GAME.PausedWarning", { localize: true });
+                    return false;
+                }
+                if (!this.visible || !this.destination) return false;
+                const token = this._getMovementToken();
+                if (!token) return false;
+
+                // Determine offset relative to the Token top-left.
+                // This is important so we can position the token relative to the ruler origin for non-1x1 tokens.
+                const origin = canvas.grid.getTopLeft(this.waypoints[0].x, this.waypoints[0].y);
+                const s2 = canvas.dimensions.size / 2;
+                const dx = Math.round((token.data.x - origin[0]) / s2) * s2;
+                const dy = Math.round((token.data.y - origin[1]) / s2) * s2;
+
+                // Get the movement rays and check collision along each Ray
+                // These rays are center-to-center for the purposes of collision checking
+                let rays = this._getRaysFromWaypoints(this.waypoints, this.destination);
+                let hasCollision = rays.some(r => canvas.walls.checkCollision(r));
+                if (hasCollision) {
+                    ui.notifications.error("ERROR.TokenCollide", { localize: true });
+                    return false;
+                }
+
+                // Execute the movement path defined by each ray.
+                this._state = Ruler.STATES.MOVING;
+                let priorDest = undefined;
+                for (let r of rays) {
+                    // Break the movement if the game is paused
+                    if (!wasPaused && game.paused) break;
+
+                    // Break the movement if Token is no longer located at the prior destination (some other change override this)
+                    if (priorDest && ((token.data.x !== priorDest.x) || (token.data.y !== priorDest.y))) break;
+
+                    // Adjust the ray based on token size
+                    const dest = canvas.grid.getTopLeft(r.B.x, r.B.y);
+                    const path = new Ray({ x: token.x, y: token.y }, { x: dest[0] + dx, y: dest[1] + dy });
+
+                    // Commit the movement and update the final resolved destination coordinates
+                    let animate = true;
+                    await token.document.update(path.B, { animate: animate });
+                    path.B.x = token.data.x;
+                    path.B.y = token.data.y;
+
+                    //if the movement has been canceled then stop processing rays
+                    if (this.cancelMovement) {
+                        this.cancelMovement = false;
+                        break;
+                    }
+
+                    // Update the path which may have changed during the update, and animate it
+                    priorDest = path.B;
+                    if (animate)
+                        await token.animateMovement(path);
+                }
+
+                // Once all animations are complete we can clear the ruler
+                this._endMeasurement();
+            }
+
+            if (game.modules.get("lib-wrapper")?.active) {
+                libWrapper.register("monks-active-tiles", "Ruler.prototype.moveToken", moveToken, "OVERRIDE");
+            } else {
+                const oldMoveToken = Ruler.prototype.moveToken;
+                Ruler.prototype.moveToken = function (event) {
+                    return moveToken.call(this, oldMoveToken.bind(this));
+                }
+            }
+        }
     }
 }
 
@@ -724,15 +820,17 @@ Hooks.on('canvasInit', () => {
 });
 
 Hooks.on('preUpdateToken', async (document, update, options, userId) => { 
-    log('preupdate token', document, update, options, MonksActiveTiles._rejectRemaining);
+    //log('preupdate token', document, update, options, MonksActiveTiles._rejectRemaining);
 
+    /*
     if (MonksActiveTiles._rejectRemaining[document.id] && options.bypass !== true) {
         update.x = MonksActiveTiles._rejectRemaining[document.id].x;
         update.y = MonksActiveTiles._rejectRemaining[document.id].y;
         options.animate = false;
-    }
+    }*/
+
     //make sure to bypass if the token is being dropped somewhere, otherwise we could end up triggering a lot of tiles
-    if ((update.x != undefined || update.y != undefined) && options.bypass !== true && (!game.modules.get("drag-ruler")?.active || options.animate)) {
+    if ((update.x != undefined || update.y != undefined) && options.bypass !== true && options.animate !== false) { //(!game.modules.get("drag-ruler")?.active || options.animate)) {
         let token = document.object;
         //Does this cross a tile
         for (let layer of [canvas.background.tiles, canvas.foreground.tiles]) {
@@ -747,6 +845,9 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                             let ray = new Ray({ x: token.data.x, y: token.data.y }, { x: triggerPt.x, y: triggerPt.y });
 
                             let stop = tile.document.checkStop();
+
+                            //log('Triggering tile', update, stop);
+
                             if (stop) {
                                 //check for snapping to the closest grid spot
                                 if (stop == 'snap')
@@ -758,13 +859,19 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                                 delete update.y;
 
                                 //try to disrupt the remaining path if there is one, by setting an update
-                                MonksActiveTiles._rejectRemaining[document.id] = { x: triggerPt.x, y: triggerPt.y };
-                                window.setTimeout(function () { delete MonksActiveTiles._rejectRemaining[document.id]; }, 500); //Hopefully half a second is enough to clear any of the remaining animations
+                                //MonksActiveTiles._rejectRemaining[document.id] = { x: triggerPt.x, y: triggerPt.y };
+                                //window.setTimeout(function () { delete MonksActiveTiles._rejectRemaining[document.id]; }, 500); //Hopefully half a second is enough to clear any of the remaining animations
 
+                                let ruler = canvas.controls.getRulerForUser(game.user.id);
+                                if (ruler) ruler.cancelMovement = true;
+                                options.animate = false;
+
+                                /*
                                 if (game.modules.get("drag-ruler")?.active) {
                                     let checkcount = 0;
                                     let stopanimate = window.setInterval(function () {
                                         checkcount++;
+                                        log('stop animation', CanvasAnimation.animations);
                                         let sa = CanvasAnimation.animations[`Token.${document.id}.animateMovement`] != undefined;
                                         token.stopAnimation();
                                         if (sa || checkcount > 20) {
@@ -773,7 +880,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                                             document.update({ x: triggerPt.x, y: triggerPt.y }, { bypass: true });
                                         }
                                     }, 10);
-                                } else
+                                }*/
                                     await document.update({ x: triggerPt.x, y: triggerPt.y }, { bypass: true });
                             }
 
