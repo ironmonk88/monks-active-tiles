@@ -1,3 +1,9 @@
+## Version 1.0.7
+
+Fixed libWrapper support
+
+Updated the code that checks on cancellig the remaining animation.
+
 ## Version 1.0.6
 
 Added libWrapper support

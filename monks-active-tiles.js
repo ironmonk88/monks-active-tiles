@@ -548,7 +548,7 @@ export class MonksActiveTiles {
         } else {
             const oldClickLeft = Canvas.prototype._onClickLeft;
             Canvas.prototype._onClickLeft = function (event) {
-                return updateSelection.call(this, oldClickLeft.bind(this), [event]);
+                return updateSelection.call(this, oldClickLeft.bind(this), ...arguments);
             }
         }
     }
@@ -718,6 +718,7 @@ export class MonksActiveTiles {
         }
 
         if (!game.modules.get("drag-ruler")?.active) {
+            /*
             let clear = function (wrapped, ...args) {
                 this.cancelMovement = false;
                 wrapped(...args);
@@ -730,9 +731,10 @@ export class MonksActiveTiles {
                 Ruler.prototype.clear = function (event) {
                     return clear.call(this, oldClear.bind(this));
                 }
-            }
+            }*/
 
             let moveToken = async function (wrapped, ...args) {
+                this.cancelMovement = false;
                 let wasPaused = game.paused;
                 if (wasPaused && !game.user.isGM) {
                     ui.notifications.warn("GAME.PausedWarning", { localize: true });
@@ -779,10 +781,8 @@ export class MonksActiveTiles {
                     path.B.y = token.data.y;
 
                     //if the movement has been canceled then stop processing rays
-                    if (this.cancelMovement) {
-                        this.cancelMovement = false;
+                    if (this.cancelMovement)
                         break;
-                    }
 
                     // Update the path which may have changed during the update, and animate it
                     priorDest = path.B;
