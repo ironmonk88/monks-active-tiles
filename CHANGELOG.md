@@ -1,3 +1,7 @@
+## Version 1.0.9
+
+Added support to activate/deactivate lights and sounds
+
 ## Version 1.0.8
 
 Fixed issue with tokens sneaking into the tile by stopping right on the edge of the tile.

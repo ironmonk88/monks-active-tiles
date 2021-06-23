@@ -278,7 +278,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    restrict: (entity) => { return (entity instanceof Tile); }
+                    restrict: (entity) => { return (entity instanceof Tile || entity instanceof AmbientLight || entity instanceof AmbientSound); }
                 },
                 {
                     id: "activate",
@@ -290,7 +290,8 @@ export class MonksActiveTiles {
             values: {
                 'activate': {
                     'deactivate': "MonksActiveTiles.activate.deactivate",
-                    'activate': "MonksActiveTiles.activate.activate"
+                    'activate': "MonksActiveTiles.activate.activate",
+                    'toggle': "MonksActiveTiles.activate.toggle"
 
                 }
             },
@@ -301,7 +302,10 @@ export class MonksActiveTiles {
                 else
                     entity = await fromUuid(action.data.entity.id);
 
-                await entity.setFlag('monks-active-tiles', 'active', action.data.activate == 'activate');
+                if (entity instanceof AmbientLightDocument || entity instanceof AmbientSoundDocument)
+                    await entity.update({ hidden: (action.data.activate == 'toggle' ? !entity.data.hidden : (action.data.activate != 'activate')) });
+                else
+                    await entity.setFlag('monks-active-tiles', 'active', (action.data.activate == 'toggle' ? !entity.getFlag('monks-active-tiles', 'active') : action.data.activate == 'activate'));
             },
             content: (trigger, action) => {
                 return i18n(trigger.values.activate[action.data?.activate]) + ' ' + action.data?.entity.name;
@@ -872,6 +876,18 @@ export class MonksActiveTiles {
                     return moveToken.call(this, oldMoveToken.bind(this));
                 }
             }
+        }
+
+        let oldLightClickLeft = AmbientLight.prototype._onClickLeft;
+        AmbientLight.prototype._onClickLeft = function (event) {
+            MonksActiveTiles.controlEntity(this);
+            return oldLightClickLeft.call(this, event);
+        }
+
+        let oldSoundClickLeft = AmbientSound.prototype._onClickLeft;
+        AmbientSound.prototype._onClickLeft = function (event) {
+            MonksActiveTiles.controlEntity(this);
+            return oldSoundClickLeft.call(this, event);
         }
     }
 }

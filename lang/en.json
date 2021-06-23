@@ -20,10 +20,10 @@
   "MonksActiveTiles.ToggleActive": "Toggle Active State",
 
   "MonksActiveTiles.action.pause": "Pause Game",
-  "MonksActiveTiles.action.movement": "Stop Triggering Token Movement",
+  "MonksActiveTiles.action.movement": "Stop Token Movement",
   "MonksActiveTiles.action.teleport": "Teleport",
   "MonksActiveTiles.action.showhide": "Show/Hide",
-  "MonksActiveTiles.action.activate": "Activate/Deactivate Tile",
+  "MonksActiveTiles.action.activate": "Activate/Deactivate",
   "MonksActiveTiles.action.alter": "Alter",
   "MonksActiveTiles.action.playsound": "Play sound",
   "MonksActiveTiles.action.changedoor": "Change door state",
@@ -59,6 +59,7 @@
 
   "MonksActiveTiles.activate.activate": "Activate",
   "MonksActiveTiles.activate.deactivate": "Deactivate",
+  "MonksActiveTiles.activate.toggle": "Toggle",
 
   "MonksActiveTiles.for.all": "Everyone",
   "MonksActiveTiles.for.gm": "GM Only",
