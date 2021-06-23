@@ -17,18 +17,20 @@ You can specify the chance that a tile will be triggered, so if the trap only ha
 
 You can then add multiple actions for Foundry to take when a tile is triggered.
 Current options allow you to: 
-Pause the Game, 
-Stop the Triggering token, 
-Teleport the token, 
-Show/Hide tokens or tiles.
-Activate/Deactivate a Tile (usually used to deactivate the Tile once triggered), 
-Alter a Wall, Token, or Tile (true and fallse will be converted to boolean, numbers will set the attribute to that value, and '+ 10' or '- 10' will increase or decrease the value),
-Play a Sound,
-Change a door state (this is a short form of alter),
-Show a notification,
-Add a chat message,
-Excute a Macro,
-Roll on a Roll Table.
+* Pause the Game, 
+* Stop the Triggering token, 
+* Teleport the token, 
+* Show/Hide tokens or tiles.
+* Activate/Deactivate a Tile or Light Source or Sound, 
+* Alter a Wall, Token, or Tile (true and false will be converted to boolean, numbers will set the attribute to that value, and '+ 10' or '- 10' will increase or decrease the value),
+* Play a Sound,
+* Change a door state (this is a short form of alter),
+* Show a notification,
+* Add a chat message,
+* Excute a Macro,
+* Roll on a Roll Table.
+
+Monk's Tokenbar also adds the option to request a roll and to change the Token's movement state.
 
 ## Bug Reporting
 I'm sure there are lots of issues with it.  It's very much a work in progress.
