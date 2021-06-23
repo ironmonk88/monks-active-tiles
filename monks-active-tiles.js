@@ -57,7 +57,7 @@ export class MonksActiveTiles {
                 }
             ],
             content: (trigger, action) => {
-                return i18n(trigger.name) + (action.data.snap ? ' (' + i18n("MonksActiveTiles.ctrl.snap").toLowerCase() + ')' : '');
+                return i18n(trigger.name) + (action.data?.snap ? ' (' + i18n("MonksActiveTiles.ctrl.snap").toLowerCase() + ')' : '');
             }
         },
         'teleport': {
@@ -75,7 +75,18 @@ export class MonksActiveTiles {
                     id: "remotesnap",   //using remote snap because I don't want this to trigger the token to be snapped to the grid on the tile
                     name: "MonksActiveTiles.ctrl.snap",
                     type: "checkbox"
-                }/*,
+                },
+                {
+                    id: "animatepan",
+                    name: "Animate Canvas Pan",
+                    type: "checkbox"
+                },
+                {
+                    id: "addanimation",
+                    name: "Add bit of animation",
+                    type: "checkbox"
+                }
+                /*,
                 {
                     id: "addmovement",
                     name: "Add bit of movement",
@@ -83,23 +94,81 @@ export class MonksActiveTiles {
                 }*/
             ],
             fn: async (tile, token, action, userid) => {
+                let onMovementFrame = function (dt, anim, config) {
+                    log('movement frame', dt, anim, config);
+                }
                 //move the token to the new square
                 let newPos = {
                     x: action.data.location.x - (token.w / 2),
                     y: action.data.location.y - (token.h / 2)
                 };
                 if (action.data.location.sceneId == undefined || action.data.location.sceneId == canvas.scene.id) {
+
                     await token.stopAnimation();
                     if (!canvas.grid.hitArea.contains(newPos.x, newPos.y)) {
-                        //+++find the closest spot on the edge
+                        //+++find the closest spot on the edge of the scene
                         ui.notifications.error("MonksActiveTiles.msg.prevent-teleport");
                         return;
                     }
                     if (action.data.remotesnap)
                         newPos = canvas.grid.getSnappedPosition(newPos.x, newPos.y);
 
-                    await token.document.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false });
-                    canvas.pan(newPos.x, newPos.y);
+                    if (action.data.addanimation) {
+                        let oldSize = { width: token.width, height: token.height };
+                        //token.pivot.set(token.width / 2, token.height / 2);
+                        token.x = token.x + (token.width / 2);
+                        token.y = token.y + (token.height / 2);
+                        token.border.alpha = 0;
+                        let animationName = `Token.${token.id}.animateTeleport`;
+                        const animationData = [
+                            { parent: token, attribute: 'rotation', to: (Math.PI * 6) },
+                            { parent: token, attribute: 'width', to: 20 },
+                            { parent: token, attribute: 'height', to: 20 }];
+                        await CanvasAnimation.animateLinear(animationData, {
+                            name: animationName,
+                            context: token,
+                            duration: 500,
+                            ontick: (dt, anim) => onMovementFrame(dt, anim)
+                        });
+                        //token.pivot.set(0, 0);
+                        token.rotation = 0;
+                        token.width = oldSize.width;
+                        token.height = oldSize.height;
+                        token.border.alpha = 1;
+
+                        await token.document.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false });
+                        canvas.animatePan({ x: newPos.x, y: newPos.y });
+
+                        //token.pivot.set(token.width / 2, token.height / 2);
+                        token.x = token.x + (token.width / 2);
+                        token.y = token.y + (token.height / 2);
+                        token.width = 20;
+                        token.height = 20;
+                        token.border.alpha = 0;
+                        const animationData2 = [
+                            { parent: token, attribute: 'rotation', to: (Math.PI * 6) },
+                            { parent: token, attribute: 'width', to: oldSize.width },
+                            { parent: token, attribute: 'height', to: oldSize.height }];
+                        await CanvasAnimation.animateLinear(animationData2, {
+                            name: animationName,
+                            context: token,
+                            duration: 500,
+                            ontick: (dt, anim) => onMovementFrame(dt, anim)
+                        });
+                        token.pivot.set(0, 0);
+                        token.rotation = 0;
+                        token.width = oldSize.width;
+                        token.height = oldSize.height;
+                        token.x = token.x - (token.width / 2);
+                        token.y = token.y - (token.height / 2);
+                        token.border.alpha = 1;
+                    } else {
+                        await token.document.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false });
+                        if(action.data.animatepan)
+                            canvas.animatePan({ x: newPos.x, y: newPos.y });
+                        else
+                            canvas.pan({ x: newPos.x, y: newPos.y });
+                    }
                 } else {
                     //if the end spot is on a different scene then hide this token, check the new scene for a token for that actor and move it, otherwise create the token on the new scene
                     let scene = game.scenes.get(action.data.location.sceneId);
@@ -123,7 +192,7 @@ export class MonksActiveTiles {
 
                     if (userid == game.user.id) {
                         await scene.view();
-                        canvas.pan(newPos.x, newPos.y, scale);
+                        canvas.pan({ x: newPos.x, y: newPos.y, scale: scale });
                     } else {
                         //pass this back to the player
                         game.socket.emit(
@@ -141,8 +210,8 @@ export class MonksActiveTiles {
                 }
             },
             content: (trigger, action) => {
-                let scene = game.scenes.find(s => s.id == action.data.location.sceneId);
-                return i18n(trigger.name) + ' token to [' + action.data.location.x + ',' + action.data.location.y + ']'+ (scene ? ' Scene: ' + scene.name : '') + (action.data.remotesnap ? ' (snap to grid)' : '');
+                let scene = game.scenes.find(s => s.id == action.data?.location.sceneId);
+                return i18n(trigger.name) + ' token to [' + action.data?.location.x + ',' + action.data?.location.y + ']'+ (scene ? ' Scene: ' + scene.name : '') + (action.data?.remotesnap ? ' (snap to grid)' : '');
             }
         },
         'showhide': {
@@ -189,7 +258,7 @@ export class MonksActiveTiles {
                     if (entity && entity.length > 0) {
                         //set or toggle visible
                         for (let e of entity) {
-                            e.update({ hidden: (action.data.hidden == 'toggle' ? !e.data.hidden : action.data.hidden !== 'show') });
+                            await e.update({ hidden: (action.data.hidden == 'toggle' ? !e.data.hidden : action.data.hidden !== 'show') });
                         }
                     }
                 } catch {
@@ -197,7 +266,7 @@ export class MonksActiveTiles {
                 }
             },
             content: (trigger, action) => {
-                return i18n(trigger.values.hidden[action.data.hidden]) + ' ' + action.data.entity.name;
+                return i18n(trigger.values.hidden[action.data?.hidden]) + ' ' + action.data?.entity.name;
             }
         },
         'activate': {
@@ -220,8 +289,9 @@ export class MonksActiveTiles {
             ],
             values: {
                 'activate': {
-                    'activate': "MonksActiveTiles.activate.activate",
-                    'deactivate': "MonksActiveTiles.activate.deactivate"
+                    'deactivate': "MonksActiveTiles.activate.deactivate",
+                    'activate': "MonksActiveTiles.activate.activate"
+
                 }
             },
             fn: async (tile, token, action) => {
@@ -231,10 +301,10 @@ export class MonksActiveTiles {
                 else
                     entity = await fromUuid(action.data.entity.id);
 
-                entity.setFlag('monks-active-tiles', 'active', action.data.activate == 'activate');
+                await entity.setFlag('monks-active-tiles', 'active', action.data.activate == 'activate');
             },
             content: (trigger, action) => {
-                return i18n(trigger.values.activate[action.data.activate]) + ' ' + action.data.entity.name;
+                return i18n(trigger.values.activate[action.data?.activate]) + ' ' + action.data?.entity.name;
             }
         },
         'alter': {
@@ -294,9 +364,9 @@ export class MonksActiveTiles {
                 }
             },
             content: (trigger, action) => {
-                return i18n(trigger.name) + ' ' + action.data.entity.name + ', ' + (action.data.value.startsWith('+ ') ? 'increase ' + action.data.attribute + ' by ' + action.data.value.substring(2) :
-                    (action.data.value.startsWith('- ') ? 'decrease ' + action.data.attribute + ' by ' + action.data.value.substring(2) :
-                        'set ' + action.data.attribute + ' to ' + action.data.value));
+                return i18n(trigger.name) + ' ' + action.data?.entity.name + ', ' + (action.data?.value.startsWith('+ ') ? 'increase ' + action.data?.attribute + ' by ' + action.data?.value.substring(2) :
+                    (action.data?.value.startsWith('- ') ? 'decrease ' + action.data?.attribute + ' by ' + action.data?.value.substring(2) :
+                        'set ' + action.data?.attribute + ' to ' + action.data?.value));
             }
         },
         'playsound': {
@@ -363,7 +433,7 @@ export class MonksActiveTiles {
                 }
             },
             content: (trigger, action) => {
-                return i18n(trigger.name) + ' to ' + i18n(trigger.values.state[action.data.state]);
+                return i18n(trigger.name) + ' to ' + i18n(trigger.values.state[action.data?.state]);
             }
         },
         'notification': {
@@ -439,7 +509,7 @@ export class MonksActiveTiles {
                 ChatMessage.create(messageData);
             },
             content: (trigger, action) => {
-                return i18n(trigger.name) + ' for ' + i18n(trigger.values.for[action.data.for]);
+                return i18n(trigger.name) + ' for ' + i18n(trigger.values.for[action.data?.for]);
             }
         },
         /*'castspell': {
@@ -457,7 +527,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.macro",
                     list: () => {
                         let result = {};
-                        for (let macro of game.macros.contents) {
+                        for (let macro of game.macros.contents.sort((a, b) => { return a.name < b.name ? -1 : (a.name > b.name ? 1 : 0)})) {
                             result[macro.id] = macro.name;
                         }
                         return result;
@@ -475,7 +545,7 @@ export class MonksActiveTiles {
                 } catch{}
             },
             content: (trigger, action) => {
-                let macro = game.macros.get(action.data.macroid);
+                let macro = game.macros.get(action.data?.macroid);
                 return i18n(trigger.name) + ', ' + macro?.name;
             }
         },
@@ -499,7 +569,7 @@ export class MonksActiveTiles {
             fn: async (tile, token, action) => {
                 //Find the roll table
                 try {
-                    let rolltable = game.tables.get(action.data.rolltableid);
+                    let rolltable = game.tables.get(action.data?.rolltableid);
                     if (rolltable instanceof RollTable) {
                         //Make a roll
                         let result = rolltable.draw();
@@ -508,7 +578,7 @@ export class MonksActiveTiles {
                 } catch{ }
             },
             content: (trigger, action) => {
-                let rolltable = game.tables.get(action.data.rolltableid);
+                let rolltable = game.tables.get(action.data?.rolltableid);
                 return i18n(trigger.name) + ', ' + rolltable?.name;
             }
         }
@@ -567,7 +637,7 @@ export class MonksActiveTiles {
                 if (game.user.id == data.userid) {
                     let scene = game.scenes.get(data.sceneid);
                     await scene.view();
-                    canvas.pan(data.pos.x, data.pos.y, data.pos.scale);
+                    canvas.pan({ x: data.pos.x, y: data.pos.y, scale: data.pos.scale });
                 }
             } break;
         }
@@ -623,7 +693,7 @@ export class MonksActiveTiles {
 
                 //is the token currently in the tile
                 let tokenPos = { x: token.x + (token.w / 2), y: token.y + (token.h / 2) };
-                let inTile = !(tokenPos.x < this.object.x || tokenPos.x > this.object.x + this.object.width || tokenPos.y < this.object.y || tokenPos.y > this.object.y + this.object.height);
+                let inTile = !(tokenPos.x <= this.object.x || tokenPos.x >= this.object.x + this.object.width || tokenPos.y <= this.object.y || tokenPos.y >= this.object.y + this.object.height);
 
                 //go through the list, alternating in/out until we find one that satisfies the on enter/on exit setting, and if it does, return the trigger point.
                 let when = this.getFlag('monks-active-tiles', 'trigger');   //+++ need to do something different if movement is called for
@@ -642,7 +712,7 @@ export class MonksActiveTiles {
             }
         }
 
-        TileDocument.prototype.trigger = function (token, userid = game.user.id) {
+        TileDocument.prototype.trigger = async function (token, userid = game.user.id) {
             if (game.user.isGM) {
                 //A token has triggered this tile, what actions do we need to do
                 let actions = this.data.flags["monks-active-tiles"]?.actions || [];
@@ -650,11 +720,11 @@ export class MonksActiveTiles {
                     let fn = MonksActiveTiles.triggerActions[action.action]?.fn;
                     if (fn) {
                         if (action.delay > 0) {
-                            window.setTimeout(function () {
-                                fn.call(this, this, token, action);
+                            window.setTimeout(async function () {
+                                await fn.call(this, this, token, action);
                             }, action.delay * 1000);
                         } else
-                            fn.call(this, this, token, action, userid);
+                            await fn.call(this, this, token, action, userid);
                     }
                 }
             } else {

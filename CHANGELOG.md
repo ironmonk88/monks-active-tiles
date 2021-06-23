@@ -1,8 +1,20 @@
+## Version 1.0.8
+
+Fixed issue with tokens sneaking into the tile by stopping right on the edge of the tile.
+
+Fixed conflict with Window Control module.  The module didn't support maximizing multiple windows all at the same time.
+
+Fixed issue with data not saving to the database when multiple triggers fire at once.
+
+Fixed issue when selecting an entity, it was displaying as if it were a location.
+
+Added option to animate the canvas pan on teleport
+
 ## Version 1.0.7
 
 Fixed libWrapper support
 
-Updated the code that checks on cancellig the remaining animation.
+Updated the code that checks on cancelling the remaining animation.
 
 ## Version 1.0.6
 

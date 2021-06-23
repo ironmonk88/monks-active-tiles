@@ -34,7 +34,7 @@ export class ActionConfig extends FormApplication {
         $('select[name="action"]', html).change(this.changeAction.bind(this));
     }
 
-    selectEntity(event) {
+    async selectEntity(event) {
         let btn = $(event.currentTarget);
         let field = $('input[name="' + btn.attr('data-target') + '"]', this.element);
 
@@ -46,9 +46,9 @@ export class ActionConfig extends FormApplication {
             field.val('{"id":"players","name":"' + i18n("MonksActiveTiles.PlayerTokens") + '"}').next().html(i18n("MonksActiveTiles.PlayerTokens"));
         else {
             if (!this._minimized)
-                this.minimize();
+                await this.minimize();
             if (!this.options.parent._minimized)
-                this.options.parent.minimize();
+                await this.options.parent.minimize();
 
             this.waitingfield = field;
             MonksActiveTiles.waitingInput = this;
@@ -57,13 +57,13 @@ export class ActionConfig extends FormApplication {
         }
     }
 
-    updateSelection(selection) {
+    async updateSelection(selection) {
         this.waitingfield.val((typeof selection == 'object' ? JSON.stringify(selection) : selection));
         let scene = (selection?.sceneId ? game.scenes.get(selection.sceneId) : null);
-        this.waitingfield.next().html(typeof selection == 'object' ? 'x:' + selection.x + ', y:' + selection.y + (scene ? ', scene:' + scene.name : '') : selection);
+        this.waitingfield.next().html(typeof selection == 'object' ? (selection.x || selection.y ? 'x:' + selection.x + ', y:' + selection.y + (scene ? ', scene:' + scene.name : '') : selection.name) : selection);
 
-        this.maximize();
-        this.options.parent.maximize();
+        await this.maximize();
+        await this.options.parent.maximize();
 
         delete this.waitingfield;
         delete MonksActiveTiles.waitingInput;
