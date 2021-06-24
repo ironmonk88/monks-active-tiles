@@ -1,3 +1,17 @@
+## Version 1.0.10
+
+Fixed issue with multiple walls being changed at the same time.
+
+Fixed issue with secret doors not being updated.
+
+Fixed display name so that it includes the wall id
+
+adding advanced macro execution.
+
+Added polyglot support with chat messages
+
+Changed how actions are saved.  BE AWARE that instead of svaing when you update the action, the action won't save unless you save the Tile.
+
 ## Version 1.0.9
 
 Added support to activate/deactivate lights and sounds

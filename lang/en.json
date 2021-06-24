@@ -18,6 +18,10 @@
   "MonksActiveTiles.ChanceTrigger": "% Chance to trigger",
   "MonksActiveTiles.Add": "Add",
   "MonksActiveTiles.ToggleActive": "Toggle Active State",
+  "MonksActiveTiles.PerToken": "Once per token",
+  "MonksActiveTiles.EditAction": "Edit Action",
+  "MonksActiveTiles.DeleteAction": "Delete Action",
+  "MonksActiveTiles.Actions": "Actions",
 
   "MonksActiveTiles.action.pause": "Pause Game",
   "MonksActiveTiles.action.movement": "Stop Token Movement",
@@ -31,6 +35,7 @@
   "MonksActiveTiles.action.chatmessage": "Chat Message",
   "MonksActiveTiles.action.runmacro": "Run Macro",
   "MonksActiveTiles.action.rolltable": "Roll Table",
+  "MonksActiveTiles.action.pancanvas": "Pan Canvas",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
@@ -45,9 +50,13 @@
   "MonksActiveTiles.ctrl.type": "Type",
   "MonksActiveTiles.ctrl.text": "Text",
   "MonksActiveTiles.ctrl.macro": "Macro",
+  "MonksActiveTiles.ctrl.args": "Args",
+  "MonksActiveTiles.ctrl.animate": "Animate",
+  "MonksActiveTiles.ctrl.language": "Language",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
+  "MonksActiveTiles.mode.both": "Both",
 
   "MonksActiveTiles.restrict.all": "Everyone",
   "MonksActiveTiles.restrict.player": "Player Only",
@@ -66,8 +75,8 @@
   "MonksActiveTiles.for.token": "Token Owner",
 
   "MonksActiveTiles.state.open": "Open",
-  "MonksActiveTiles.state.close": "Closed",
-  "MonksActiveTiles.state.lock": "Locked",
+  "MonksActiveTiles.state.closed": "Closed",
+  "MonksActiveTiles.state.locked": "Locked",
 
   "MonksActiveTiles.notification.info": "Info",
   "MonksActiveTiles.notification.warning": "Warning",

@@ -60,6 +60,31 @@ export class MonksActiveTiles {
                 return i18n(trigger.name) + (action.data?.snap ? ' (' + i18n("MonksActiveTiles.ctrl.snap").toLowerCase() + ')' : '');
             }
         },
+        'pancanvas': {
+            name: "MonksActiveTiles.action.pancanvas",
+            ctrls: [
+                {
+                    id: "location",
+                    name: "MonksActiveTiles.ctrl.select-coordinates",
+                    type: "select",
+                    subtype: "location"
+                },
+                {
+                    id: "animate",
+                    name: "MonksActiveTiles.ctrl.animate",
+                    type: "checkbox"
+                }
+            ],
+            fn: async (tile, token, action, userid) => {
+                if (action.data.animate)
+                    canvas.animatePan({ x: action.data.location.x, y: action.data.location.y });
+                else
+                    canvas.pan({ x: action.data.location.x, y: action.data.location.y });
+            },
+            content: (trigger, action) => {
+                return i18n(trigger.name) + (action.data?.snap ? ' (' + i18n("MonksActiveTiles.ctrl.snap").toLowerCase() + ')' : '');
+            }
+        },
         'teleport': {
             name: "MonksActiveTiles.action.teleport",
             options: { allowDelay: true },
@@ -432,12 +457,12 @@ export class MonksActiveTiles {
             fn: async (tile, token, action) => {
                 //Find the door in question, set the state to whatever value
                 let wall = await fromUuid(action.data.entity.id);
-                if (wall && wall.data.door == 1) {
-                    wall.update({ ds: (action.data.state == 'open' ? CONST.WALL_DOOR_STATES.OPEN : (action.data.state == 'locked' ? CONST.WALL_DOOR_STATES.LOCKED : CONST.WALL_DOOR_STATES.CLOSED)) });
+                if (wall && wall.data.door != 0) {
+                    await wall.update({ ds: (action.data.state == 'open' ? CONST.WALL_DOOR_STATES.OPEN : (action.data.state == 'locked' ? CONST.WALL_DOOR_STATES.LOCKED : CONST.WALL_DOOR_STATES.CLOSED)) });
                 }
             },
             content: (trigger, action) => {
-                return i18n(trigger.name) + ' to ' + i18n(trigger.values.state[action.data?.state]);
+                return i18n(trigger.name) + ' ' + action.data?.entity.name + ' to ' + i18n(trigger.values.state[action.data?.state]);
             }
         },
         'notification': {
@@ -483,6 +508,16 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.for",
                     list: "for",
                     type: "list"
+                },
+                {
+                    id: "language",
+                    name: "MonksActiveTiles.ctrl.language",
+                    list: () => {
+                        let languages = mergeObject({'': ''}, duplicate(CONFIG[game.system.id.toUpperCase()].languages));
+                        return languages;
+                    },
+                    conditional: () => { return (game.modules.get("polyglot")?.active); },
+                    type: "list"
                 }
             ],
             values: {
@@ -499,8 +534,8 @@ export class MonksActiveTiles {
 
                 let messageData = {
                     user: game.user.id,
-                    speaker: speaker,
-                    type: CONST.CHAT_MESSAGE_TYPES.OOC,
+                    //speaker: speaker,
+                    type: CONST.CHAT_MESSAGE_TYPES.OTHER,
                     content: action.data.text
                 };
 
@@ -509,6 +544,9 @@ export class MonksActiveTiles {
                 else if (action.data.for == 'token') {
                     messageData.whisper = Array.from(new Set(ChatMessage.getWhisperRecipients("GM").map(u => u.id).concat(tokenOwners)));
                 }
+
+                if (action.data.language != '')
+                    mergeObject(messageData, { flags: { 'monks-active-tiles': { language: action.data.language } } });
 
                 ChatMessage.create(messageData);
             },
@@ -537,6 +575,14 @@ export class MonksActiveTiles {
                         return result;
                     },
                     type: "list"
+                },
+                {
+                    id: "args",
+                    name: "MonksActiveTiles.ctrl.args",
+                    type: "text",
+                    conditional: () => {
+                        return (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active);
+                    }
                 }
             ],
             fn: async (tile, token, action) => {
@@ -544,7 +590,36 @@ export class MonksActiveTiles {
                 try {
                     let macro = game.macros.get(action.data.macroid);
                     if (macro instanceof Macro) {
-                        macro.execute({ actor: token.actor, token: token });
+                        if (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active) {
+                            let args = action.data.args.match(/(?:[^\s"]+|"[^"]*")+/g).map(p => {
+                                if (p.startsWith("\"") && p.endsWith("\""))
+                                    return p.substr(1, p.length - 2);
+                                else if ($.isNumeric(p))
+                                    return (p.indexOf(".") >= 0 ? parseFloat(p) : parseInt(p));
+                                else
+                                    return p;
+                            });
+                                /*.match(/\\?.|^$/g).reduce((p, c) => {
+                                if (c === '"') {
+                                    p.quote ^= 1;
+                                } else if (!p.quote && c === ' ') {
+                                    p.a.push('');
+                                } else {
+                                    if($.isNumeric)
+                                    p.a[p.a.length - 1] += c.replace(/\\(.)/, "$1");
+                                }
+                                return p;
+                            }, { a: [''] }).a;*/
+
+                            for (let i = 0; i < args.length; i++) {
+                                if (args[i] == '_tile')
+                                    args[i] = tile;
+                                else if (args[i] == '_token')
+                                    args[i] = token;
+                            }
+                            macro.execute.apply(macro, args);
+                        }else
+                            macro.execute({ actor: token.actor, token: token });
                     }
                 } catch{}
             },
@@ -673,6 +748,10 @@ export class MonksActiveTiles {
         TileDocument.prototype.canTrigger = function (token, collision) {
             let triggerData = this.data.flags["monks-active-tiles"];
             if (triggerData) {
+                //check to see if this trigger is per token, and already triggered
+                if (triggerData.pertoken && triggerData.tokens?.includes(token.id))
+                    return;
+
                 //check to see if this trigger is restricted
                 if ((triggerData.restriction == 'gm' && token.actor.hasPlayerOwner) || (triggerData.restriction == 'player' && !token.actor.hasPlayerOwner))
                     return;
@@ -730,6 +809,12 @@ export class MonksActiveTiles {
                         } else
                             await fn.call(this, this, token, action, userid);
                     }
+                }
+
+                if (this.data.flags["monks-active-tiles"]?.pertoken) {
+                    let triggerTokens = duplicate(this.data.flags["monks-active-tiles"]?.tokens || []);
+                    triggerTokens.push(token.id);
+                    await this.setFlag("monks-active-tiles", "tokens", triggerTokens);
                 }
             } else {
                 //post this to the GM
@@ -921,7 +1006,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
         //Does this cross a tile
         for (let layer of [canvas.background.tiles, canvas.foreground.tiles]) {
             for (let tile of layer) {
-                if (tile.data.flags['monks-active-tiles']?.active) {
+                if (tile.data.flags['monks-active-tiles']?.active && tile.data.flags['monks-active-tiles']?.actions?.length > 0) {
                     //check and see if the ray crosses a tile
                     let collision = tile.document.checkCollision(document, { x: update.x || document.data.x, y: update.y || document.data.y });
                     if (collision.length > 0) {
@@ -991,17 +1076,29 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
     }
 });
 
+Hooks.on('preCreateChatMessage', async (document, data, options, userId) => {
+    if (document.getFlag('monks-active-tiles', 'language')) {
+        document.data.update({ "flags.polyglot.language": document.getFlag('monks-active-tiles', 'language') });
+    }
+});
+
+Hooks.on('renderChatMessage', async (message, html, data) => {
+    if (message.getFlag('monks-active-tiles', 'language') && message.data.type == CONST.CHAT_MESSAGE_TYPES.OTHER) {
+        await message.update({ type: CONST.CHAT_MESSAGE_TYPES.OOC });
+    }
+});
+
 Hooks.on('controlToken', (token, control) => {
     if (control)
         MonksActiveTiles.controlEntity(token);
-})
+});
 
 Hooks.on('controlWall', (wall, control) => {
     if (control)
         MonksActiveTiles.controlEntity(wall);
-})
+});
 
 Hooks.on('controlTile', (tile, control) => {
-    if(control)
+    if (control)
         MonksActiveTiles.controlEntity(tile);
-})
+});

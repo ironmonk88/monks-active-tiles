@@ -161,6 +161,15 @@
         </div>
 
         <div class="form-group">
+            <label>{{ localize "MonksActiveTiles.PerToken" }}</label>
+            <div class="form-fields">
+                <div class="pertoken-list">{{#each pertoken}}<div class="pertoken" data-token-id="{{this.id}}" >{{this.name}}</div>{{/each}}</div>
+                <button class="reset-pertoken" type="button" style="height: 20px; line-height: 15px;">Reset</button>
+                <input type="checkbox" name="flags.monks-active-tiles.pertoken" {{ checked data.flags.monks-active-tiles.pertoken }}>
+            </div>
+        </div>
+
+        <div class="form-group">
             <label>{{ localize "MonksActiveTiles.ChanceTrigger" }}</label>
             <div class="form-fields">
                 {{ rangePicker name="flags.monks-active-tiles.chance" value=data.flags.monks-active-tiles.chance min="0" max="100" step="1" }}
@@ -169,7 +178,7 @@
 
         <ol class="items-list action-items">
             <li class="items-header flexrow">
-                <h3 class="item-name flexrow">Actions</h3>
+                <h3 class="item-name flexrow">{{ localize "MonksActiveTiles.Actions" }}</h3>
 
                 <div class="item-controls flexrow">
                     <a class="item-control action-create" title="{{ localize "MonksActiveTiles.CreateNewAction" }}" data-type="objective">
@@ -186,8 +195,8 @@
                     </div>
 
                     <div class="item-controls flexrow">
-                        <a class="item-control action-edit" title="Edit Objective"><i class="fas fa-edit"></i></a>
-                        <a class="item-control action-delete" title="Delete Action"><i class="fas fa-trash"></i></a>
+                        <a class="item-control action-edit" title="{{ localize "MonksActiveTiles.EditAction" }}"><i class="fas fa-edit"></i></a>
+                        <a class="item-control action-delete" title="{{ localize "MonksActiveTiles.DeleteAction" }}"><i class="fas fa-trash"></i></a>
                     </div>
                 </li>
                 {{/each}}

@@ -18,18 +18,33 @@ export const WithActiveTileConfig = (TileConfig) => {
             this.object._normalize();
             const data = super.getData(options);
 
-            data.triggerModes = { 'enter': i18n("MonksActiveTiles.mode.enter"), 'exit': i18n("MonksActiveTiles.mode.exit") };
+            data.triggerModes = { 'enter': i18n("MonksActiveTiles.mode.enter"), 'exit': i18n("MonksActiveTiles.mode.exit") }; //, 'both': i18n("MonksActiveTiles.mode.both") };
             data.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
 
-            data.actions = this.object.data.flags['monks-active-tiles'].actions.map(a => {
-                let trigger = MonksActiveTiles.triggerActions[a.action];
-                let content = (trigger == undefined ? 'Unknown' : (trigger.content ? trigger.content(trigger, a) : i18n(trigger.name)) + (a.action.delay > 0 ? ' after ' + a.action.delay + ' seconds' : ''));
-                return {
-                    id: a.id,
-                    content: content
-                };
-            });
+            data.actions = this.object.data.flags['monks-active-tiles'].actions
+                .map(a => {
+                    let trigger = MonksActiveTiles.triggerActions[a.action];
+                    let content = (trigger == undefined ? 'Unknown' : (trigger.content ? trigger.content(trigger, a) : i18n(trigger.name)) + (a.action.delay > 0 ? ' after ' + a.action.delay + ' seconds' : ''));
+                    return {
+                        id: a.id,
+                        content: content
+                    };
+                });
 
+            data.pertoken = this.object.data.flags['monks-active-tiles']?.tokens?.map(tid => {
+                let token = canvas.tokens.get(tid);
+                if (token)
+                    return { id: token.id, name: token.name };
+                else
+                    return null;
+            }).filter(t => t);
+
+            return data;
+        }
+
+        _getSubmitData(updateData = {}) {
+            let data = super._getSubmitData(updateData);
+            data["flags.monks-active-tiles.actions"] = this.object.data.flags["monks-active-tiles"].actions;
             return data;
         }
 
@@ -39,6 +54,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             $('.action-create', html).click(this._createAction.bind(this));
             $('.action-edit', html).click(this._editAction.bind(this));
             $('.action-delete', html).click(this._deleteAction.bind(this));
+            $('.reset-pertoken', html).click(this.resetPerToken.bind(this));
         }
 
         _createAction(event) {
@@ -65,6 +81,10 @@ export const WithActiveTileConfig = (TileConfig) => {
             actions.findSplice(i => i.id == id);
             this.object.setFlag("monks-active-tiles", "actions", actions);
             //$(`li[data-id="${id}"]`, this.element).remove();
+        }
+
+        resetPerToken() {
+            this.object.setFlag("monks-active-tiles", "tokens", []);
         }
     }
 
