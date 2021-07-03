@@ -88,24 +88,28 @@ export class ActionConfig extends FormApplication {
         if (this.object.id == undefined) {
             mergeObject(this.object, formData);
             this.object.id = makeid();
-            let actions = duplicate(this.options.parent.object.getFlag("monks-active-tiles", "actions"));
+            let actions = duplicate(this.options.parent.object.getFlag("monks-active-tiles", "actions") || []);
             actions.push(this.object);
-            this.options.parent.object.data.flags["monks-active-tiles"].actions = actions;
+            mergeObject(this.options.parent.object.data.flags, {
+                "monks-active-tiles": { actions: actions }
+            });
             //add this row to the parent
             let trigger = MonksActiveTiles.triggerActions[this.object.action];
             $('<li>').addClass('item flexrow').attr('data-id', this.object.id).attr('draggable', true)
-                .append($('<div>').addClass('item-name flexrow').append($('<h4>').css({ 'white-space': 'normal' }).html(trigger.content ? trigger.content(trigger, this.object) : trigger.name)))
+                .append($('<div>').addClass('item-name flexrow').append($('<h4>').css({ 'white-space': 'normal' }).html(trigger.content ? trigger.content(trigger, this.object) : i18n(trigger.name))))
                 .append($('<div>').addClass('item-controls flexrow')
                     .append($('<a>').addClass('item-control action-edit').attr('title', 'Edit Action').html('<i class="fas fa-edit"></i>').click(this.options.parent._editAction.bind(this.options.parent)))
-                    .append($('<a>').addClass('item-control action-delete').attr('title', 'Delete Action').html('<i class="fas fa-edit"></i>').click(this.options.parent._deleteAction.bind(this.options.parent))))
+                    .append($('<a>').addClass('item-control action-delete').attr('title', 'Delete Action').html('<i class="fas fa-trash"></i>').click(this.options.parent._deleteAction.bind(this.options.parent))))
                 .appendTo($(`.action-items .item-list`, this.options.parent.element));
             this.options.parent.setPosition();
         } else {
-            let actions = duplicate(this.options.parent.object.getFlag("monks-active-tiles", "actions"));
+            let actions = duplicate(this.options.parent.object.getFlag("monks-active-tiles", "actions") || []);
             let action = actions.find(a => a.id == this.object.id);
             if (action) {
                 mergeObject(action, formData);
-                this.options.parent.object.data.flags["monks-active-tiles"].actions = actions;
+                mergeObject(this.options.parent.object.data.flags, {
+                    "monks-active-tiles": { actions: actions }
+                });
                 //update the text for this row
                 let trigger = MonksActiveTiles.triggerActions[action.action];
                 $(`.action-items .item[data-id="${action.id}"] .item-name h4`, this.options.parent.element).html(trigger.content ? trigger.content(trigger, action) : trigger.name);

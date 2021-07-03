@@ -205,7 +205,7 @@ export class MonksActiveTiles {
                     }
 
                     if (xtoken) {
-                        xtoken.update({ x: newPos.x, y: newPos.y, hidden: token.data.hidden }, { bypass: true, animate: false });
+                        await xtoken.update({ x: newPos.x, y: newPos.y, hidden: token.data.hidden }, { bypass: true, animate: false });
                     }
                     else {
                         const td = await token.actor.getTokenData({ x: newPos.x, y: newPos.y });

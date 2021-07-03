@@ -1,3 +1,13 @@
+## Version 1.0.11
+
+Fixed issue when adding actions to a new Tile.
+
+Fixed issue with localization when appending actions.
+
+Fixed issue with Delete Action icon
+
+Fixed issue when teleporting tokens not saving position.
+
 ## Version 1.0.10
 
 Fixed issue with multiple walls being changed at the same time.
