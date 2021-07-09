@@ -10,7 +10,9 @@ export const WithActiveTileConfig = (TileConfig) => {
         static get defaultOptions() {
             return foundry.utils.mergeObject(super.defaultOptions, {
                 classes: ["monks-active-tiles", "sheet"],
-                template: "modules/monks-active-tiles/templates/active-tile-config.html"
+                template: "modules/monks-active-tiles/templates/active-tile-config.html",
+                scrollY: ["ol.item-list"],
+                dragDrop: [{ dragSelector: ".item", dropSelector: ".item-list" }]
             });
         }
 
@@ -40,6 +42,49 @@ export const WithActiveTileConfig = (TileConfig) => {
             }).filter(t => t);
 
             return data;
+        }
+
+        _onDragStart(event) {
+            let li = event.currentTarget.closest(".item");
+            const isFolder = li.classList.contains("folder");
+            const dragData = { type: this.constructor.documentName, id: li.dataset.id };
+            event.dataTransfer.setData("text/plain", JSON.stringify(dragData));
+            this._dragType = dragData.type;
+        }
+
+        _canDragStart(selector) {
+            return true;
+        }
+
+        _onDrop(event) {
+            const cls = this.constructor.documentName;
+
+            // Try to extract the data
+            let data;
+            try {
+                data = JSON.parse(event.dataTransfer.getData('text/plain'));
+            }
+            catch (err) {
+                return false;
+            }
+
+            // Identify the drop target
+            const selector = this._dragDrop[0].dropSelector;
+            const target = event.target.closest(".item") || null;
+
+            // Call the drop handler
+            if (target && target.dataset.id) {
+                let actions = duplicate(this.object.data.flags["monks-active-tiles"].actions || []);
+
+                if (data.id === target.dataset.id) return; // Don't drop on yourself
+
+                let from = actions.findIndex(a => a.id == data.id);
+                let to = actions.findIndex(a => a.id == target.dataset.id);
+                actions.splice(to, 0, actions.splice(from, 1)[0]);
+
+                this.object.data.flags["monks-active-tiles"].actions = actions;
+                $('.action-items .item[data-id="' + data.id + '"]', this.element).insertBefore(target);
+            }
         }
 
         _getSubmitData(updateData = {}) {

@@ -13,7 +13,7 @@ export class ActionConfig extends FormApplication {
             title: "MonksActiveTiles.TriggerAction",
             template: "modules/monks-active-tiles/templates/action-config.html",
             width: 500,
-            height:'auto'
+            height: 'auto'
         });
     }
 
@@ -126,7 +126,7 @@ export class ActionConfig extends FormApplication {
         let data = this.object.data || {};
 
         for (let ctrl of (action.ctrls || [])) {
-            let options = mergeObject({ showTile: true, showToken: true, showPlayers: true, allowDelay: false }, ctrl.options);
+            let options = mergeObject({ showTile: true, showToken: true, showPlayers: true }, ctrl.options);
             let field = $('<div>').addClass('form-fields');
             let id = 'data.' + ctrl.id;
 
@@ -177,7 +177,7 @@ export class ActionConfig extends FormApplication {
                         field.append($('<input>').attr({ type: 'text', name: id }).val(data[ctrl.id]));
                         break;
                     case 'checkbox':
-                        field.append($('<input>').attr({ type: 'checkbox', name: id }).prop('checked', data[ctrl.id]));
+                        field.append($('<input>').attr({ type: 'checkbox', name: id }).prop('checked', data[ctrl.id])).css({flex: '0 0 30px'});
                         break;
                 }
 
@@ -187,9 +187,9 @@ export class ActionConfig extends FormApplication {
                     .append(field)
                     .appendTo($('.action-controls', this.element));
             }
-
-            $('[data-type="delay"]', this.element).toggle(options.allowDelay);
         }
+
+        $('[data-type="delay"]', this.element).toggle(action?.options?.allowDelay === true);
 
         if(this.rendered)
             this.setPosition();

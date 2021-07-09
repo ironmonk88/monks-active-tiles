@@ -385,7 +385,7 @@ export class MonksActiveTiles {
                                 value = eval(base + action.data.value);
                             }
                             update[action.data.attribute] = value;
-                            e.update(update);
+                            await e.update(update);
                         }
                     }
                 } catch {
@@ -617,9 +617,9 @@ export class MonksActiveTiles {
                                 else if (args[i] == '_token')
                                     args[i] = token;
                             }
-                            macro.execute.apply(macro, args);
+                            return await macro.execute.apply(macro, args);
                         }else
-                            macro.execute({ actor: token.actor, token: token });
+                            return await macro.execute({ actor: token.actor, token: token });
                     }
                 } catch{}
             },
@@ -659,6 +659,35 @@ export class MonksActiveTiles {
             content: (trigger, action) => {
                 let rolltable = game.tables.get(action.data?.rolltableid);
                 return i18n(trigger.name) + ', ' + rolltable?.name;
+            }
+        },
+        'resetfog': {
+            name: "MonksActiveTiles.action.resetfog",
+            ctrls: [
+                /*
+                {
+                    id: "for",
+                    name: "MonksActiveTiles.ctrl.for",
+                    list: "for",
+                    type: "list"
+                }
+                */
+            ],
+            values: {
+                'for': {
+                    'all': "MonksActiveTiles.for.all",
+                    //'token': "MonksActiveTiles.for.token"
+                }
+            },
+            fn: async (tile, token, action) => {
+                if (action.data?.for == 'token') {
+                    //canvas.sight._onResetFog(result)
+                }
+                else 
+                    canvas.sight.resetFog();
+            },
+            content: (trigger, action) => {
+                return i18n(trigger.name) + ' for ' + (action.data?.for == 'token' ? 'Token' : 'Everyone');
             }
         }
     }
@@ -806,8 +835,10 @@ export class MonksActiveTiles {
                             window.setTimeout(async function () {
                                 await fn.call(this, this, token, action);
                             }, action.delay * 1000);
-                        } else
-                            await fn.call(this, this, token, action, userid);
+                        } else {
+                            let result = await fn.call(this, this, token, action, userid);
+                            if (result === false) break;
+                        }
                     }
                 }
 
@@ -873,7 +904,7 @@ export class MonksActiveTiles {
 
         TileDocument.prototype.checkStop = function () {
             let stoppage = this.data.flags['monks-active-tiles'].actions.filter(a => { return MonksActiveTiles.triggerActions[a.action].stop === true });
-            return (stoppage.length == 0 ? false : (stoppage.find(a => a.data.snap) ? 'snap' : true));
+            return (stoppage.length == 0 ? false : (stoppage.find(a => a.data?.snap) ? 'snap' : true));
         }
 
         if (!game.modules.get("drag-ruler")?.active) {
@@ -975,6 +1006,27 @@ export class MonksActiveTiles {
             return oldSoundClickLeft.call(this, event);
         }
     }
+
+    static changeActive(event) {
+        event.preventDefault();
+
+        // Toggle the active state
+        const isActive = this.object.document.getFlag('monks-active-tiles', 'active');
+        const updates = this.layer.controlled.map(o => {
+            return { _id: o.id, 'flags.monks-active-tiles.active': !isActive };
+        });
+
+        // Update all objects
+        event.currentTarget.classList.toggle("active", !isActive);
+        return canvas.scene.updateEmbeddedDocuments(this.object.document.documentName, updates);
+    }
+
+    static manuallyTrigger(event) {
+        event.preventDefault();
+
+        //Trigger this Tile
+        this.object.document.trigger();
+    }
 }
 
 Hooks.on('init', async () => {
@@ -985,10 +1037,11 @@ Hooks.on('ready', () => {
     game.socket.on(MonksActiveTiles.SOCKET, MonksActiveTiles.onMessage);
 });
 
+/*
 Hooks.on('canvasInit', () => {
     let activehud = WithActiveTileHUD(canvas.hud.tile.constructor);
     canvas.hud.tile = new activehud();
-});
+});*/
 
 Hooks.on('preUpdateToken', async (document, update, options, userId) => { 
     //log('preupdate token', document, update, options, MonksActiveTiles._rejectRemaining);
@@ -1086,6 +1139,33 @@ Hooks.on('renderChatMessage', async (message, html, data) => {
     if (message.getFlag('monks-active-tiles', 'language') && message.data.type == CONST.CHAT_MESSAGE_TYPES.OTHER) {
         await message.update({ type: CONST.CHAT_MESSAGE_TYPES.OOC });
     }
+});
+
+Hooks.on('renderTileHUD', (app, html, data) => {
+    $('<div>')
+        .addClass('control-icon')
+        .toggleClass('active', app.object.document.getFlag('monks-active-tiles', 'active'))
+        .attr('data-action', 'active')
+        .append($('<img>').attr({
+            src: 'icons/svg/aura.svg',
+            width: '36',
+            height: '36',
+            title: i18n("MonksActiveTiles.ToggleActive")
+        }))
+        .click(MonksActiveTiles.changeActive.bind(app))
+        .insertAfter($('.control-icon[data-action="locked"]', html));
+
+    $('<div>')
+        .addClass('control-icon')
+        .attr('data-action', 'trigger')
+        .append($('<img>').attr({
+            src: 'modules/monks-active-tiles/img/power-button.svg',
+            width: '36',
+            height: '36',
+            title: i18n("MonksActiveTiles.ManualTrigger")
+        }))
+        .click(MonksActiveTiles.manuallyTrigger.bind(app))
+        .insertAfter($('.control-icon[data-action="locked"]', html));
 });
 
 Hooks.on('controlToken', (token, control) => {

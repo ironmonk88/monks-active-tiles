@@ -22,6 +22,7 @@
   "MonksActiveTiles.EditAction": "Edit Action",
   "MonksActiveTiles.DeleteAction": "Delete Action",
   "MonksActiveTiles.Actions": "Actions",
+  "MonksActiveTiles.ManualTrigger": "Manually Trigger Actions",
 
   "MonksActiveTiles.action.pause": "Pause Game",
   "MonksActiveTiles.action.movement": "Stop Token Movement",
@@ -36,6 +37,7 @@
   "MonksActiveTiles.action.runmacro": "Run Macro",
   "MonksActiveTiles.action.rolltable": "Roll Table",
   "MonksActiveTiles.action.pancanvas": "Pan Canvas",
+  "MonksActiveTiles.action.resetfog": "Reset Fog of War",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",

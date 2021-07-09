@@ -1,3 +1,17 @@
+## Version 1.0.12
+
+Fixed issue with displaying the delay by text box
+
+Added ability to reorder actions
+
+Added option to stop with the remining actions if the function called returns false.  Helpful for macros and requsting a roll.
+
+Added ability to trigger the tile manually.
+
+Added Reset Fog of War action.
+
+Switched from overriding the Tile HUD to just adding the controls to the Tile HUD.  This should make it easier to maintain in case Foundry changes the Tile HUD.
+
 ## Version 1.0.11
 
 Fixed issue when adding actions to a new Tile.
