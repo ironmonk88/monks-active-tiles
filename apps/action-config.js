@@ -18,9 +18,13 @@ export class ActionConfig extends FormApplication {
     }
 
     getData(options) {
-        let availableActions = {};
+        let temp = [];
         for (let [k, v] of Object.entries(MonksActiveTiles.triggerActions))
-            availableActions[k] = i18n(v.name);
+            temp.push({ id: k, name: i18n(v.name) });
+        let availableActions = temp.sort((a, b) => { return (a.name > b.name ? 1 : (a.name < b.name ? -1 : 0)) }).reduce(function (result, item) {
+            result[item.id] = item.name;
+            return result;
+        }, {});
 
         return mergeObject(super.getData(options), {
             availableActions: availableActions
@@ -53,7 +57,7 @@ export class ActionConfig extends FormApplication {
             this.waitingfield = field;
             MonksActiveTiles.waitingInput = this;
 
-            ui.notifications.warn((btn.hasClass('location-picker') ? i18n("MonksActiveTiles.msg.select-location") : i18n("MonksActiveTiles.msg.select-entity")));
+            ui.notifications.warn((btn.hasClass('location-picker') ? (this.restrict ? i18n("MonksActiveTiles.msg.select-location") : i18n("MonksActiveTiles.msg.select-location-any")) : i18n("MonksActiveTiles.msg.select-entity")));
         }
     }
 
@@ -158,26 +162,24 @@ export class ActionConfig extends FormApplication {
                         if (ctrl.subtype == 'location') {
                             let scene = (data[ctrl.id]?.sceneId ? game.scenes.get(data[ctrl.id].sceneId) : null);
                             field
-                                .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectlocation") }).addClass('location-picker').html('<i class="fas fa-crosshairs fa-fw"></i>').click(this.selectEntity.bind(this)))
                                 .append($('<input>').attr({ type: 'hidden', name: id }).val(JSON.stringify(data[ctrl.id])).data('type', 'location'))
-                                .append($('<span>').addClass('display-value').html((data[ctrl.id] ? 'x:' + data[ctrl.id].x + ', y:' + data[ctrl.id].y + (scene ? ', scene:' + scene.name : '') : '')));
+                                .append($('<span>').addClass('display-value').html((data[ctrl.id] ? 'x:' + data[ctrl.id].x + ', y:' + data[ctrl.id].y + (scene ? ', scene:' + scene.name : '') : '')))
+                                .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectlocation") }).addClass('location-picker').html('<i class="fas fa-crosshairs fa-fw"></i>').click(this.selectEntity.bind(this)));
                         } else if (ctrl.subtype == 'entity') {
-                            field.css({ 'flex-direction': 'column', 'align-items': 'flex-start' })
-                                .append($('<div>').addClass('flexrow')
-                                    .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectentity") }).addClass('entity-picker').html('<i class="fas fa-crosshairs fa-fw"></i>').click(this.selectEntity.bind(this)))
-                                    .append($('<button>').attr({ 'type': 'button', 'data-type': 'tile', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetile") }).toggle(options.showTile).addClass('entity-picker').html('<i class="fas fa-cubes fa-fw"></i>').click(this.selectEntity.bind(this)))
-                                    .append($('<button>').attr({ 'type': 'button', 'data-type': 'token', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetoken") }).toggle(options.showToken).addClass('entity-picker').html('<i class="fas fa-user-alt fa-fw"></i>').click(this.selectEntity.bind(this)))
-                                    .append($('<button>').attr({ 'type': 'button', 'data-type': 'players', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useplayers") }).toggle(options.showPlayers).addClass('entity-picker').html('<i class="fas fa-users fa-fw"></i>').click(this.selectEntity.bind(this))))
-                                .append($('<div>').css({ 'width': '100%' })
-                                    .append($('<input>').attr({ type: 'hidden', name: id }).val(typeof data[ctrl.id] == 'object' ? JSON.stringify(data[ctrl.id]) : data[ctrl.id]).data('restrict', ctrl.restrict).data('type', 'entity'))
-                                    .append($('<span>').addClass('display-value').html(data[ctrl.id]?.name)));
+                            field//.css({ 'flex-direction': 'row', 'align-items': 'flex-start' })
+                                .append($('<input>').attr({ type: 'hidden', name: id }).val(typeof data[ctrl.id] == 'object' ? JSON.stringify(data[ctrl.id]) : data[ctrl.id]).data('restrict', ctrl.restrict).data('type', 'entity'))
+                                .append($('<span>').addClass('display-value').html(data[ctrl.id]?.name))
+                                .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectentity") }).addClass('entity-picker').html('<i class="fas fa-crosshairs fa-fw"></i>').click(this.selectEntity.bind(this)))
+                                .append($('<button>').attr({ 'type': 'button', 'data-type': 'tile', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetile") }).toggle(options.showTile).addClass('entity-picker').html('<i class="fas fa-cubes fa-fw"></i>').click(this.selectEntity.bind(this)))
+                                .append($('<button>').attr({ 'type': 'button', 'data-type': 'token', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetoken") }).toggle(options.showToken).addClass('entity-picker').html('<i class="fas fa-user-alt fa-fw"></i>').click(this.selectEntity.bind(this)))
+                                .append($('<button>').attr({ 'type': 'button', 'data-type': 'players', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useplayers") }).toggle(options.showPlayers).addClass('entity-picker').html('<i class="fas fa-users fa-fw"></i>').click(this.selectEntity.bind(this)));
                         }
                         break;
                     case 'text':
-                        field.append($('<input>').attr({ type: 'text', name: id }).val(data[ctrl.id]));
+                        field.append($('<input>').attr({ type: 'text', name: id }).val(data[ctrl.id] != undefined ? data[ctrl.id] : ctrl.defvalue));
                         break;
                     case 'checkbox':
-                        field.append($('<input>').attr({ type: 'checkbox', name: id }).prop('checked', data[ctrl.id])).css({flex: '0 0 30px'});
+                        field.append($('<input>').attr({ type: 'checkbox', name: id }).prop('checked', (data[ctrl.id] != undefined ? data[ctrl.id] : ctrl.defvalue ))).css({flex: '0 0 30px'});
                         break;
                 }
 

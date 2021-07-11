@@ -25,7 +25,7 @@
   "MonksActiveTiles.ManualTrigger": "Manually Trigger Actions",
 
   "MonksActiveTiles.action.pause": "Pause Game",
-  "MonksActiveTiles.action.movement": "Stop Token Movement",
+  "MonksActiveTiles.action.stopmovement": "Stop Token Movement",
   "MonksActiveTiles.action.teleport": "Teleport",
   "MonksActiveTiles.action.showhide": "Show/Hide",
   "MonksActiveTiles.action.activate": "Activate/Deactivate",
@@ -38,6 +38,9 @@
   "MonksActiveTiles.action.rolltable": "Roll Table",
   "MonksActiveTiles.action.pancanvas": "Pan Canvas",
   "MonksActiveTiles.action.resetfog": "Reset Fog of War",
+  "MonksActiveTiles.action.activeeffect": "Active Effect",
+  "MonksActiveTiles.action.movement": "Move",
+  "MonksActiveTiles.action.createtoken": "Create Token",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
@@ -55,6 +58,8 @@
   "MonksActiveTiles.ctrl.args": "Args",
   "MonksActiveTiles.ctrl.animate": "Animate",
   "MonksActiveTiles.ctrl.language": "Language",
+  "MonksActiveTiles.ctrl.effectlist": "Effect",
+  "MonksActiveTiles.ctrl.waitforanimation": "Wait for Animation",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -72,6 +77,10 @@
   "MonksActiveTiles.activate.deactivate": "Deactivate",
   "MonksActiveTiles.activate.toggle": "Toggle",
 
+  "MonksActiveTiles.add.add": "Add",
+  "MonksActiveTiles.add.remove": "Remove",
+  "MonksActiveTiles.add.toggle": "Toggle",
+
   "MonksActiveTiles.for.all": "Everyone",
   "MonksActiveTiles.for.gm": "GM Only",
   "MonksActiveTiles.for.token": "Token Owner",
@@ -86,7 +95,9 @@
 
   "MonksActiveTiles.msg.prevent-teleport": "Teleporting off the map has been prevented",
   "MonksActiveTiles.msg.invalid-entity": "Invalid Entity Type",
-  "MonksActiveTiles.msg.select-location": "Please select a location on this scene or a different scene",
+  "MonksActiveTiles.msg.invalid-location": "Invalid Location, Please select on the same Scene",
+  "MonksActiveTiles.msg.select-location": "Please select a location on this scene",
+  "MonksActiveTiles.msg.select-location-any": "Please select a location on this scene or a different scene",
   "MonksActiveTiles.msg.select-entity": "Please select an entity",
   "MonksActiveTiles.msg.selectlocation": "Select a location",
   "MonksActiveTiles.msg.selectentity": "Select an entity",

@@ -1,3 +1,19 @@
+## Version 1.0.14
+
+Sorted the list of actions that could be taken.
+
+Cleaned up the display for setting up actions.
+
+Added option for action controls to have a default value
+
+Added movement action, so you can move a token along a path.  Add multiple moves for the same token and set the first ones to wait, and you can add a complex path.
+
+Added the create token action, so you can create a Token on the scene when a tile is triggered.
+
+Added active effect action, so you can add an effect to a token.
+
+Added support for Levels, to make sure the Tile is on the same level as the triggering token.
+
 ## Version 1.0.12
 
 Fixed issue with displaying the delay by text box
