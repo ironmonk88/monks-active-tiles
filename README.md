@@ -29,12 +29,16 @@ Current options allow you to:
 * Add a chat message,
 * Excute a Macro,
 * Roll on a Roll Table.
+* Add an effect to a Token
+* Move a Token
+* Reset the Fog of War
 
 Monk's Tokenbar also adds the option to request a roll and to change the Token's movement state.
 
 ## Bug Reporting
 I'm sure there are lots of issues with it.  It's very much a work in progress.
 Please feel free to contact me on discord if you have any questions or concerns. ironmonk88#4075
+I also have a Discord site called Monk's Discord Server that I use to keep people up to date with changes.
 
 ## Support
 
