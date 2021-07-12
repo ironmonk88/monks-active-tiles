@@ -1,3 +1,9 @@
+## Version 1.0.16
+
+Fixing minor issue with determining what entity the action is being applied to.
+
+Adding another action, you can start or stop an animation on a Tile.
+
 ## Version 1.0.15
 
 Fixing support for Levels

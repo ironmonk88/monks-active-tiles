@@ -877,15 +877,56 @@ export class MonksActiveTiles {
                 const effect = CONFIG.statusEffects.find(e => e.id === action.data?.effectid);
                 return (action.data?.addeffect == 'add' ? i18n("MonksActiveTiles.add.add") : (action.data?.addeffect == 'remove' ? i18n("MonksActiveTiles.add.remove") : i18n("MonksActiveTiles.add.toggle"))) + ' ' + i18n(effect.label) + ' ' + (action.data?.addeffect == 'add' ? "to" : (action.data?.addeffect == 'remove' ? "from" : "on")) + ' ' + action.data?.entity.name;
             }
+        },
+        'playanimation': {
+            name: "MonksActiveTiles.action.playanimation",
+            options: { allowDelay: true },
+            ctrls: [
+                {
+                    id: "entity",
+                    name: "MonksActiveTiles.ctrl.select-entity",
+                    type: "select",
+                    subtype: "entity",
+                    options: { showToken: false, showPlayers: false },
+                    restrict: (entity) => { return (entity instanceof Tile); }
+                },
+                {
+                    id: "play",
+                    name: "MonksActiveTiles.ctrl.animation",
+                    list: "animate",
+                    type: "list"
+                }
+            ],
+            values: {
+                'animate': {
+                    'start': "MonksActiveTiles.animate.start",
+                    'pause': "MonksActiveTiles.animate.pause",
+                    'stop': "MonksActiveTiles.animate.stop"
+
+                }
+            },
+            fn: async (tile, token, action) => {
+                let entities = await MonksActiveTiles.getEntities(tile, token, action);
+                if (entities.length == 0)
+                    return;
+
+                let entity = entities[0];
+
+                if (entity.isVideo) 
+                    entity.play(action.data?.play == 'start', { offset: (action.data?.play == 'stop' ? 0 : null)});
+            },
+            content: (trigger, action) => {
+                return i18n(trigger.values.animate[action.data?.play]) + ' animation on ' + action.data?.entity.name;
+            }
         }
     }
 
     static async getEntities(tile, token, action) {
         let entity;
         if (action.data.entity.id == 'tile')
-            entity = [tile];
+            entity = [(tile.object || tile)];
         else if (action.data.entity.id == 'token')
-            entity = [token];
+            entity = [(token.object || token)];
         else if (action.data.entity.id == 'players') {
             entity = canvas.tokens.placeables.filter(t => {
                 return t.actor != undefined && t.actor?.hasPlayerOwner && t.actor?.data.type != 'npc';

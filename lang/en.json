@@ -41,6 +41,7 @@
   "MonksActiveTiles.action.activeeffect": "Active Effect",
   "MonksActiveTiles.action.movement": "Move",
   "MonksActiveTiles.action.createtoken": "Create Token",
+  "MonksActiveTiles.action.playanimation": "Play Animation",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
@@ -60,6 +61,7 @@
   "MonksActiveTiles.ctrl.language": "Language",
   "MonksActiveTiles.ctrl.effectlist": "Effect",
   "MonksActiveTiles.ctrl.waitforanimation": "Wait for Animation",
+  "MonksActiveTiles.ctrl.animation": "Animation",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -88,6 +90,10 @@
   "MonksActiveTiles.state.open": "Open",
   "MonksActiveTiles.state.closed": "Closed",
   "MonksActiveTiles.state.locked": "Locked",
+
+  "MonksActiveTiles.animate.start": "Start",
+  "MonksActiveTiles.animate.pause": "Pause",
+  "MonksActiveTiles.animate.stop": "Stop",
 
   "MonksActiveTiles.notification.info": "Info",
   "MonksActiveTiles.notification.warning": "Warning",
