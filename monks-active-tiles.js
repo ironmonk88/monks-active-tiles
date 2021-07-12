@@ -1296,7 +1296,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
         for (let layer of [canvas.background.tiles, canvas.foreground.tiles]) {
             for (let tile of layer) {
                 if (tile.data.flags['monks-active-tiles']?.active && tile.data.flags['monks-active-tiles']?.actions?.length > 0) {
-                    if (_levels && _levels.isTokenInRange && !_levels.isTokenInRange(token, tile))
+                    if (game.modules.get("levels")?.active && _levels && _levels.isTokenInRange && !_levels.isTokenInRange(token, tile))
                         continue;
 
                     //check and see if the ray crosses a tile

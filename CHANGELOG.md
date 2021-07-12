@@ -1,3 +1,7 @@
+## Version 1.0.15
+
+Fixing support for Levels
+
 ## Version 1.0.14
 
 Sorted the list of actions that could be taken.
