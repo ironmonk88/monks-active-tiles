@@ -110,7 +110,12 @@ export class MonksActiveTiles {
                     id: "addanimation",
                     name: "Add bit of animation",
                     type: "checkbox"
-                }
+                }/*,
+                {
+                    id: "avoidtokens",
+                    name: "Avoid other tokens",
+                    type: "checkbox"
+                }*/
                 /*,
                 {
                     id: "addmovement",
@@ -419,7 +424,7 @@ export class MonksActiveTiles {
 
                             // Submit the Token creation request and activate the Tokens layer (if not already active)
                             const cls = getDocumentClass("Token");
-                            await cls.create(td, { parent: tile.parent });
+                            await cls.create(td, { parent: tile.document.parent });
                         }
                     }
                 } catch {
@@ -712,41 +717,12 @@ export class MonksActiveTiles {
                     }
                 }
             ],
-            fn: async (tile, token, action) => {
+            fn: async (tile, token, action, userid) => {
                 //Find the macro to be run, call it with the data from the trigger
                 try {
                     let macro = game.macros.get(action.data.macroid);
                     if (macro instanceof Macro) {
-                        if (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active) {
-                            let args = action.data.args.match(/(?:[^\s"]+|"[^"]*")+/g).map(p => {
-                                if (p.startsWith("\"") && p.endsWith("\""))
-                                    return p.substr(1, p.length - 2);
-                                else if ($.isNumeric(p))
-                                    return (p.indexOf(".") >= 0 ? parseFloat(p) : parseInt(p));
-                                else
-                                    return p;
-                            });
-                                /*.match(/\\?.|^$/g).reduce((p, c) => {
-                                if (c === '"') {
-                                    p.quote ^= 1;
-                                } else if (!p.quote && c === ' ') {
-                                    p.a.push('');
-                                } else {
-                                    if($.isNumeric)
-                                    p.a[p.a.length - 1] += c.replace(/\\(.)/, "$1");
-                                }
-                                return p;
-                            }, { a: [''] }).a;*/
-
-                            for (let i = 0; i < args.length; i++) {
-                                if (args[i] == '_tile')
-                                    args[i] = tile;
-                                else if (args[i] == '_token')
-                                    args[i] = token;
-                            }
-                            return await macro.execute.apply(macro, args);
-                        }else
-                            return await macro.execute({ actor: token.actor, token: token });
+                        return await MonksActiveTiles._executeMacro(macro, tile, token, action, userid);
                     }
                 } catch{}
             },
@@ -864,6 +840,9 @@ export class MonksActiveTiles {
 
                 const effect = CONFIG.statusEffects.find(e => e.id === action.data?.effectid);
                 for (let token of entities) {
+                    if (token == undefined)
+                        continue;
+
                     if (action.data?.addeffect == 'toggle')
                         await token.toggleEffect(effect, { overlay: false });
                     else {
@@ -918,6 +897,33 @@ export class MonksActiveTiles {
             content: (trigger, action) => {
                 return i18n(trigger.values.animate[action.data?.play]) + ' animation on ' + action.data?.entity.name;
             }
+        },
+        'openjournal': {
+            name: "MonksActiveTiles.action.openjournal",
+            options: { allowDelay: true },
+            ctrls: [
+                {
+                    id: "entity",
+                    name: "MonksActiveTiles.ctrl.select-entity",
+                    type: "select",
+                    subtype: "entity",
+                    options: { showTile: false, showToken: false, showPlayers: false },
+                    restrict: (entity) => { return (entity instanceof JournalEntry); }
+                }
+            ],
+            fn: async (tile, token, action) => {
+                let entities = await MonksActiveTiles.getEntities(tile, token, action);
+                if (entities.length == 0)
+                    return;
+
+                let entity = entities[0];
+
+                //open journal
+                if (entity) entity.sheet.render(true);
+            },
+            content: (trigger, action) => {
+                return i18n(trigger.name) + ', ' + action.data?.entity.name;
+            }
         }
     }
 
@@ -926,7 +932,7 @@ export class MonksActiveTiles {
         if (action.data.entity.id == 'tile')
             entity = [(tile.object || tile)];
         else if (action.data.entity.id == 'token')
-            entity = [(token.object || token)];
+            entity = [(token?.object || token)];
         else if (action.data.entity.id == 'players') {
             entity = canvas.tokens.placeables.filter(t => {
                 return t.actor != undefined && t.actor?.hasPlayerOwner && t.actor?.data.type != 'npc';
@@ -937,6 +943,32 @@ export class MonksActiveTiles {
         }
 
         return entity;
+    }
+
+    static async _executeMacro(macro, tile, token, action, userid) {
+        if (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active) {
+            if (!(macro.getFlag("advanced-macros", "runAsGM") || macro.getFlag("furnace", "runAsGM") || token == undefined) && userid != game.user.id) {
+                //this one needs to be run as the player, so send it back
+                window.setTimeout(function () {
+                    game.socket.emit(
+                        MonksActiveTiles.SOCKET,
+                        {
+                            action: 'runmacro',
+                            userid: userid,
+                            macroid: macro.uuid,
+                            tileid: tile?.document.uuid,
+                            tokenid: token?.document.uuid,
+                            acts: action
+                        },
+                        (resp) => { }
+                    );
+                }, 100);
+            } else {
+                let args = [{ actor: token?.actor, token: token, tile: tile, userid: userid }, action.data.args];
+                return await macro.execute.apply(macro, args);
+            }
+        } else
+            return await macro.execute({ actor: token.actor, token: token });
     }
 
     constructor() {
@@ -983,7 +1015,7 @@ export class MonksActiveTiles {
             }
         }
 
-        let oldClickEntityName = ActorDirectory.prototype._onClickEntityName;
+        let oldClickActorName = ActorDirectory.prototype._onClickEntityName;
         ActorDirectory.prototype._onClickEntityName = async function (event) {
             if (MonksActiveTiles.waitingInput && MonksActiveTiles.waitingInput.waitingfield.data('type') == 'entity') { //+++ need to make sure this is allowed, only create should be able to select templates
                 event.preventDefault();
@@ -991,7 +1023,18 @@ export class MonksActiveTiles {
                 const actor = this.constructor.collection.get(actorId);
                 MonksActiveTiles.waitingInput.updateSelection({ id: actor.uuid, name: actor.name });
             } else
-                oldClickEntityName.call(this, event);
+                oldClickActorName.call(this, event);
+        }
+
+        let oldClickJournalName = JournalDirectory.prototype._onClickEntityName;
+        JournalDirectory.prototype._onClickEntityName = async function (event) {
+            if (MonksActiveTiles.waitingInput && MonksActiveTiles.waitingInput.waitingfield.data('type') == 'entity') { //+++ need to make sure this is allowed, only create should be able to select templates
+                event.preventDefault();
+                const journalId = event.currentTarget.closest(".journal").dataset.entityId;
+                const journal = this.constructor.collection.get(journalId);
+                MonksActiveTiles.waitingInput.updateSelection({ id: journal.uuid, name: journal.name });
+            } else
+                oldClickJournalName.call(this, event);
         }
 
         let oldOnClickEntry = Compendium.prototype._onClickEntry;
@@ -1015,7 +1058,7 @@ export class MonksActiveTiles {
                     let token = await fromUuid(data.tokenid);
                     let tile = await fromUuid(data.tileid);
 
-                    tile.trigger(token.object);
+                    tile.trigger(token.object, data.senderId);
                 }
             } break;
             case 'switchview': {
@@ -1025,6 +1068,14 @@ export class MonksActiveTiles {
                     canvas.pan({ x: data.pos.x, y: data.pos.y, scale: data.pos.scale });
                 }
             } break;
+            case 'runmacro': {
+                if (game.user.id == data.userid) {
+                    let macro = await fromUuid(data.macroid);
+                    let tile = await fromUuid(data.tileid);
+                    let token = await fromUuid(data.tokenid);
+                    MonksActiveTiles._executeMacro(macro, tile, token, data.acts, data.userid);
+                }
+            }
         }
     }
 
@@ -1101,44 +1152,6 @@ export class MonksActiveTiles {
             }
         }
 
-        TileDocument.prototype.trigger = async function (token, userid = game.user.id) {
-            if (game.user.isGM) {
-                //A token has triggered this tile, what actions do we need to do
-                let actions = this.data.flags["monks-active-tiles"]?.actions || [];
-                for (let action of actions) {
-                    let fn = MonksActiveTiles.triggerActions[action.action]?.fn;
-                    if (fn) {
-                        if (action.delay > 0) {
-                            window.setTimeout(async function () {
-                                await fn.call(this, this, token, action);
-                            }, action.delay * 1000);
-                        } else {
-                            let result = await fn.call(this, this, token, action, userid);
-                            if (result === false) break;
-                        }
-                    }
-                }
-
-                if (this.data.flags["monks-active-tiles"]?.pertoken) {
-                    let triggerTokens = duplicate(this.data.flags["monks-active-tiles"]?.tokens || []);
-                    triggerTokens.push(token.id);
-                    await this.setFlag("monks-active-tiles", "tokens", triggerTokens);
-                }
-            } else {
-                //post this to the GM
-                game.socket.emit(
-                    MonksActiveTiles.SOCKET,
-                    {
-                        action: 'trigger',
-                        senderId: game.user.id,
-                        tileid: this.uuid,
-                        tokenid: token?.document.uuid
-                    },
-                    (resp) => { }
-                );
-            }
-        }
-
         TileDocument.prototype.checkCollision = function (token, update) {
             // 1. Get all the tile's vertices. X and Y are position at top-left corner
             // of tile.
@@ -1182,6 +1195,44 @@ export class MonksActiveTiles {
         TileDocument.prototype.checkStop = function () {
             let stoppage = this.data.flags['monks-active-tiles'].actions.filter(a => { return MonksActiveTiles.triggerActions[a.action].stop === true });
             return (stoppage.length == 0 ? false : (stoppage.find(a => a.data?.snap) ? 'snap' : true));
+        }
+
+        TileDocument.prototype.trigger = async function (token, userid = game.user.id) {
+            if (game.user.isGM) {
+                //A token has triggered this tile, what actions do we need to do
+                let actions = this.data.flags["monks-active-tiles"]?.actions || [];
+                for (let action of actions) {
+                    let fn = MonksActiveTiles.triggerActions[action.action]?.fn;
+                    if (fn) {
+                        if (action.delay > 0) {
+                            window.setTimeout(async function () {
+                                await fn.call(this, this.object, token, action);
+                            }, action.delay * 1000);
+                        } else {
+                            let result = await fn.call(this, this.object, token, action, userid);
+                            if (result === false) break;
+                        }
+                    }
+                }
+
+                if (this.data.flags["monks-active-tiles"]?.pertoken) {
+                    let triggerTokens = duplicate(this.data.flags["monks-active-tiles"]?.tokens || []);
+                    triggerTokens.push(token.id);
+                    await this.setFlag("monks-active-tiles", "tokens", triggerTokens);
+                }
+            } else {
+                //post this to the GM
+                game.socket.emit(
+                    MonksActiveTiles.SOCKET,
+                    {
+                        action: 'trigger',
+                        senderId: game.user.id,
+                        tileid: this.uuid,
+                        tokenid: token?.document.uuid
+                    },
+                    (resp) => { }
+                );
+            }
         }
 
         if (!game.modules.get("drag-ruler")?.active) {

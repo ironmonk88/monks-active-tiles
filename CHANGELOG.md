@@ -1,3 +1,9 @@
+## Version 1.0.17
+
+Adding action, Open journal
+
+Fixing macros so they'll run as the correct user.
+
 ## Version 1.0.16
 
 Fixing minor issue with determining what entity the action is being applied to.
