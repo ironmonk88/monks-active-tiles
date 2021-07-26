@@ -86,10 +86,8 @@ export class MonksActiveTiles {
                 }
             ],
             fn: async (tile, token, action, userid) => {
-                if (action.data.animate)
-                    canvas.animatePan({ x: action.data.location.x, y: action.data.location.y });
-                else
-                    canvas.pan({ x: action.data.location.x, y: action.data.location.y });
+                if (userid != game.user.id)
+                    MonksActiveTiles.emit('pan', { userid: userid, animatepan: action.data.animatepan, x: action.data.location.x, y: action.data.location.y });
             },
             content: (trigger, action) => {
                 return i18n(trigger.name) + (action.data?.snap ? ' (' + i18n("MonksActiveTiles.ctrl.snap").toLowerCase() + ')' : '');
@@ -168,44 +166,49 @@ export class MonksActiveTiles {
                         newPos = canvas.grid.getSnappedPosition(newPos.x, newPos.y);
 
                     //fade in backdrop
-                    if(userid != game.user.id)
-                        MonksActiveTiles.emit('fade', {userid: userid});
+                    if (userid != game.user.id) {
+                        MonksActiveTiles.emit('fade', { userid: userid });
+                        await MonksActiveTiles.timeout(400);
+                    }
 
                     let offset = { dx: oldPos.x - newPos.x, dy: oldPos.y - newPos.y };
-                    await MonksActiveTiles.timeout(400);
                     await token.document.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false });
 
                     if (userid != game.user.id)
-                        MonksActiveTiles.emit('pan', { userid: userid, animatepan: action.data.animatepan, x: canvas.scene._viewPosition.x - offset.dx, y: canvas.scene._viewPosition.y - offset.dy });
+                        MonksActiveTiles.emit('offsetpan', { userid: userid, animatepan: action.data.animatepan, x: offset.dx, y: offset.dy });
                 } else {
                     //if the end spot is on a different scene then hide this token, check the new scene for a token for that actor and move it, otherwise create the token on the new scene
-                    let offset = { dx: canvas.scene._viewPosition.x - oldPos.x, dy: canvas.scene._viewPosition.y - oldPos.y };
+                    //let offset = { dx: canvas.scene._viewPosition.x - oldPos.x, dy: canvas.scene._viewPosition.y - oldPos.y };
+                    //let offset = { dx: oldPos.x - newPos.x, dy: oldPos.y - newPos.y };
 
-                    if (userid != game.user.id)
+                    if (userid != game.user.id) {
                         MonksActiveTiles.emit('fade', { userid: userid });
+                        await MonksActiveTiles.timeout(400);
+                    }
 
                     let scene = game.scenes.get(action.data.location.sceneId);
-                    let xtoken = (token.actor?.id ? scene.tokens.find(t => { return t.actor?.id == token.actor?.id }) : null);
+                    let newtoken = (token.actor?.id ? scene.tokens.find(t => { return t.actor?.id == token.actor?.id }) : null);
 
                     if (action.data.remotesnap) {
                         newPos.x = newPos.x.toNearest(scene.data.size);
                         newPos.y = newPos.y.toNearest(scene.data.size);
                     }
 
-                    if (xtoken) {
-                        await xtoken.update({ x: newPos.x, y: newPos.y, hidden: token.data.hidden }, { bypass: true, animate: false });
+                    if (newtoken) {
+                        await newtoken.update({ x: newPos.x, y: newPos.y, hidden: token.data.hidden }, { bypass: true, animate: false });
                     }
                     else {
                         const td = await token.actor.getTokenData({ x: newPos.x, y: newPos.y });
                         const cls = getDocumentClass("Token");
-                        await cls.create(td, { parent: scene });
+                        newtoken = await cls.create(td, { parent: scene });
                     }
                     token.document.update({ hidden: true });   //hide the old one
-                    let scale = canvas.scene._viewPosition.scale;
+                    //token = newtoken.token;
+                    //let scale = canvas.scene._viewPosition.scale;
 
                     if (userid != game.user.id) {
                         //pass this back to the player
-                        MonksActiveTiles.emit('switchview', { userid: userid, sceneid: scene.id, pos: { x: newPos.x + offset.dx, y: newPos.y + offset.dy, scale: scale } });
+                        MonksActiveTiles.emit('switchview', { userid: userid, sceneid: scene.id, newpos: newPos, oldpos: oldPos });
                     }
                     ui.notifications.warn(`${token.name} has teleported to ${scene.name}`);
                 }
@@ -518,6 +521,9 @@ export class MonksActiveTiles {
                                 if (value.startsWith('+ ') || value.startsWith('- ')) {
                                     value = eval(prop + value);
                                 }
+
+                                if (!isNaN(args[i]) && !isNaN(parseFloat(args[i])))
+                                    value = parseFloat(value);
                             }
                             update[attr] = value;
                             await body.update(update);
@@ -1195,9 +1201,10 @@ export class MonksActiveTiles {
             } break;
             case 'switchview': {
                 if (game.user.id == data.userid) {
+                    let offset = { dx: (canvas.scene._viewPosition.x - data.oldpos.x) * canvas.scene._viewPosition.scale, dy: (canvas.scene._viewPosition.y - data.oldpos.y) * canvas.scene._viewPosition.scale };
                     let scene = game.scenes.get(data.sceneid);
                     await scene.view();
-                    canvas.pan({ x: data.pos.x, y: data.pos.y, scale: data.pos.scale });
+                    canvas.pan({ x: (data.newpos.x + offset.dx) * canvas.scene._viewPosition.scale, y: (data.newpos.y + offset.dy) * canvas.scene._viewPosition.scale });
                 }
             } break;
             case 'runmacro': {
@@ -1223,6 +1230,14 @@ export class MonksActiveTiles {
                         canvas.animatePan({ x: data.x, y: data.y });
                     else
                         canvas.pan({ x: data.x, y: data.y });
+                }
+            } break;
+            case 'offsetpan': {
+                if (data.userid == game.user.id) {
+                    if (data.animatepan)
+                        canvas.animatePan({ x: canvas.scene._viewPosition.x - data.x, y: canvas.scene._viewPosition.y - data.y });
+                    else
+                        canvas.pan({ x: canvas.scene._viewPosition.x - data.x, y: canvas.scene._viewPosition.y - data.y });
                 }
             } break;
             case 'fade': {
