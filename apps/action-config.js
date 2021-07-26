@@ -48,6 +48,8 @@ export class ActionConfig extends FormApplication {
             field.val('{"id":"token","name":"' + i18n("MonksActiveTiles.TriggeringToken") + '"}').next().html(i18n("MonksActiveTiles.TriggeringToken"));
         else if (btn.attr('data-type') == 'players')
             field.val('{"id":"players","name":"' + i18n("MonksActiveTiles.PlayerTokens") + '"}').next().html(i18n("MonksActiveTiles.PlayerTokens"));
+        else if (btn.attr('data-type') == 'within')
+            field.val('{"id":"within","name":"' + i18n("MonksActiveTiles.WithinTile") + '"}').next().html(i18n("MonksActiveTiles.WithinTile"));
         else {
             if (!this._minimized)
                 await this.minimize();
@@ -130,7 +132,7 @@ export class ActionConfig extends FormApplication {
         let data = this.object.data || {};
 
         for (let ctrl of (action.ctrls || [])) {
-            let options = mergeObject({ showTile: true, showToken: true, showPlayers: true }, ctrl.options);
+            let options = mergeObject({ showTile: true, showToken: true, showWithin: true, showPlayers: true }, ctrl.options);
             let field = $('<div>').addClass('form-fields');
             let id = 'data.' + ctrl.id;
 
@@ -159,20 +161,21 @@ export class ActionConfig extends FormApplication {
                         break;
                     case 'select':
                         //so this is the fun one, when the button is pressed, I need to minimize the windows, and wait for a selection
-                        if (ctrl.subtype == 'location') {
+                        if (ctrl.subtype == 'location' || ctrl.subtype == 'either') {
                             let scene = (data[ctrl.id]?.sceneId ? game.scenes.get(data[ctrl.id].sceneId) : null);
                             field
-                                .append($('<input>').attr({ type: 'hidden', name: id }).val(JSON.stringify(data[ctrl.id])).data('type', 'location'))
-                                .append($('<span>').addClass('display-value').html((data[ctrl.id] ? 'x:' + data[ctrl.id].x + ', y:' + data[ctrl.id].y + (scene ? ', scene:' + scene.name : '') : '')))
+                                .append($('<input>').attr({ type: 'hidden', name: id }).val(JSON.stringify(data[ctrl.id])).data('type', ctrl.subtype))
+                                .append($('<span>').addClass('display-value').html((data[ctrl.id] ? (data[ctrl.id].name ? data[ctrl.id].name : 'x:' + data[ctrl.id].x + ', y:' + data[ctrl.id].y) + (scene ? ', scene:' + scene.name : '') : '')))
                                 .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectlocation") }).addClass('location-picker').html('<i class="fas fa-crosshairs fa-fw"></i>').click(this.selectEntity.bind(this)));
                         } else if (ctrl.subtype == 'entity') {
                             field//.css({ 'flex-direction': 'row', 'align-items': 'flex-start' })
                                 .append($('<input>').attr({ type: 'hidden', name: id }).val(typeof data[ctrl.id] == 'object' ? JSON.stringify(data[ctrl.id]) : data[ctrl.id]).data('restrict', ctrl.restrict).data('type', 'entity'))
                                 .append($('<span>').addClass('display-value').html(data[ctrl.id]?.name))
-                                .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectentity") }).addClass('entity-picker').html('<i class="fas fa-crosshairs fa-fw"></i>').click(this.selectEntity.bind(this)))
-                                .append($('<button>').attr({ 'type': 'button', 'data-type': 'tile', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetile") }).toggle(options.showTile).addClass('entity-picker').html('<i class="fas fa-cubes fa-fw"></i>').click(this.selectEntity.bind(this)))
-                                .append($('<button>').attr({ 'type': 'button', 'data-type': 'token', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetoken") }).toggle(options.showToken).addClass('entity-picker').html('<i class="fas fa-user-alt fa-fw"></i>').click(this.selectEntity.bind(this)))
-                                .append($('<button>').attr({ 'type': 'button', 'data-type': 'players', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useplayers") }).toggle(options.showPlayers).addClass('entity-picker').html('<i class="fas fa-users fa-fw"></i>').click(this.selectEntity.bind(this)));
+                                .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectentity") }).addClass('entity-picker').html('<i class="fas fa-crosshairs fa-sm"></i>').click(this.selectEntity.bind(this)))
+                                .append($('<button>').attr({ 'type': 'button', 'data-type': 'tile', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetile") }).toggle(options.showTile).addClass('entity-picker').html('<i class="fas fa-cubes fa-sm"></i>').click(this.selectEntity.bind(this)))
+                                .append($('<button>').attr({ 'type': 'button', 'data-type': 'token', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetoken") }).toggle(options.showToken).addClass('entity-picker').html('<i class="fas fa-user-alt fa-sm"></i>').click(this.selectEntity.bind(this)))
+                                .append($('<button>').attr({ 'type': 'button', 'data-type': 'within', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usewithin") }).toggle(options.showWithin).addClass('entity-picker').html('<i class="fas fa-street-view fa-sm"></i>').click(this.selectEntity.bind(this)))
+                                .append($('<button>').attr({ 'type': 'button', 'data-type': 'players', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useplayers") }).toggle(options.showPlayers).addClass('entity-picker').html('<i class="fas fa-users fa-sm"></i>').click(this.selectEntity.bind(this)));
                         }
                         break;
                     case 'text':

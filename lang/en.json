@@ -6,6 +6,7 @@
   "MonksActiveTiles.ThisTile": "This Tile",
   "MonksActiveTiles.TriggeringToken": "Triggering Token",
   "MonksActiveTiles.PlayerTokens": "Player Tokens",
+  "MonksActiveTiles.WithinTile": "Tokens within Tile",
 
   "MonksActiveTiles.After": "After",
   "MonksActiveTiles.Action": "Action",
@@ -13,7 +14,8 @@
   "MonksActiveTiles.Seconds": "seconds",
   "MonksActiveTiles.CreateNewAction": "Create New Action",
   "MonksActiveTiles.Active": "Active",
-  "MonksActiveTiles.RestrictedTo": "Restricted To",
+  "MonksActiveTiles.RestrictedTo": "Restricted Tokens",
+  "MonksActiveTiles.ControlledBy": "Controlled By",
   "MonksActiveTiles.When": "When",
   "MonksActiveTiles.ChanceTrigger": "% Chance to trigger",
   "MonksActiveTiles.Add": "Add",
@@ -66,11 +68,17 @@
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
-  "MonksActiveTiles.mode.both": "Both",
+  "MonksActiveTiles.mode.both": "On Enter/Exit",
+  "MonksActiveTiles.mode.movement": "On Movement",
+  "MonksActiveTiles.mode.manual": "On Click",
 
-  "MonksActiveTiles.restrict.all": "Everyone",
-  "MonksActiveTiles.restrict.player": "Player Only",
-  "MonksActiveTiles.restrict.gm": "GM Only",
+  "MonksActiveTiles.restrict.all": "Allow All Tokens",
+  "MonksActiveTiles.restrict.player": "Only Player Tokens",
+  "MonksActiveTiles.restrict.gm": "Only GM Tokens",
+
+  "MonksActiveTiles.control.all": "Anyone",
+  "MonksActiveTiles.control.player": "Player Only",
+  "MonksActiveTiles.control.gm": "GM Only",
 
   "MonksActiveTiles.hidden.show": "Show",
   "MonksActiveTiles.hidden.hide": "Hide",
@@ -109,6 +117,7 @@
   "MonksActiveTiles.msg.selectlocation": "Select a location",
   "MonksActiveTiles.msg.selectentity": "Select an entity",
   "MonksActiveTiles.msg.usetile": "Use this Tile",
-  "MonksActiveTiles.msg.usetoken": "Use the triggering token",
-  "MonksActiveTiles.msg.useplayers": "Use player tokens"
+  "MonksActiveTiles.msg.usetoken": "Use the triggering Token",
+  "MonksActiveTiles.msg.useplayers": "Use player Tokens",
+  "MonksActiveTiles.msg.usewithin": "Use Tokens within triggering Tile"
 }

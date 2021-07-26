@@ -1,3 +1,29 @@
+## Version 1.0.18
+
+Added option to choose all Tokens currently within the Tile, to go along with "Current Tile", "Triggering Token", and "Player Tokens"
+
+Added option to teleport to a Tile instead of an x/y location.  This way you can move to destination of the teleport easier.
+
+Added additional trigger modes, On Movement, On Enter/Exit, and On Click.  Movement will trigger if the Token moves at all within the Tile (this includes entering and exiting the Tile).  On Enter/Exit will fire on both entering and exiting (be aware this can cause the Tile to trigger twice if the Token moves across it).  And On Click makes it so the Tile will not trigger at all unless you manually click it.
+
+Added option to trigger based on who is controlling the token.  Currently it's restricted to the type of token, but if a GM moves a player token, you might not want the Tile to trigger.  The text has been changed to make it a little clearer what's meant by each setting.
+
+Removed the option to add an animation when teleporting.  It was a bit silly and can be replaced using actual animations via a macro.
+
+Teleport will flash an overlay over the screen when teleporting begins to make the transition a little less jarring, and will pan the canvas so that the token is in approximately the same spot it was relative to the screen.  If the teleport is to a different scene it will detect a scene shift and begin preloading it.
+
+Alter will now check the actor of a token to see if it can apply the changes there if it can't find the attribute on the token itself.  If the property being referenced is an object it will try and use the .value property.  The value part now supports handlebar substitutions.
+
+Notification, and Chat Message now support handlebar substitutions.  actor, tile, token, and user can be used for related property names.
+
+Active Effects should now be supported on PF2E
+
+Fixed issues with playing an animated Tile wasn't being shown to players.
+
+Executeing a macro has hopefully gone through it's last change in awhile, sorry for changing the arguments around all the time.  I think I've settled on the proper order now.  Unfortunately due to the way Active Tiles is called I need to include the token, tile, and actor information within the arguments.  So the actual arguments passed from Active Tiles will be included in an args property.  This is a little weird as you now have to reference it using args[0].args[0] for the first property.  The data added to the args field will be split on spaces, but strings can be quote delimited.  And it will also support handlebar substitution.
+
+Overridden functions are now using libWrapper
+
 ## Version 1.0.17
 
 Adding action, Open journal

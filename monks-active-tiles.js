@@ -94,7 +94,8 @@ export class MonksActiveTiles {
                     id: "location",
                     name: "MonksActiveTiles.ctrl.select-coordinates",
                     type: "select",
-                    subtype: "location"
+                    subtype: "either",
+                    restrict: (entity) => { return (entity instanceof Tile); }
                 },
                 {
                     id: "remotesnap",   //using remote snap because I don't want this to trigger the token to be snapped to the grid on the tile
@@ -105,12 +106,12 @@ export class MonksActiveTiles {
                     id: "animatepan",
                     name: "Animate Canvas Pan",
                     type: "checkbox"
-                },
+                }/*,
                 {
                     id: "addanimation",
                     name: "Add bit of animation",
                     type: "checkbox"
-                }/*,
+                }*//*,
                 {
                     id: "avoidtokens",
                     name: "Avoid other tokens",
@@ -127,6 +128,19 @@ export class MonksActiveTiles {
                 let onMovementFrame = function (dt, anim, config) {
                     log('movement frame', dt, anim, config);
                 }
+
+                if (action.data.location.id) {
+                    //this is directing to a Tile
+                    let entity = await fromUuid(action.data.location.id);
+                    action.data.location.x = entity.data.x + (entity.data.width / 2);
+                    action.data.location.y = entity.data.y + (entity.data.height / 2);
+                }
+
+                let oldPos = {
+                    x: token.x + (token.width / 2),
+                    y: token.y + (token.height / 2)
+                }
+
                 //move the token to the new square
                 let newPos = {
                     x: action.data.location.x - (token.w / 2),
@@ -137,13 +151,13 @@ export class MonksActiveTiles {
                     await token.stopAnimation();
                     if (!canvas.grid.hitArea.contains(newPos.x, newPos.y)) {
                         //+++find the closest spot on the edge of the scene
-                        ui.notifications.error("MonksActiveTiles.msg.prevent-teleport");
+                        ui.notifications.error(i18n("MonksActiveTiles.msg.prevent-teleport"));
                         return;
                     }
                     if (action.data.remotesnap)
                         newPos = canvas.grid.getSnappedPosition(newPos.x, newPos.y);
 
-                    if (action.data.addanimation) {
+                    /*if (action.data.addanimation) {
                         let oldSize = { width: token.width, height: token.height };
                         //token.pivot.set(token.width / 2, token.height / 2);
                         token.x = token.x + (token.width / 2);
@@ -192,15 +206,37 @@ export class MonksActiveTiles {
                         token.x = token.x - (token.width / 2);
                         token.y = token.y - (token.height / 2);
                         token.border.alpha = 1;
-                    } else {
-                        await token.document.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false });
-                        if(action.data.animatepan)
-                            canvas.animatePan({ x: newPos.x, y: newPos.y });
-                        else
-                            canvas.pan({ x: newPos.x, y: newPos.y });
-                    }
+                    } else {*/
+                        //fade in backdrop
+                        let offset = { dx: oldPos.x - newPos.x, dy: oldPos.y - newPos.y };
+                        $('<div>').addClass('active-tile-backdrop').appendTo('body').animate({ opacity: 1 }, {
+                            duration: 400, easing: 'linear', complete: async function () {
+                                await token.document.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false });
+
+                                //fade out backdrop
+                                $(this).animate({ opacity: 0 }, {
+                                    duration: 400, easing: 'linear', complete: function () { $(this).remove(); }
+                                });
+                                if (action.data.animatepan)
+                                    canvas.animatePan({ x: canvas.scene._viewPosition.x - offset.dx, y: canvas.scene._viewPosition.y - offset.dy });
+                                else
+                                    canvas.pan({ x: canvas.scene._viewPosition.x - offset.dx, y: canvas.scene._viewPosition.y - offset.dy });
+                            }
+                        });
+
+                    //}
                 } else {
                     //if the end spot is on a different scene then hide this token, check the new scene for a token for that actor and move it, otherwise create the token on the new scene
+                    let offset = { dx: canvas.scene._viewPosition.x - oldPos.x, dy: canvas.scene._viewPosition.y - oldPos.y };
+
+                    $('<div>').addClass('active-tile-backdrop').appendTo('body').animate({ opacity: 1 }, {
+                        duration: 400, easing: 'linear', complete: async function () {
+                            $(this).animate({ opacity: 0 }, {
+                                duration: 400, easing: 'linear', complete: function () { $(this).remove(); }
+                            });
+                        }
+                    });
+
                     let scene = game.scenes.get(action.data.location.sceneId);
                     let xtoken = (token.actor?.id ? scene.tokens.find(t => { return t.actor?.id == token.actor?.id }) : null);
 
@@ -217,12 +253,12 @@ export class MonksActiveTiles {
                         const cls = getDocumentClass("Token");
                         await cls.create(td, { parent: scene });
                     }
-                    token.update({ hidden: true });   //hide the old one
+                    token.document.update({ hidden: true });   //hide the old one
                     let scale = canvas.scene._viewPosition.scale;
 
                     if (userid == game.user.id) {
                         await scene.view();
-                        canvas.pan({ x: newPos.x, y: newPos.y, scale: scale });
+                        canvas.pan({ x: newPos.x + offset.dx, y: newPos.y + offset.dy, scale: scale });
                     } else {
                         //pass this back to the player
                         game.socket.emit(
@@ -232,7 +268,7 @@ export class MonksActiveTiles {
                                 senderId: game.user.id,
                                 userid: userid,
                                 sceneid: scene.id,
-                                pos: { x: newPos.x, y: newPos.y, scale: scale}
+                                pos: { x: newPos.x + offset.dx, y: newPos.y + offset.dy, scale: scale}
                             },
                             (resp) => { }
                         );
@@ -241,7 +277,7 @@ export class MonksActiveTiles {
             },
             content: (trigger, action) => {
                 let scene = game.scenes.find(s => s.id == action.data?.location.sceneId);
-                return i18n(trigger.name) + ' token to [' + action.data?.location.x + ',' + action.data?.location.y + ']'+ (scene ? ' Scene: ' + scene.name : '') + (action.data?.remotesnap ? ' (snap to grid)' : '');
+                return i18n(trigger.name) + ' token to ' + (action.data?.location.name ? action.data?.location.name : '[' + action.data?.location.x + ',' + action.data?.location.y + ']') + (scene ? ' Scene: ' + scene.name : '') + (action.data?.remotesnap ? ' (snap to grid)' : '');
             }
         },
         'movetoken': {
@@ -366,7 +402,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    options: { showTile: false, showToken: false, showPlayers: false },
+                    options: { showTile: false, showToken: false, showWithin: false, showPlayers: false },
                     restrict: (entity) => { return (entity instanceof Actor); }
                 },
                 {
@@ -444,7 +480,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    options: { showToken: false, showPlayers: false },
+                    options: { showToken: false, showWithin: false, showPlayers: false },
                     restrict: (entity) => { return (entity instanceof Tile || entity instanceof AmbientLight || entity instanceof AmbientSound); }
                 },
                 {
@@ -499,24 +535,57 @@ export class MonksActiveTiles {
                     type: "text"
                 }
             ],
-            fn: async (tile, token, action) => {
+            fn: async (tile, token, action, userid) => {
                 try {
                     let entities = await MonksActiveTiles.getEntities(tile, token, action);
 
                     if (entities && entities.length > 0) {
                         for (let entity of entities) {
-                            let document = entity.document;
+                            let body = entity.document;
+                            let attr = action.data.attribute;
+
+                            let prop = getProperty(body.data, attr);
+                            if (prop == undefined && entity instanceof Token) {
+                                body = body.actor;
+                                attr = 'data.' + attr;
+                                prop = getProperty(body.data, attr);
+                            }
+
+                            if (prop == undefined) {
+                                debug("Couldn't find attribute", entity.document, attr);
+                                return;
+                            }
+
+                            if (typeof prop == 'object') {
+                                if (prop.value == undefined) {
+                                    debug("Attribute reurned an object and the object doesn't have a value property", entity, attr, prop);
+                                    return;
+                                }
+
+                                attr = attr + '.value';
+                                prop = prop.value;
+                            }
+
 
                             let update = {};
                             let value = action.data.value;
-                            if (action.data.value == 'true') value = true;
-                            else if (action.data.value == 'false') value = false;
-                            else if (action.data.value.startsWith('+ ') || action.data.value.startsWith('- ')) {
-                                let base = getProperty(document.data, action.data.attribute);
-                                value = eval(base + action.data.value);
+
+                            if (value == 'true') value = true;
+                            else if (value == 'false') value = false;
+                            else {
+                                let context = { actor: token?.actor, token: token, tile: tile, user: game.users.get(userid) };
+
+                                if (value.includes("{{")) {
+                                    const compiled = Handlebars.compile(value);
+                                    value = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
+                                }
+
+                                if (value.startsWith('+ ') || value.startsWith('- ')) {
+                                    value = eval(prop + value);
+                                }
                             }
-                            update[action.data.attribute] = value;
-                            await document.update(update);
+                            update[attr] = value;
+                            await body.update(update);
                         }
                     }
                 } catch {
@@ -569,7 +638,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.selectdoor",
                     type: "select",
                     subtype: "entity",
-                    options: { showTile: false, showToken: false, showPlayers: false },
+                    options: { showTile: false, showToken: false, showWithin: false, showPlayers: false },
                     restrict: (entity) => { return (entity instanceof Wall && entity.data.door); }  //this needs to be a wall segment
                 },
                 {
@@ -620,9 +689,17 @@ export class MonksActiveTiles {
                     'error': "MonksActiveTiles.notification.error"
                 }
             },
-            fn: (tile, token, action) => {
+            fn: (tile, token, action, userid) => {
                 //Display a notification with the message
-                ui.notifications.notify(action.data.text, action.data.type);
+                let context = { actor: token?.actor, token: token, tile: tile, user: game.users.get(userid) };
+                let content = action.data.text;
+
+                if (content.includes("{{")) {
+                    const compiled = Handlebars.compile(content);
+                    content = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
+                }
+
+                ui.notifications.notify(content, action.data.type);
             }
         },
         'chatmessage': {
@@ -659,16 +736,24 @@ export class MonksActiveTiles {
                     'token': "MonksActiveTiles.for.token"
                 }
             },
-            fn: (tile, token, action) => {
+            fn: (tile, token, action, userid) => {
                 //Add a chat message
                 let tokenOwners = Object.entries(token.actor.data.permission).filter(([k, v]) => { return v == CONST.ENTITY_PERMISSIONS.OWNER }).map(a => { return a[0]; });
                 const speaker = ChatMessage.getSpeaker({ user: game.user.id });
+
+                let context = { actor: token?.actor, token: token, tile: tile, user: game.users.get(userid) };
+                let content = action.data.text;
+
+                if (content.includes("{{")) {
+                    const compiled = Handlebars.compile(content);
+                    content = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
+                }
 
                 let messageData = {
                     user: game.user.id,
                     //speaker: speaker,
                     type: CONST.CHAT_MESSAGE_TYPES.OTHER,
-                    content: action.data.text
+                    content: content
                 };
 
                 if (action.data.for == 'gm')
@@ -810,7 +895,12 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.effectlist",
                     list: () => {
                         let result = {};
-                        for (let effect of CONFIG.statusEffects.sort((a, b) => { return (i18n(a.label) > i18n(b.label) ? 1 : (i18n(a.label) < i18n(b.label) ? -1 : 0)) })) {
+                        let conditions = CONFIG.statusEffects;
+                        if (game.system.id == 'pf2e') {
+                            conditions = game.pf2e.ConditionManager.conditions;
+                            conditions = [...conditions].map(e => { return { id: e[0], label: e[1].name }; });
+                        }
+                        for (let effect of conditions.sort((a, b) => { return String(a.label).localeCompare(b.label) })) { //(i18n(a.label) > i18n(b.label) ? 1 : (i18n(a.label) < i18n(b.label) ? -1 : 0))
                             result[effect.id] = i18n(effect.label);
                         }
                         return result;
@@ -838,23 +928,47 @@ export class MonksActiveTiles {
                 if (entities.length == 0)
                     return;
 
-                const effect = CONFIG.statusEffects.find(e => e.id === action.data?.effectid);
-                for (let token of entities) {
-                    if (token == undefined)
-                        continue;
+                if (game.system.id == 'pf2e') {
+                    let effect = game.pf2e.ConditionManager.getCondition(action.data?.effectid);
 
-                    if (action.data?.addeffect == 'toggle')
-                        await token.toggleEffect(effect, { overlay: false });
-                    else {
-                        const exists = (token.actor.effects.find(e => e.getFlag("core", "statusId") === effect.id) != undefined);
-                        if (exists != (action.data?.addeffect == 'add'))
+                    for (let token of entities) {
+                        if (token == undefined)
+                            continue;
+
+                        let add = (action.data?.addeffect == 'add');
+
+                        let existing = token.actor.itemTypes.condition.find((condition => condition.getFlag("core", "sourceId") === effect.flags.core.sourceId));
+                        if (action.data?.addeffect == 'toggle') {
+                            add = (existing == undefined);
+                        }
+
+                        if (add)
+                            await game.pf2e.ConditionManager.addConditionToToken(effect, token);
+                        else
+                            await game.pf2e.ConditionManager.removeConditionFromToken(existing.id, token)
+                    }
+                } else {
+                    let effect = CONFIG.statusEffects.find(e => e.id === action.data?.effectid);
+
+                    for (let token of entities) {
+                        if (token == undefined)
+                            continue;
+
+                        if (action.data?.addeffect == 'toggle')
                             await token.toggleEffect(effect, { overlay: false });
+                        else {
+                            const exists = (token.actor.effects.find(e => e.getFlag("core", "statusId") === effect.id) != undefined);
+                            if (exists != (action.data?.addeffect == 'add'))
+                                await token.toggleEffect(effect, { overlay: false });
+                        }
                     }
                 }
             },
             content: (trigger, action) => {
-                const effect = CONFIG.statusEffects.find(e => e.id === action.data?.effectid);
-                return (action.data?.addeffect == 'add' ? i18n("MonksActiveTiles.add.add") : (action.data?.addeffect == 'remove' ? i18n("MonksActiveTiles.add.remove") : i18n("MonksActiveTiles.add.toggle"))) + ' ' + i18n(effect.label) + ' ' + (action.data?.addeffect == 'add' ? "to" : (action.data?.addeffect == 'remove' ? "from" : "on")) + ' ' + action.data?.entity.name;
+                let effect = CONFIG.statusEffects.find(e => e.id === action.data?.effectid);
+                if (game.system.id == 'pf2e')
+                    effect = game.pf2e.ConditionManager.getCondition(action.data?.effectid);
+                return (action.data?.addeffect == 'add' ? i18n("MonksActiveTiles.add.add") : (action.data?.addeffect == 'remove' ? i18n("MonksActiveTiles.add.remove") : i18n("MonksActiveTiles.add.toggle"))) + ' ' + (i18n(effect.label) || effect.name) + ' ' + (action.data?.addeffect == 'add' ? "to" : (action.data?.addeffect == 'remove' ? "from" : "on")) + ' ' + action.data?.entity.name;
             }
         },
         'playanimation': {
@@ -866,7 +980,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    options: { showToken: false, showPlayers: false },
+                    options: { showToken: false, showWithin: false, showPlayers: false },
                     restrict: (entity) => { return (entity instanceof Tile); }
                 },
                 {
@@ -891,8 +1005,24 @@ export class MonksActiveTiles {
 
                 let entity = entities[0];
 
-                if (entity.isVideo) 
-                    entity.play(action.data?.play == 'start', { offset: (action.data?.play == 'stop' ? 0 : null)});
+                if (entity.isVideo) {
+                    //entity.play(action.data?.play == 'start', { offset: (action.data?.play == 'stop' ? 0 : null) });
+                    entity.document.update({ "video.autoplay": false }, { diff: false, playVideo: action.data?.play == 'start' });
+                    if (action.data?.play == 'stop') {
+                        game.socket.emit(
+                            MonksActiveTiles.SOCKET,
+                            {
+                                action: 'stopvideo',
+                                tileid: entity.document.uuid
+                            },
+                            (resp) => { }
+                        );
+                        const el = entity.sourceElement;
+                        if (el?.tagName !== "VIDEO") return;
+
+                        game.video.stop(el);
+                    }
+                }
             },
             content: (trigger, action) => {
                 return i18n(trigger.values.animate[action.data?.play]) + ' animation on ' + action.data?.entity.name;
@@ -907,7 +1037,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    options: { showTile: false, showToken: false, showPlayers: false },
+                    options: { showTile: false, showToken: false, showWithin: false, showPlayers: false },
                     restrict: (entity) => { return (entity instanceof JournalEntry); }
                 }
             ],
@@ -937,7 +1067,16 @@ export class MonksActiveTiles {
             entity = canvas.tokens.placeables.filter(t => {
                 return t.actor != undefined && t.actor?.hasPlayerOwner && t.actor?.data.type != 'npc';
             });
-        } else {
+        }
+        else if (action.data.entity.id == 'within') {
+            //find all tokens with this Tile
+            entity = canvas.tokens.placeables.filter(t => {
+                let offsetW = t.w / 2;
+                let offsetH = t.h / 2;
+                return tile.hitArea.contains((t.x + offsetW) - tile.x, (t.y + offsetH) - tile.y);
+            })
+        }
+        else {
             entity = await fromUuid(action.data.entity.id);
             entity = [(entity.object || entity)];
         }
@@ -946,6 +1085,36 @@ export class MonksActiveTiles {
     }
 
     static async _executeMacro(macro, tile, token, action, userid) {
+        let context = { actor: token?.actor, token: token, tile: tile, user: game.users.get(userid) };
+        let args = action.data.args;
+
+        if (args == undefined || args == "")
+            args = [];
+        else {
+            if (args.includes("{{")) {
+                const compiled = Handlebars.compile(args);
+                args = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
+            }
+
+            args = args.match(/\\?.|^$/g).reduce((p, c) => {
+                if (c === '"') {
+                    p.quote ^= 1;
+                } else if (!p.quote && c === ' ') {
+                    p.a.push('');
+                } else {
+                    p.a[p.a.length - 1] += c.replace(/\\(.)/, "$1");
+                }
+                return p;
+            }, { a: [''] }).a
+
+            for (let i = 0; i < args.length; i++) {
+                if (!isNaN(args[i]) && !isNaN(parseFloat(args[i])))
+                    args[i] = parseFloat(args[i]);
+            }
+        }
+
+        context.args = args;
+
         if (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active) {
             if (!(macro.getFlag("advanced-macros", "runAsGM") || macro.getFlag("furnace", "runAsGM") || token == undefined) && userid != game.user.id) {
                 //this one needs to be run as the player, so send it back
@@ -964,11 +1133,10 @@ export class MonksActiveTiles {
                     );
                 }, 100);
             } else {
-                let args = [{ actor: token?.actor, token: token, tile: tile, userid: userid }, action.data.args];
-                return await macro.execute.apply(macro, args);
+                return await macro.execute.apply(macro, [context]);
             }
         } else
-            return await macro.execute({ actor: token.actor, token: token });
+            return await macro.execute(context);
     }
 
     constructor() {
@@ -992,7 +1160,8 @@ export class MonksActiveTiles {
 
         let updateSelection = function (wrapped, ...args) {
             let event = args[0];
-            if (MonksActiveTiles.waitingInput && MonksActiveTiles.waitingInput.waitingfield.data('type') == 'location') {
+            let waitingType = MonksActiveTiles.waitingInput?.waitingfield?.data('type');
+            if (waitingType == 'location' || waitingType == 'either') {
                 let restrict = MonksActiveTiles.waitingInput.waitingfield.data('restrict');
                 if (restrict && !restrict(canvas.scene)) {
                     ui.notifications.error(i18n("MonksActiveTiles.msg.invalid-location"));
@@ -1015,39 +1184,67 @@ export class MonksActiveTiles {
             }
         }
 
-        let oldClickActorName = ActorDirectory.prototype._onClickEntityName;
-        ActorDirectory.prototype._onClickEntityName = async function (event) {
-            if (MonksActiveTiles.waitingInput && MonksActiveTiles.waitingInput.waitingfield.data('type') == 'entity') { //+++ need to make sure this is allowed, only create should be able to select templates
+        let clickActorName = async function (wrapped, ...args) {
+            let event = args[0];
+            let waitingType = MonksActiveTiles.waitingInput?.waitingfield?.data('type');
+            if (waitingType == 'entity') { //+++ need to make sure this is allowed, only create should be able to select templates
                 event.preventDefault();
                 const actorId = event.currentTarget.closest(".actor").dataset.entityId;
                 const actor = this.constructor.collection.get(actorId);
                 MonksActiveTiles.waitingInput.updateSelection({ id: actor.uuid, name: actor.name });
             } else
-                oldClickActorName.call(this, event);
+                wrapped(...args);
         }
 
-        let oldClickJournalName = JournalDirectory.prototype._onClickEntityName;
-        JournalDirectory.prototype._onClickEntityName = async function (event) {
+        if (game.modules.get("lib-wrapper")?.active) {
+            libWrapper.register("monks-active-tiles", "ActorDirectory.prototype._onClickEntityName", clickActorName, "MIXED");
+        } else {
+            const oldClickActorName = ActorDirectory.prototype._onClickEntityName;
+            ActorDirectory.prototype._onClickEntityName = function (event) {
+                return clickActorName.call(this, oldClickActorName.bind(this), ...arguments);
+            }
+        }
+
+        let clickJournalName = async function (wrapped, ...args) {
+            let event = args[0];
             if (MonksActiveTiles.waitingInput && MonksActiveTiles.waitingInput.waitingfield.data('type') == 'entity') { //+++ need to make sure this is allowed, only create should be able to select templates
                 event.preventDefault();
                 const journalId = event.currentTarget.closest(".journal").dataset.entityId;
                 const journal = this.constructor.collection.get(journalId);
                 MonksActiveTiles.waitingInput.updateSelection({ id: journal.uuid, name: journal.name });
             } else
-                oldClickJournalName.call(this, event);
+                wrapped(...args);
         }
 
-        let oldOnClickEntry = Compendium.prototype._onClickEntry;
-        Compendium.prototype._onClickEntry = async function (event) {
+        if (game.modules.get("lib-wrapper")?.active) {
+            libWrapper.register("monks-active-tiles", "JournalDirectory.prototype._onClickEntityName", clickJournalName, "MIXED");
+        } else {
+            const oldClickJournalName = JournalDirectory.prototype._onClickEntityName;
+            JournalDirectory.prototype._onClickEntityName = function (event) {
+                return clickJournalName.call(this, oldClickJournalName.bind(this), ...arguments);
+            }
+        }
+
+        let clickCompendiumEntry = async function (wrapped, ...args) {
+            let event = args[0];
             if (MonksActiveTiles.waitingInput && MonksActiveTiles.waitingInput.waitingfield.data('type') == 'entity') { //+++ need to make sure this is allowed, only create should be able to select templates
                 let li = event.currentTarget.parentElement;
                 const document = await this.collection.getDocument(li.dataset.documentId);
                 if (document instanceof Actor) 
                     MonksActiveTiles.waitingInput.updateSelection({ id: document.uuid, name: document.name });
                 else
-                    oldOnClickEntry.call(this, event);
+                    wrapped(...args);
             } else
-                oldOnClickEntry.call(this, event);
+                wrapped(...args);
+        }
+
+        if (game.modules.get("lib-wrapper")?.active) {
+            libWrapper.register("monks-active-tiles", "Compendium.prototype._onClickEntry", clickCompendiumEntry, "MIXED");
+        } else {
+            const oldOnClickEntry = Compendium.prototype._onClickEntry;
+            Compendium.prototype._onClickEntry = function (event) {
+                return clickCompendiumEntry.call(this, oldOnClickEntry.bind(this), ...arguments);
+            }
         }
     }
 
@@ -1076,11 +1273,21 @@ export class MonksActiveTiles {
                     MonksActiveTiles._executeMacro(macro, tile, token, data.acts, data.userid);
                 }
             }
+            case 'stopvideo': {
+                let tile = await fromUuid(data.tileid);
+                if (tile) {
+                    const el = tile._object?.sourceElement;
+                    if (el?.tagName !== "VIDEO") return;
+
+                    game.video.stop(el);
+                }
+            } break;
         }
     }
 
     static controlEntity(entity) {
-        if (MonksActiveTiles.waitingInput && MonksActiveTiles.waitingInput.waitingfield.data('type') == 'entity') {
+        let waitingType = MonksActiveTiles.waitingInput?.waitingfield?.data('type');
+        if (waitingType == 'entity' || waitingType == 'either') {
             let restrict = MonksActiveTiles.waitingInput.waitingfield.data('restrict');
             if (restrict && !restrict(entity)) {
                 ui.notifications.error(i18n("MonksActiveTiles.msg.invalid-entity"));
@@ -1098,19 +1305,77 @@ export class MonksActiveTiles {
                 this.data.flags["monks-active-tiles"].chance = 100;
             if (this.data.flags["monks-active-tiles"].restriction == undefined)
                 this.data.flags["monks-active-tiles"].restriction = 'all';
+            if (this.data.flags["monks-active-tiles"].control == undefined)
+                this.data.flags["monks-active-tiles"].control = 'all';
             if (this.data.flags["monks-active-tiles"].actions == undefined)
                 this.data.flags["monks-active-tiles"].actions = [];
         }
 
-        TileDocument.prototype.canTrigger = function (token, collision) {
+        TileDocument.prototype.checkCollision = function (token, destination) {
+            // 1. Get all the tile's vertices. X and Y are position at top-left corner
+            // of tile.
+            let when = this.getFlag('monks-active-tiles', 'trigger');   //+++ need to do something different if movement is called for
+            let buffer = (canvas.grid.size / 4) * (when == 'enter' ? 1 : (when == 'exit' ? -1 : 0));
+            const tileX1 = this.data.x + buffer;
+            const tileY1 = this.data.y + buffer;
+            const tileX2 = this.data.x + this.data.width - buffer;
+            const tileY2 = this.data.y + this.data.height - buffer;
+
+            const tokenOffsetW = token.object.w / 2;
+            const tokenOffsetH = token.object.h / 2;
+            const tokenX1 = token.data.x + tokenOffsetW;
+            const tokenY1 = token.data.y + tokenOffsetH;
+            const tokenX2 = destination.x + tokenOffsetW;
+            const tokenY2 = destination.y + tokenOffsetH;
+
+            // 2. Create a new Ray for the token, from its starting position to its
+            // destination.
+
+            const tokenRay = new Ray({ x: tokenX1, y: tokenY1 }, { x: tokenX2, y: tokenY2 });
+            // 3. Create four intersection checks, one for each line making up the
+            // tile rectangle. If any of these pass, that means it has intersected at
+            // some point.
+
+            //let i1 = tokenRay.intersectSegment([tileX1, tileY1, tileX2, tileY1]);
+            //let i2 = tokenRay.intersectSegment([tileX2, tileY1, tileX2, tileY2]);
+            //let i3 = tokenRay.intersectSegment([tileX1, tileY2, tileX2, tileY2]);
+            //let i4 = tokenRay.intersectSegment([tileX1, tileY1, tileX1, tileY2]);
+
+            let intersect = [
+                tokenRay.intersectSegment([tileX1, tileY1, tileX2, tileY1]),
+                tokenRay.intersectSegment([tileX2, tileY1, tileX2, tileY2]),
+                tokenRay.intersectSegment([tileX1, tileY2, tileX2, tileY2]),
+                tokenRay.intersectSegment([tileX1, tileY1, tileX1, tileY2])
+            ].filter(i => i);
+
+            if (when == 'movement' && intersect.length == 0) {
+                //check to see if there's moving within the Tile
+                if (this.object.hitArea.contains(tokenRay.A.x - this.data.x, tokenRay.A.y - this.data.y) && this.object.hitArea.contains(tokenRay.B.x - this.data.x, tokenRay.B.y - this.data.y)) {
+                    intersect = [{ x1: tokenRay.A.x, y1: tokenRay.A.y, x2: tokenRay.B.x, y2: tokenRay.B.y}];
+                }
+            }
+
+            return intersect;
+        }
+
+        TileDocument.prototype.canTrigger = function (token, collision, destination) {
             let triggerData = this.data.flags["monks-active-tiles"];
             if (triggerData) {
+                let when = this.getFlag('monks-active-tiles', 'trigger');
+
+                if (when == 'manual')
+                    return;
+
                 //check to see if this trigger is per token, and already triggered
                 if (triggerData.pertoken && triggerData.tokens?.includes(token.id))
                     return;
 
-                //check to see if this trigger is restricted
+                //check to see if this trigger is restricted by token type
                 if ((triggerData.restriction == 'gm' && token.actor.hasPlayerOwner) || (triggerData.restriction == 'player' && !token.actor.hasPlayerOwner))
+                    return;
+
+                //check to see if this trigger is restricted by control type
+                if ((triggerData.control == 'gm' && !game.user.isGM) || (triggerData.control == 'player' && game.user.isGM))
                     return;
 
                 //If this trigger has a chance of failure, roll the dice
@@ -1136,63 +1401,54 @@ export class MonksActiveTiles {
                 let inTile = !(tokenPos.x <= this.object.x || tokenPos.x >= this.object.x + this.object.width || tokenPos.y <= this.object.y || tokenPos.y >= this.object.y + this.object.height);
 
                 //go through the list, alternating in/out until we find one that satisfies the on enter/on exit setting, and if it does, return the trigger point.
-                let when = this.getFlag('monks-active-tiles', 'trigger');   //+++ need to do something different if movement is called for
-                let idx = ((inTile ? 0 : 1) - (when == 'enter' ? 1 : 0));
+                let newPos = [];
+                if (when == 'movement') {
+                    if (filtered.length == 2)
+                        newPos.push({ x: filtered[0].x, y: filtered[0].y, x2: filtered[1].x, y2: filtered[1].y });
+                    else {
+                        if (inTile)
+                            newPos.push({ x: filtered[0].x1, y: filtered[0].y1, x2: filtered[0].x2, y2: filtered[0].y2 });
+                        else 
+                            newPos.push({ x: filtered[0].x, y: filtered[0].y, x2: destination.x + (token.w / 2), y2: destination.y + (token.h / 2) });
+                    }
+                } else {
+                    let checkPos = function (wh) {
+                        let idx = ((inTile ? 0 : 1) - (wh == 'enter' || wh == 'both' ? 1 : 0));
 
-                log(collision, sorted, filtered, inTile, when, idx);
+                        log(collision, sorted, filtered, inTile, wh, idx);
 
-                if (idx < 0 || idx >= filtered.length)
-                    return;
+                        if (idx < 0 || idx >= filtered.length)
+                            return;
 
-                let newPos = filtered[idx];
-                newPos.x -= (token.w / 2);
-                newPos.y -= (token.h / 2);
+                        let pos = duplicate(filtered[idx]);
+                        pos.x -= (token.w / 2);
+                        pos.y -= (token.h / 2);
+                        newPos.push(pos);
+                    }
+
+                    checkPos(when);
+                    if (when == 'both')
+                        checkPos('exit');
+                }
 
                 return newPos;
             }
         }
 
-        TileDocument.prototype.checkCollision = function (token, update) {
-            // 1. Get all the tile's vertices. X and Y are position at top-left corner
-            // of tile.
-            let when = this.getFlag('monks-active-tiles', 'trigger');   //+++ need to do something different if movement is called for
-            let buffer = (canvas.grid.size / 4) * (when == 'enter' ? 1 : (when == 'exit' ? -1 : 0));
-            const tileX1 = this.data.x + buffer;
-            const tileY1 = this.data.y + buffer;
-            const tileX2 = this.data.x + this.data.width - buffer;
-            const tileY2 = this.data.y + this.data.height - buffer;
-
-            const tokenOffsetW = token.object.w / 2;
-            const tokenOffsetH = token.object.h / 2;
-            const tokenX1 = token.data.x + tokenOffsetW;
-            const tokenY1 = token.data.y + tokenOffsetH;
-            const tokenX2 = update.x + tokenOffsetW;
-            const tokenY2 = update.y + tokenOffsetH;
-
-            // 2. Create a new Ray for the token, from its starting position to its
-            // destination.
-
-            const tokenRay = new Ray({ x: tokenX1, y: tokenY1 }, { x: tokenX2, y: tokenY2 });
-            // 3. Create four intersection checks, one for each line making up the
-            // tile rectangle. If any of these pass, that means it has intersected at
-            // some point.
-
-            let i1 = tokenRay.intersectSegment([tileX1, tileY1, tileX2, tileY1]);
-            //let i2 = tokenRay.intersectSegment([tileX2, tileY1, tileX2, tileY2]);
-            //let i3 = tokenRay.intersectSegment([tileX1, tileY2, tileX2, tileY2]);
-            let i4 = tokenRay.intersectSegment([tileX1, tileY1, tileX1, tileY2]);
-
-            let intersect = [
-                tokenRay.intersectSegment([tileX1, tileY1, tileX2, tileY1]),
-                tokenRay.intersectSegment([tileX2, tileY1, tileX2, tileY2]),
-                tokenRay.intersectSegment([tileX1, tileY2, tileX2, tileY2]),
-                tokenRay.intersectSegment([tileX1, tileY1, tileX1, tileY2])
-            ].filter(i => i);
-
-            return intersect;
+        TileDocument.prototype.preloadScene = function () {
+            let actions = this.data.flags["monks-active-tiles"]?.actions || [];
+            for (let action of actions) {
+                if (action.action == 'teleport' && action.data.location.sceneId != canvas.scene.id) {
+                    log('preloading scene', action.data.location.sceneId);
+                    game.scenes.preload(action.data.location.sceneId, true);
+                }
+            }
         }
 
         TileDocument.prototype.checkStop = function () {
+            let when = this.getFlag('monks-active-tiles', 'trigger');
+            if (when == 'movement')
+                return false;
             let stoppage = this.data.flags['monks-active-tiles'].actions.filter(a => { return MonksActiveTiles.triggerActions[a.action].stop === true });
             return (stoppage.length == 0 ? false : (stoppage.find(a => a.data?.snap) ? 'snap' : true));
         }
@@ -1206,11 +1462,15 @@ export class MonksActiveTiles {
                     if (fn) {
                         if (action.delay > 0) {
                             window.setTimeout(async function () {
-                                await fn.call(this, this.object, token, action);
+                                await fn.call(this, this.object, token, action, userid);
                             }, action.delay * 1000);
                         } else {
-                            let result = await fn.call(this, this.object, token, action, userid);
-                            if (result === false) break;
+                            let cancall = await Hooks.call("preTriggerTile", this, this.object, token, action, userid);
+                            if (cancall) {
+                                let result = await fn.call(this, this.object, token, action, userid);
+                                let cancontinue = await Hooks.call("triggerTile", this, this.object, token, action, userid);
+                                if (result === false || cancontinue === false) break;
+                            }
                         }
                     }
                 }
@@ -1384,6 +1644,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
     //make sure to bypass if the token is being dropped somewhere, otherwise we could end up triggering a lot of tiles
     if ((update.x != undefined || update.y != undefined) && options.bypass !== true && options.animate !== false) { //(!game.modules.get("drag-ruler")?.active || options.animate)) {
         let token = document.object;
+
         //Does this cross a tile
         for (let layer of [canvas.background.tiles, canvas.foreground.tiles]) {
             for (let tile of layer) {
@@ -1392,67 +1653,89 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                         continue;
 
                     //check and see if the ray crosses a tile
-                    let collision = tile.document.checkCollision(document, { x: update.x || document.data.x, y: update.y || document.data.y });
+                    let dest = { x: update.x || document.data.x, y: update.y || document.data.y };
+                    let collision = tile.document.checkCollision(document, dest);
 
                     if (collision.length > 0) {
-                        let triggerPt = tile.document.canTrigger(document.object, collision);
-                        if (triggerPt) {
-                            //if it does and the token needs to stop, then modify the end position in update
-                            let ray = new Ray({ x: token.data.x, y: token.data.y }, { x: triggerPt.x, y: triggerPt.y });
+                        
+                        let tpts = tile.document.canTrigger(document.object, collision, dest);
+                        if (tpts) {
+                            //preload any teleports to other scenes
+                            tile.document.preloadScene();
 
-                            let stop = tile.document.checkStop();
+                            let doTrigger = async function (idx) {
+                                if (idx >= tpts.length)
+                                    return;
 
-                            //log('Triggering tile', update, stop);
-
-                            if (stop) {
-                                //check for snapping to the closest grid spot
-                                if (stop == 'snap')
-                                    triggerPt = canvas.grid.getSnappedPosition(triggerPt.x, triggerPt.y);
-
-                                //if this token needs to be stopped, then we need to adjust the path, and force close the movement animation
-                                let oldPos = { x: update.x, y: update.y };
-                                delete update.x;
-                                delete update.y;
-
-                                //try to disrupt the remaining path if there is one, by setting an update
-                                //MonksActiveTiles._rejectRemaining[document.id] = { x: triggerPt.x, y: triggerPt.y };
-                                //window.setTimeout(function () { delete MonksActiveTiles._rejectRemaining[document.id]; }, 500); //Hopefully half a second is enough to clear any of the remaining animations
-
-                                let ruler = canvas.controls.getRulerForUser(game.user.id);
-                                if (ruler) ruler.cancelMovement = true;
-                                options.animate = false;
-
+                                let triggerPt = tpts[idx];
+                                //let when = tile.document.getFlag('monks-active-tiles', 'trigger');
                                 /*
-                                if (game.modules.get("drag-ruler")?.active) {
-                                    let checkcount = 0;
-                                    let stopanimate = window.setInterval(function () {
-                                        checkcount++;
-                                        log('stop animation', CanvasAnimation.animations);
-                                        let sa = CanvasAnimation.animations[`Token.${document.id}.animateMovement`] != undefined;
-                                        token.stopAnimation();
-                                        if (sa || checkcount > 20) {
-                                            window.clearInterval(stopanimate);
-                                            //add a new animation to the new spot
-                                            document.update({ x: triggerPt.x, y: triggerPt.y }, { bypass: true });
-                                        }
-                                    }, 10);
-                                }*/
+                                if (when == 'movement') {
+                                    //trigger on every grid space, this should probably be per square
+                                    let dist = Math.sqrt(Math.pow((triggerPt.x1 - triggerPt.x2), 2) + Math.pow((triggerPt.y1 - triggerPt.y2), 2));
+                                    
+                                    const s = canvas.dimensions.size;
+                                    const speed = s * 10;
+                                    const duration = (s * 1000) / speed;
+    
+                                    let total = parseInt(dist / s);
+                                    let count = 0;
+                                    let timer = window.setInterval(function () {
+                                        tile.document.trigger(document.object);
+                                        count++;
+                                        if (count >= total)
+                                            window.clearInterval(timer);
+                                    }, duration);
+                                } else {*/
+                                //if it does and the token needs to stop, then modify the end position in update
+                                let ray = new Ray({ x: token.data.x, y: token.data.y }, { x: triggerPt.x, y: triggerPt.y });
+
+                                let stop = tile.document.checkStop();
+
+                                //log('Triggering tile', update, stop);
+
+                                if (stop) {
+                                    //check for snapping to the closest grid spot
+                                    if (stop == 'snap')
+                                        triggerPt = canvas.grid.getSnappedPosition(triggerPt.x, triggerPt.y);
+
+                                    //if this token needs to be stopped, then we need to adjust the path, and force close the movement animation
+                                    let oldPos = { x: update.x, y: update.y };
+                                    delete update.x;
+                                    delete update.y;
+
+                                    //try to disrupt the remaining path if there is one, by setting an update
+                                    //MonksActiveTiles._rejectRemaining[document.id] = { x: triggerPt.x, y: triggerPt.y };
+                                    //window.setTimeout(function () { delete MonksActiveTiles._rejectRemaining[document.id]; }, 500); //Hopefully half a second is enough to clear any of the remaining animations
+
+                                    let ruler = canvas.controls.getRulerForUser(game.user.id);
+                                    if (ruler) ruler.cancelMovement = true;
+                                    options.animate = false;
+
                                     await document.update({ x: triggerPt.x, y: triggerPt.y }, { bypass: true });
+                                }
+
+                                //if there's a scene to teleport to, then preload it.
+                                let sceneId = tile.document.data.flags['monks-active-tiles'].actions.find(a => { return a.action.id == 'teleport' })?.sceneId;
+                                if (sceneId && sceneId != canvas.scene.id)
+                                    game.scenes.preload(sceneId, true);
+
+                                //calculate how much time until the token reaches the trigger point, and wait to call the trigger
+                                const s = canvas.dimensions.size;
+                                const speed = s * 10;
+                                const duration = (ray.distance * 1000) / speed;
+
+                                window.setTimeout(function () {
+                                    tile.document.trigger(document.object);
+                                    if(!stop)
+                                        doTrigger(idx + 1);
+                                }, duration);
+                                //}
+
+                                return duration;
                             }
 
-                            //if there's a scene to teleport to, then preload it.
-                            let sceneId = tile.document.data.flags['monks-active-tiles'].actions.find(a => { return a.action.id == 'teleport' })?.sceneId;
-                            if (sceneId && sceneId != canvas.scene.id)
-                                game.scenes.preload(sceneId, true);
-
-                            //calculate how much time until the token reaches the trigger point, and wait to call the trigger
-                            const s = canvas.dimensions.size;
-                            const speed = s * 10;
-                            const duration = (ray.distance * 1000) / speed;
-
-                            window.setTimeout(function () {
-                                tile.document.trigger(document.object);
-                            }, duration);
+                            doTrigger(0);
                         }
                     }
                 }

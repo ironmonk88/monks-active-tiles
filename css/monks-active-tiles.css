@@ -103,6 +103,15 @@
     border-radius: 3px;
     background: rgba(0, 0, 0, 0.05);
     padding: 1px 5px;
+    overflow: hidden;
+    white-space:nowrap;
+    text-overflow: ellipsis;
+}
+
+.action-sheet button[data-target="data.entity"] i,
+.action-sheet button[data-target="data.location"] i,
+.action-sheet button[data-target="data.either"] i {
+    margin-right: 0px;
 }
 
 .pertoken{
@@ -113,4 +122,15 @@
 .pertoken:not(:last-child):after {
     content: ',';
     padding-right: 4px;
+}
+
+.active-tile-backdrop{
+    opacity:0;
+    background: #C0C0C0;
+    position:absolute;
+    top:0px;
+    left: 0px;
+    width:100%;
+    height:100%;
+    z-index: 1;
 }

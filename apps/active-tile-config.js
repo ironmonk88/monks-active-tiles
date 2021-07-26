@@ -20,8 +20,15 @@ export const WithActiveTileConfig = (TileConfig) => {
             this.object._normalize();
             const data = super.getData(options);
 
-            data.triggerModes = { 'enter': i18n("MonksActiveTiles.mode.enter"), 'exit': i18n("MonksActiveTiles.mode.exit") }; //, 'both': i18n("MonksActiveTiles.mode.both") };
+            data.triggerModes = {
+                'enter': i18n("MonksActiveTiles.mode.enter"),
+                'exit': i18n("MonksActiveTiles.mode.exit"),
+                'both': i18n("MonksActiveTiles.mode.both"),
+                'movement': i18n("MonksActiveTiles.mode.movement"),
+                'manual': i18n("MonksActiveTiles.mode.manual")
+            };
             data.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
+            data.triggerControlled = { 'all': i18n("MonksActiveTiles.control.all"), 'player': i18n("MonksActiveTiles.control.player"), 'gm': i18n("MonksActiveTiles.control.gm") };
 
             data.actions = this.object.data.flags['monks-active-tiles'].actions
                 .map(a => {
