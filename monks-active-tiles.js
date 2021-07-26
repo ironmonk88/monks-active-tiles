@@ -40,6 +40,16 @@ export class MonksActiveTiles {
     //static _oldObjectClass;
     static _rejectRemaining = {};
 
+    static timeout(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    static emit(action, args = {}) {
+        args.action = action;
+        args.senderId = game.user.id
+        game.socket.emit( MonksActiveTiles.SOCKET, args, (resp) => { } );
+    }
+
     static triggerActions = {
         'pause': {
             name: "MonksActiveTiles.action.pause",
@@ -157,85 +167,22 @@ export class MonksActiveTiles {
                     if (action.data.remotesnap)
                         newPos = canvas.grid.getSnappedPosition(newPos.x, newPos.y);
 
-                    /*if (action.data.addanimation) {
-                        let oldSize = { width: token.width, height: token.height };
-                        //token.pivot.set(token.width / 2, token.height / 2);
-                        token.x = token.x + (token.width / 2);
-                        token.y = token.y + (token.height / 2);
-                        token.border.alpha = 0;
-                        let animationName = `Token.${token.id}.animateTeleport`;
-                        const animationData = [
-                            { parent: token, attribute: 'rotation', to: (Math.PI * 6) },
-                            { parent: token, attribute: 'width', to: 20 },
-                            { parent: token, attribute: 'height', to: 20 }];
-                        await CanvasAnimation.animateLinear(animationData, {
-                            name: animationName,
-                            context: token,
-                            duration: 500,
-                            ontick: (dt, anim) => onMovementFrame(dt, anim)
-                        });
-                        //token.pivot.set(0, 0);
-                        token.rotation = 0;
-                        token.width = oldSize.width;
-                        token.height = oldSize.height;
-                        token.border.alpha = 1;
+                    //fade in backdrop
+                    if(userid != game.user.id)
+                        MonksActiveTiles.emit('fade', {userid: userid});
 
-                        await token.document.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false });
-                        canvas.animatePan({ x: newPos.x, y: newPos.y });
+                    let offset = { dx: oldPos.x - newPos.x, dy: oldPos.y - newPos.y };
+                    await MonksActiveTiles.timeout(400);
+                    await token.document.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false });
 
-                        //token.pivot.set(token.width / 2, token.height / 2);
-                        token.x = token.x + (token.width / 2);
-                        token.y = token.y + (token.height / 2);
-                        token.width = 20;
-                        token.height = 20;
-                        token.border.alpha = 0;
-                        const animationData2 = [
-                            { parent: token, attribute: 'rotation', to: (Math.PI * 6) },
-                            { parent: token, attribute: 'width', to: oldSize.width },
-                            { parent: token, attribute: 'height', to: oldSize.height }];
-                        await CanvasAnimation.animateLinear(animationData2, {
-                            name: animationName,
-                            context: token,
-                            duration: 500,
-                            ontick: (dt, anim) => onMovementFrame(dt, anim)
-                        });
-                        token.pivot.set(0, 0);
-                        token.rotation = 0;
-                        token.width = oldSize.width;
-                        token.height = oldSize.height;
-                        token.x = token.x - (token.width / 2);
-                        token.y = token.y - (token.height / 2);
-                        token.border.alpha = 1;
-                    } else {*/
-                        //fade in backdrop
-                        let offset = { dx: oldPos.x - newPos.x, dy: oldPos.y - newPos.y };
-                        $('<div>').addClass('active-tile-backdrop').appendTo('body').animate({ opacity: 1 }, {
-                            duration: 400, easing: 'linear', complete: async function () {
-                                await token.document.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false });
-
-                                //fade out backdrop
-                                $(this).animate({ opacity: 0 }, {
-                                    duration: 400, easing: 'linear', complete: function () { $(this).remove(); }
-                                });
-                                if (action.data.animatepan)
-                                    canvas.animatePan({ x: canvas.scene._viewPosition.x - offset.dx, y: canvas.scene._viewPosition.y - offset.dy });
-                                else
-                                    canvas.pan({ x: canvas.scene._viewPosition.x - offset.dx, y: canvas.scene._viewPosition.y - offset.dy });
-                            }
-                        });
-
-                    //}
+                    if (userid != game.user.id)
+                        MonksActiveTiles.emit('pan', { userid: userid, animatepan: action.data.animatepan, x: canvas.scene._viewPosition.x - offset.dx, y: canvas.scene._viewPosition.y - offset.dy });
                 } else {
                     //if the end spot is on a different scene then hide this token, check the new scene for a token for that actor and move it, otherwise create the token on the new scene
                     let offset = { dx: canvas.scene._viewPosition.x - oldPos.x, dy: canvas.scene._viewPosition.y - oldPos.y };
 
-                    $('<div>').addClass('active-tile-backdrop').appendTo('body').animate({ opacity: 1 }, {
-                        duration: 400, easing: 'linear', complete: async function () {
-                            $(this).animate({ opacity: 0 }, {
-                                duration: 400, easing: 'linear', complete: function () { $(this).remove(); }
-                            });
-                        }
-                    });
+                    if (userid != game.user.id)
+                        MonksActiveTiles.emit('fade', { userid: userid });
 
                     let scene = game.scenes.get(action.data.location.sceneId);
                     let xtoken = (token.actor?.id ? scene.tokens.find(t => { return t.actor?.id == token.actor?.id }) : null);
@@ -256,23 +203,11 @@ export class MonksActiveTiles {
                     token.document.update({ hidden: true });   //hide the old one
                     let scale = canvas.scene._viewPosition.scale;
 
-                    if (userid == game.user.id) {
-                        await scene.view();
-                        canvas.pan({ x: newPos.x + offset.dx, y: newPos.y + offset.dy, scale: scale });
-                    } else {
+                    if (userid != game.user.id) {
                         //pass this back to the player
-                        game.socket.emit(
-                            MonksActiveTiles.SOCKET,
-                            {
-                                action: 'switchview',
-                                senderId: game.user.id,
-                                userid: userid,
-                                sceneid: scene.id,
-                                pos: { x: newPos.x + offset.dx, y: newPos.y + offset.dy, scale: scale}
-                            },
-                            (resp) => { }
-                        );
+                        MonksActiveTiles.emit('switchview', { userid: userid, sceneid: scene.id, pos: { x: newPos.x + offset.dx, y: newPos.y + offset.dy, scale: scale } });
                     }
+                    ui.notifications.warn(`${token.name} has teleported to ${scene.name}`);
                 }
             },
             content: (trigger, action) => {
@@ -1280,6 +1215,25 @@ export class MonksActiveTiles {
                     if (el?.tagName !== "VIDEO") return;
 
                     game.video.stop(el);
+                }
+            } break;
+            case 'pan': {
+                if (data.userid == game.user.id) {
+                    if (data.animatepan)
+                        canvas.animatePan({ x: data.x, y: data.y });
+                    else
+                        canvas.pan({ x: data.x, y: data.y });
+                }
+            } break;
+            case 'fade': {
+                if (data.userid == game.user.id) {
+                    $('<div>').addClass('active-tile-backdrop').appendTo('body').animate({ opacity: 1 }, {
+                        duration: 400, easing: 'linear', complete: async function () {
+                            $(this).animate({ opacity: 0 }, {
+                                duration: 400, easing: 'linear', complete: function () { $(this).remove(); }
+                            });
+                        }
+                    });
                 }
             } break;
         }
