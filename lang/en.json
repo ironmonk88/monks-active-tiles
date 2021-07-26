@@ -44,7 +44,7 @@
   "MonksActiveTiles.action.movement": "Move",
   "MonksActiveTiles.action.createtoken": "Create Token",
   "MonksActiveTiles.action.playanimation": "Play Animation",
-  "MonksActiveTiles.action.openjournal": "Open Journal",
+  "MonksActiveTiles.action.openjournal": "Open a Journal Entry",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
