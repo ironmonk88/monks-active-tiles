@@ -45,6 +45,7 @@
   "MonksActiveTiles.action.createtoken": "Create Token",
   "MonksActiveTiles.action.playanimation": "Play Animation",
   "MonksActiveTiles.action.openjournal": "Open a Journal Entry",
+  "MonksActiveTiles.action.additem": "Add Item",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
@@ -65,12 +66,19 @@
   "MonksActiveTiles.ctrl.effectlist": "Effect",
   "MonksActiveTiles.ctrl.waitforanimation": "Wait for Animation",
   "MonksActiveTiles.ctrl.animation": "Animation",
+  "MonksActiveTiles.ctrl.showto": "Show To",
+  "MonksActiveTiles.ctrl.invisible": "Create Invisible",
+  "MonksActiveTiles.ctrl.select-item": "Select Item",
+  "MonksActiveTiles.ctrl.rollmode": "Roll Mode",
+  "MonksActiveTiles.ctrl.chatmessage": "Add Chat Message",
+  "MonksActiveTiles.ctrl.flavor": "Flavor",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
   "MonksActiveTiles.mode.both": "On Enter/Exit",
   "MonksActiveTiles.mode.movement": "On Movement",
-  "MonksActiveTiles.mode.manual": "On Click",
+  "MonksActiveTiles.mode.click": "On Click",
+  "MonksActiveTiles.mode.manual": "Manually Activate",
 
   "MonksActiveTiles.restrict.all": "Allow All Tokens",
   "MonksActiveTiles.restrict.player": "Only Player Tokens",
@@ -99,10 +107,21 @@
   "MonksActiveTiles.state.open": "Open",
   "MonksActiveTiles.state.closed": "Closed",
   "MonksActiveTiles.state.locked": "Locked",
+  "MonksActiveTiles.state.toggle": "Toggle",
 
   "MonksActiveTiles.animate.start": "Start",
   "MonksActiveTiles.animate.pause": "Pause",
   "MonksActiveTiles.animate.stop": "Stop",
+
+  "MonksActiveTiles.showto.everyone": "Everyone",
+  "MonksActiveTiles.showto.players": "Only Players",
+  "MonksActiveTiles.showto.trigger": "Triggering Player",
+
+
+  "MonksActiveTiles.rollmode.public": "Public Roll",
+  "MonksActiveTiles.rollmode.private": "Private GM Roll",
+  "MonksActiveTiles.rollmode.blind": "Blind GM Roll",
+  "MonksActiveTiles.rollmode.self": "Self Roll",
 
   "MonksActiveTiles.notification.info": "Info",
   "MonksActiveTiles.notification.warning": "Warning",

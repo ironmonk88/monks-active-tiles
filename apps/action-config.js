@@ -32,10 +32,19 @@ export class ActionConfig extends FormApplication {
     }
 
     activateListeners(html) {
+        var that = this;
         this.changeAction();
 
         super.activateListeners(html);
-        $('select[name="action"]', html).change(this.changeAction.bind(this));
+        $('select[name="action"]', html).change(function () {
+            //clear out these before saving the new information so we don't get data bleed through
+            if (that.object.data) {
+                that.object.data.location = {};
+                that.object.data.entity = {};
+                that.object.data.item = {};
+            }
+            that.changeAction.call(that);
+        });
     }
 
     async selectEntity(event) {
@@ -85,6 +94,8 @@ export class ActionConfig extends FormApplication {
             formData['data.location'] = (formData['data.location'].startsWith('{') ? JSON.parse(formData['data.location']) : formData['data.location']);
         if (formData['data.entity'])
             formData['data.entity'] = (formData['data.entity'].startsWith('{') ? JSON.parse(formData['data.entity']) : formData['data.entity']);
+        if (formData['data.item'])
+            formData['data.item'] = (formData['data.item'].startsWith('{') ? JSON.parse(formData['data.item']) : formData['data.item']);
 
         //make sure delay is not set for one of the controls that can't delay
         let trigger = MonksActiveTiles.triggerActions[formData.action];
@@ -112,13 +123,15 @@ export class ActionConfig extends FormApplication {
             let actions = duplicate(this.options.parent.object.getFlag("monks-active-tiles", "actions") || []);
             let action = actions.find(a => a.id == this.object.id);
             if (action) {
+                //clear out these before saving the new information so we don't get data bleed through
+                action.data.location = {};
+                action.data.entity = {};
+                action.data.item = {};
                 mergeObject(action, formData);
-                mergeObject(this.options.parent.object.data.flags, {
-                    "monks-active-tiles": { actions: actions }
-                });
+                this.options.parent.object.data.flags["monks-active-tiles"].actions = actions;
                 //update the text for this row
                 let trigger = MonksActiveTiles.triggerActions[action.action];
-                $(`.action-items .item[data-id="${action.id}"] .item-name h4`, this.options.parent.element).html(trigger.content ? trigger.content(trigger, action) : trigger.name);
+                $(`.action-items .item[data-id="${action.id}"] .item-name h4`, this.options.parent.element).html(trigger.content ? trigger.content(trigger, action) : i18n(trigger.name));
             }
         }
     }

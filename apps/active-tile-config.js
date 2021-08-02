@@ -25,6 +25,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                 'exit': i18n("MonksActiveTiles.mode.exit"),
                 'both': i18n("MonksActiveTiles.mode.both"),
                 'movement': i18n("MonksActiveTiles.mode.movement"),
+                'click': i18n("MonksActiveTiles.mode.click"),
                 'manual': i18n("MonksActiveTiles.mode.manual")
             };
             data.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
@@ -33,7 +34,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             data.actions = this.object.data.flags['monks-active-tiles'].actions
                 .map(a => {
                     let trigger = MonksActiveTiles.triggerActions[a.action];
-                    let content = (trigger == undefined ? 'Unknown' : (trigger.content ? trigger.content(trigger, a) : i18n(trigger.name)) + (a.action.delay > 0 ? ' after ' + a.action.delay + ' seconds' : ''));
+                    let content = (trigger == undefined ? 'Unknown' : (trigger.content ? trigger.content(trigger, a) : i18n(trigger.name)) + (a.delay > 0 ? ' after ' + a.delay + ' seconds' : ''));
                     return {
                         id: a.id,
                         content: content

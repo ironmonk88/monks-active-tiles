@@ -1,3 +1,65 @@
+## Version 1.0.19
+
+Fixed issue when changing action, it would retain information for the previous action, and some of that data was incompatible with the next action.
+
+Fixed issue where updating the action, wasn't using localization for the name.
+
+Fixed issue where the delayed seconds weren't showing up on the action list.
+
+Added the much asked for "On Click" trigger, so if you're on the token layer and the tile is set to On Click, it will trigger when clicked.
+
+Updated the Action Config screen to use decimal seconds
+
+Fixed issue where the display for 'pan canvas' was displaying snap information rather than location information.
+
+Teleport will now let you avoid other tokens at the destination.  It will do its best to find the closest available spot to the destination, but it can get a little weird if transporting to a different scene.
+
+Teleport should center your screen so the token is still under your mouse... but when switching to a different scene I can't figure out how to calculate it properly.
+
+Increased the fade time when switching to a new scene so that it has time to load the scene in the background.
+
+Fixed an issue where a teleported token was no longer the token being referenced in further actions because it was essentially a new token.  Updated the code so it will reference the new token from that point on.
+
+Creating a token action will now also use a Tile for a drop location.  And you can set the token to be created as invisible.
+
+Alter will now accept dice rolls using the [[1d4]] notation, and can be rolled to a chat message, and have the roll mode set properly.
+
+Fixed an error in the code with Alter action and parcing it as a float properly.
+
+Updated the Play Sound action to allow for sound to be played for everyone, gm only, and triggering token.
+
+Fixed an issue with Play Sound so that it will respect who it's supposed to play for.
+
+Fixed an issue with Play Sound that the label wasn't using localization.
+
+Added toggle option to the Change Door State.  If the door is locked it will not toggle, but if open or closed it will toggle between the two.
+
+Added the option to notification to set who it should be shown to.
+
+Fixed an issue with notification so that handle bar replacements are done properly.
+
+Fixed an issue with notification so that the label is created properly.
+
+Fixed an issue with Chat Message so that it gets the speaker properly.
+
+Fixed an issue with Chat Message so that handle bar replacements are done properly.
+
+Added option for flavor text to the Chat Message.
+
+Added option for roll mode to Roll Table.
+
+Fixed issue that prevented Reset Fog action from working.
+
+Fixed issue of who the journal is displayed to.  Previously it was just showing to the GM, now you can have it show to everyone, players, or the triggering token.
+
+Added the "Add Item" action.  So when the Tile is triggered it will add the specific item to the token's inventory.
+
+Fixed issue with teleporting preloading a scene.
+
+BREAKING CHANGES!!!
+
+I've updated how I pass tiles and tokens to functions, this will break Monk's TokenBar.  It's fixed, but TokenBar will need to be released and updated for it to work.
+
 ## Version 1.0.18
 
 Added option to choose all Tokens currently within the Tile, to go along with "Current Tile", "Triggering Token", and "Player Tokens"
@@ -24,7 +86,7 @@ Active Effects should now be supported on PF2E
 
 Fixed issues with playing an animated Tile wasn't being shown to players.
 
-Executeing a macro has hopefully gone through it's last change in awhile, sorry for changing the arguments around all the time.  I think I've settled on the proper order now.  Unfortunately due to the way Active Tiles is called I need to include the token, tile, and actor information within the arguments.  So the actual arguments passed from Active Tiles will be included in an args property.  This is a little weird as you now have to reference it using args[0].args[0] for the first property.  The data added to the args field will be split on spaces, but strings can be quote delimited.  And it will also support handlebar substitution.
+Executing a macro has hopefully gone through it's last change in awhile, sorry for changing the arguments around all the time.  I think I've settled on the proper order now.  Unfortunately due to the way Active Tiles is called I need to include the token, tile, and actor information within the arguments.  So the actual arguments passed from Active Tiles will be included in an args property.  This is a little weird as you now have to reference it using args[0].args[0] for the first property.  The data added to the args field will be split on spaces, but strings can be quote delimited.  And it will also support handlebar substitution.
 
 Overridden functions are now using libWrapper
 
