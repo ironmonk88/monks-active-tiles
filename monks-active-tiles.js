@@ -1280,9 +1280,8 @@ export class MonksActiveTiles {
 
                 let result = (distSq < radSumSq - 5);
                 
-                log('check', count, dist, tkn.name, distSq, radSumSq, checkpt, tkn, result);
-                gr.lineStyle(2, 0x808080).drawCircle(tokenX + debugoffset.x, tokenY + debugoffset.y, ((tkn.data.width * scene.data.size) / 2));
-                //gr.lineStyle(1, 0x800080).drawCircle(checkpt.x, checkpt.y, ptWidth);
+                //log('check', count, dist, tkn.name, distSq, radSumSq, checkpt, tkn, result);
+                //gr.lineStyle(2, 0x808080).drawCircle(tokenX + debugoffset.x, tokenY + debugoffset.y, ((tkn.data.width * scene.data.size) / 2));
                 
 
                 return result;
@@ -1304,20 +1303,20 @@ export class MonksActiveTiles {
 
             if (dest) {
                 
-                gr.lineStyle(2, 0x808080).drawRect(dest.data.x + debugoffset.x, dest.data.y + debugoffset.y, dest.data.width, dest.data.height);
+                //gr.lineStyle(2, 0x808080).drawRect(dest.data.x + debugoffset.x, dest.data.y + debugoffset.y, dest.data.width, dest.data.height);
 
                 return (checkpt.x < dest.data.x || checkpt.y < dest.data.y || checkpt.x > dest.data.x + dest.data.width || checkpt.y > dest.data.y + dest.data.height);
             }
             return false;
         }
 
-        let debugoffset = (scene != undefined ? { x: -(pos.x - scene.dimensions.paddingX), y: -(pos.y - scene.dimensions.paddingY) } : { x: 0, y: 0 });
+        /*let debugoffset = (scene != undefined ? { x: -(pos.x - scene.dimensions.paddingX), y: -(pos.y - scene.dimensions.paddingY) } : { x: 0, y: 0 });
         let gr = new PIXI.Graphics();
         if (MonksActiveTiles.debugGr)
             canvas.tokens.removeChild(MonksActiveTiles.debugGr);
         MonksActiveTiles.debugGr = gr;
         canvas.tokens.addChild(gr);
-        gr.beginFill(0x0000ff).drawCircle(pos.x + debugoffset.x, pos.y + debugoffset.y, 4).endFill();
+        gr.beginFill(0x0000ff).drawCircle(pos.x + debugoffset.x, pos.y + debugoffset.y, 4).endFill();*/
 
         let count = 0;
         const tw = (token.data.width * scene.data.size);
@@ -1363,7 +1362,7 @@ export class MonksActiveTiles {
             }
 
             //for testing
-
+            /*
             log('Checking', checkspot, dest);
 
             let collide = wallCollide(ray);
@@ -1379,7 +1378,7 @@ export class MonksActiveTiles {
             }
             gr.beginFill(collide ? 0xff0000 : (tcollide ? 0xffff00 : 0x00ff00)).drawCircle(checkspot.x + debugoffset.x, checkspot.y + debugoffset.y, 4).endFill();
 
-            log('checkspot', checkspot, dist, collide, tcollide, outside);
+            log('checkspot', checkspot, dist, collide, tcollide, outside);*/
             
             if (count > 50) {
                 //if we've exceeded the maximum spots to check then set it to the original spot
@@ -1388,8 +1387,7 @@ export class MonksActiveTiles {
             }
         }
 
-        gr.lineStyle(2, 0x00ff00).drawCircle(spot.x + debugoffset.x, spot.y + debugoffset.y, 4);
-
+        //gr.lineStyle(2, 0x00ff00).drawCircle(spot.x + debugoffset.x, spot.y + debugoffset.y, 4);
 
         return spot;
     }
@@ -1545,7 +1543,7 @@ export class MonksActiveTiles {
         switch (data.action) {
             case 'trigger': {
                 if (game.user.isGM) {
-                    let token = await fromUuid(data.tokenid);
+                    let token = (data.tokenid ? await fromUuid(data.tokenid) : null);
                     let tile = await fromUuid(data.tileid);
 
                     tile.trigger(token, data.senderId);

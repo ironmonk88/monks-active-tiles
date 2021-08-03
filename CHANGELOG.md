@@ -1,3 +1,9 @@
+## Version 1.0.20
+
+Removing debug information
+
+Fixing small issue when a player tries to trigger a Tile.
+
 ## Version 1.0.19
 
 Fixed issue when changing action, it would retain information for the previous action, and some of that data was incompatible with the next action.
