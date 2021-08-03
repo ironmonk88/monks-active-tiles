@@ -3,6 +3,20 @@ import { MonksActiveTiles, log, setting, i18n, makeid } from '../monks-active-ti
 export class ActionConfig extends FormApplication {
     constructor(object, options = {}) {
         super(object, options);
+
+        //let's just grab the first player character we can find
+        let token = canvas.scene.tokens.contents[0].data;
+        if (token) {
+            let attributes = TokenDocument.getTrackedAttributes(token ?? {});
+            if (attributes)
+                this.attributes = attributes.value.concat(attributes.bar).map(a => a.join('.'));
+        }
+        let player = game.actors.find(a => a.type == 'character');
+        if (player) {
+            let attributes = TokenDocument.getTrackedAttributes(player.data.data ?? {});
+            if (attributes)
+                this.attributes = (this.attributes || []).concat(attributes.value.concat(attributes.bar).map(a => a.join('.')));
+        }
     }
 
     /** @inheritdoc */
@@ -204,6 +218,43 @@ export class ActionConfig extends FormApplication {
                     .append($('<label>').html(i18n(ctrl.name)))
                     .append(field)
                     .appendTo($('.action-controls', this.element));
+
+                if (ctrl.id == 'attribute' && this.attributes) {
+                    let that = this;
+
+                    var substringMatcher = function (strs) {
+                        return function findMatches(q, cb) {
+                            var matches, substrRegex;
+
+                            // an array that will be populated with substring matches
+                            matches = [];
+
+                            // regex used to determine if a string contains the substring `q`
+                            substrRegex = new RegExp(q, 'i');
+
+                            // iterate through the pool of strings and for any string that
+                            // contains the substring `q`, add it to the `matches` array
+                            $.each(strs, function (i, str) {
+                                if (substrRegex.test(str)) {
+                                    matches.push(str);
+                                }
+                            });
+
+                            cb(matches);
+                        };
+                    };
+
+                    $('input[name="data.attribute"]', field).typeahead(
+                        {
+                            minLength: 1,
+                            hint: true,
+                            highlight: true
+                        },
+                        {
+                            source: substringMatcher(that.attributes)
+                        }
+                    );
+                }
             }
         }
 

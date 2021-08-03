@@ -1,3 +1,19 @@
+## Version 1.0.21
+
+Added typeahead to the Alter action Attribute field to make it a bit easier to know what goes there.
+
+Fixed an issue with Handle bar support if the Tile is manually Clicked and there's no Token to add to the context properly.
+
+Fixed issue when creating a chat message with no Token present.  It didn't know who to whisper to.
+
+Added Permissions action. So you can now change the permissions of an entity when a Tile is triggered.
+
+Fixed an issue with On Click and who's allowed to control the triggering.  It will now only trigger for the role that's been selected.
+
+possibly BREAKING CHANGE, I had mis-labelled the variable name for who gets to control the trigger.  It's fixed now, but if you had a Tile that you set Controlled By, you'll need to change it back.  On the plus side, it should respect that now, whereas it wasn't working at all for previous versions.
+
+Fixed an issue with a player manually triggering a Tile.
+
 ## Version 1.0.20
 
 Removing debug information

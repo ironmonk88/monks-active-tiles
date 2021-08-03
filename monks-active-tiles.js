@@ -579,7 +579,7 @@ export class MonksActiveTiles {
                             if (value == 'true') value = true;
                             else if (value == 'false') value = false;
                             else {
-                                let context = { actor: token?.actor.data, token: token.data, tile: tile.data, user: game.users.get(userid) };
+                                let context = { actor: token?.actor.data, token: token?.data, tile: tile.data, user: game.users.get(userid) };
 
                                 if (value.includes("{{")) {
                                     const compiled = Handlebars.compile(value);
@@ -723,7 +723,7 @@ export class MonksActiveTiles {
             },
             fn: (tile, token, action, userid) => {
                 //Display a notification with the message
-                let context = { actor: token?.actor.data, token: token.data, tile: tile.data, user: game.users.get(userid) };
+                let context = { actor: token?.actor.data, token: token?.data, tile: tile.data, user: game.users.get(userid) };
                 let content = action.data.text;
 
                 if (content.includes("{{")) {
@@ -781,10 +781,10 @@ export class MonksActiveTiles {
             },
             fn: (tile, token, action, userid) => {
                 //Add a chat message
-                let tokenOwners = Object.entries(token.actor.data.permission).filter(([k, v]) => { return v == CONST.ENTITY_PERMISSIONS.OWNER }).map(a => { return a[0]; });
+                
                 const speaker = ChatMessage.getSpeaker({ token: token });
 
-                let context = { actor: token?.actor.data, token: token.data, tile: tile.data, user: game.users.get(userid) };
+                let context = { actor: token?.actor.data, token: token?.data, tile: tile.data, user: game.users.get(userid) };
                 let content = action.data.text;
 
                 if (content.includes("{{")) {
@@ -805,6 +805,7 @@ export class MonksActiveTiles {
                 if (action.data.for == 'gm')
                     messageData.whisper = ChatMessage.getWhisperRecipients("GM").map(u => u.id);
                 else if (action.data.for == 'token') {
+                    let tokenOwners = (token ? Object.entries(token?.actor.data.permission).filter(([k, v]) => { return v == CONST.ENTITY_PERMISSIONS.OWNER }).map(a => { return a[0]; }) : []);
                     messageData.whisper = Array.from(new Set(ChatMessage.getWhisperRecipients("GM").map(u => u.id).concat(tokenOwners)));
                 }
 
@@ -1174,6 +1175,74 @@ export class MonksActiveTiles {
             content: (trigger, action) => {
                 return i18n(trigger.name) + ', ' + action.data?.item.name + ' to ' + action.data?.entity.name;
             }
+        },
+        'permissions': {
+            name: "MonksActiveTiles.action.permission",
+            options: { allowDelay: false },
+            ctrls: [
+                {
+                    id: "entity",
+                    name: "MonksActiveTiles.ctrl.select-entity",
+                    type: "select",
+                    subtype: "entity",
+                    options: { showTile: false, showToken: false, showWithin: false, showPlayers: false },
+                    restrict: (entity) => { return (entity instanceof Token || entity instanceof Note || entity instanceof JournalEntry); }
+                },
+                {
+                    id: "changefor",
+                    name: "MonksActiveTiles.ctrl.changefor",
+                    list: "showto",
+                    type: "list"
+                },
+                {
+                    id: "permission",
+                    name: "MonksActiveTiles.ctrl.permission",
+                    list: "permissions",
+                    type: "list"
+                }
+
+            ],
+            values: {
+                'showto': {
+                    'everyone': "MonksActiveTiles.showto.everyone",
+                    'trigger': "MonksActiveTiles.showto.trigger"
+
+                },
+                'permissions': {
+                    'default': "PERMISSION.DEFAULT",
+                    'none': "PERMISSION.NONE",
+                    'limited': "PERMISSION.LIMITED",
+                    'observer': "PERMISSION.OBSERVER",
+                    'owner': "PERMISSION.OWNER"
+
+                }
+            },
+            fn: async (tile, token, action, userid) => {
+                let entities = await MonksActiveTiles.getEntities(tile, token, action.data.entity.id);
+                if (entities.length == 0)
+                    return;
+
+                let level = (action.data.permission == 'limited' ? CONST.ENTITY_PERMISSIONS.LIMITED :
+                    (action.data.permission == 'observer' ? CONST.ENTITY_PERMISSIONS.OBSERVER :
+                        (action.data.permission == 'owner' ? CONST.ENTITY_PERMISSIONS.OWNER : CONST.ENTITY_PERMISSIONS.NONE)));
+
+                for (let entity of entities) {
+                    const perms = entity.data.permission;
+                    for (let user of game.users.contents) {
+                        if (user.isGM || (action.data.changefor == 'trigger' && user.id != userid))
+                            continue;
+
+                        if (action.data.permission == 'default')
+                            delete perms[user.id];
+                        else
+                            perms[user.id] = level;
+                    }
+                    entity.update({ permission: perms }, { diff: false, recursive: false, noHook: true });
+                }
+            },
+            content: (trigger, action) => {
+                return i18n(trigger.name) + ' of ' + action.data?.entity.name + ' to ' + i18n(trigger.values.permissions[action.data?.permission]);
+            }
         }
     }
 
@@ -1455,7 +1524,13 @@ export class MonksActiveTiles {
             if (canvas.activeLayer.name == 'TokenLayer') {
                 //check to see if there are any Tiles that can be activated with a click
                 for (let tile of canvas.scene.tiles) {
-                    if (tile.data.flags['monks-active-tiles'] && tile.data.flags['monks-active-tiles'].active && tile.data.flags['monks-active-tiles'].trigger == 'click') {
+                    let triggerData = tile.data.flags["monks-active-tiles"];
+                    if (triggerData && triggerData.active && triggerData.trigger == 'click') {
+
+                        //check to see if this trigger is restricted by control type
+                        if ((triggerData.controlled == 'gm' && !game.user.isGM) || (triggerData.controlled == 'player' && game.user.isGM))
+                            continue;
+
                         //check to see if the clicked point is within the Tile
                         let pt = event.data.origin;
                         if (!(pt.x < tile.data.x || pt.y < tile.data.y || pt.x > tile.data.x + tile.data.width || pt.y > tile.data.y + tile.data.height)) {
@@ -1646,8 +1721,8 @@ export class MonksActiveTiles {
                 this.data.flags["monks-active-tiles"].chance = 100;
             if (this.data.flags["monks-active-tiles"].restriction == undefined)
                 this.data.flags["monks-active-tiles"].restriction = 'all';
-            if (this.data.flags["monks-active-tiles"].control == undefined)
-                this.data.flags["monks-active-tiles"].control = 'all';
+            if (this.data.flags["monks-active-tiles"].controlled == undefined)
+                this.data.flags["monks-active-tiles"].controlled = 'all';
             if (this.data.flags["monks-active-tiles"].actions == undefined)
                 this.data.flags["monks-active-tiles"].actions = [];
         }
@@ -1716,7 +1791,7 @@ export class MonksActiveTiles {
                     return;
 
                 //check to see if this trigger is restricted by control type
-                if ((triggerData.control == 'gm' && !game.user.isGM) || (triggerData.control == 'player' && game.user.isGM))
+                if ((triggerData.controlled == 'gm' && !game.user.isGM) || (triggerData.controlled == 'player' && game.user.isGM))
                     return;
 
                 //If this trigger has a chance of failure, roll the dice
@@ -1802,8 +1877,9 @@ export class MonksActiveTiles {
                     let fn = MonksActiveTiles.triggerActions[action.action]?.fn;
                     if (fn) {
                         if (action.delay > 0) {
+                            let tile = this;
                             window.setTimeout(async function () {
-                                await fn.call(this, this, token, action, userid);
+                                await fn.call(tile, tile, token, action, userid);
                             }, action.delay * 1000);
                         } else {
                             let cancall = await Hooks.call("preTriggerTile", this, this, token, action, userid);

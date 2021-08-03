@@ -46,6 +46,7 @@
   "MonksActiveTiles.action.playanimation": "Play Animation",
   "MonksActiveTiles.action.openjournal": "Open a Journal Entry",
   "MonksActiveTiles.action.additem": "Add Item",
+  "MonksActiveTiles.action.permission": "Change Permissions",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
@@ -72,6 +73,8 @@
   "MonksActiveTiles.ctrl.rollmode": "Roll Mode",
   "MonksActiveTiles.ctrl.chatmessage": "Add Chat Message",
   "MonksActiveTiles.ctrl.flavor": "Flavor",
+  "MonksActiveTiles.ctrl.changefor": "Change For",
+  "MonksActiveTiles.ctrl.permission": "Permission",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",

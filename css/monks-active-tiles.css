@@ -134,3 +134,47 @@
     height:100%;
     z-index: 1;
 }
+
+#trigger-action .tt-hint {
+    color: #999;
+    width: 100%;
+}
+
+#trigger-action .tt-hint input{
+    background: rgba(0, 0, 0, 0);
+}
+
+#trigger-action .tt-menu {
+    width: 100%;
+    margin: 4px 0;
+    padding: 4px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+    -webkit-box-shadow: 0 5px 10px rgba(0,0,0,.2);
+    -moz-box-shadow: 0 5px 10px rgba(0,0,0,.2);
+    box-shadow: 0 5px 10px rgba(0,0,0,.2);
+    overflow: hidden;
+}
+
+#trigger-action .tt-suggestion {
+    padding: 3px;
+}
+
+#trigger-action .tt-suggestion:hover {
+    cursor: pointer;
+    color: #fff;
+    background-color: #0097cf;
+}
+
+#trigger-action .tt-suggestion.tt-cursor {
+    color: #fff;
+    background-color: #0097cf;
+}
+
+#trigger-action .tt-suggestion p {
+    margin: 0;
+}
