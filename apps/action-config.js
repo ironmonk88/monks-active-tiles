@@ -5,7 +5,7 @@ export class ActionConfig extends FormApplication {
         super(object, options);
 
         //let's just grab the first player character we can find
-        let token = canvas.scene.tokens.contents[0].data;
+        let token = canvas.scene.tokens?.contents[0]?.data;
         if (token) {
             let attributes = TokenDocument.getTrackedAttributes(token ?? {});
             if (attributes)
@@ -56,6 +56,7 @@ export class ActionConfig extends FormApplication {
                 that.object.data.location = {};
                 that.object.data.entity = {};
                 that.object.data.item = {};
+                that.object.data.actor = {};
             }
             that.changeAction.call(that);
         });
@@ -94,6 +95,18 @@ export class ActionConfig extends FormApplication {
         await this.maximize();
         await this.options.parent.maximize();
 
+        if (this.waitingfield.attr('name') == 'data.actor') {
+            $('select[name="data.attack"]', this.element).empty();
+            if (selection.id) {
+                let actor = await fromUuid(selection.id);
+
+                if (actor) {
+                    let items = actor.items.map(i => { return (i.type == 'weapon' ? `<option value="${i.id}">${i.name}</option>` : null); }).filter(i => i);
+                    $('select[name="data.attack"]', this.element).append(items.join(''));
+                }
+            }
+        }
+
         delete this.waitingfield;
         delete MonksActiveTiles.waitingInput;
 
@@ -110,6 +123,11 @@ export class ActionConfig extends FormApplication {
             formData['data.entity'] = (formData['data.entity'].startsWith('{') ? JSON.parse(formData['data.entity']) : formData['data.entity']);
         if (formData['data.item'])
             formData['data.item'] = (formData['data.item'].startsWith('{') ? JSON.parse(formData['data.item']) : formData['data.item']);
+        if (formData['data.actor'])
+            formData['data.actor'] = (formData['data.actor'].startsWith('{') ? JSON.parse(formData['data.actor']) : formData['data.actor']);
+
+        if (formData['data.attack'])
+            formData['data.attack'] = { id: formData['data.attack'], name: $('select[name="data.attack"] option:selected', this.element).text()};
 
         //make sure delay is not set for one of the controls that can't delay
         let trigger = MonksActiveTiles.triggerActions[formData.action];
@@ -141,6 +159,7 @@ export class ActionConfig extends FormApplication {
                 action.data.location = {};
                 action.data.entity = {};
                 action.data.item = {};
+                action.data.actor = {};
                 mergeObject(action, formData);
                 this.options.parent.object.data.flags["monks-active-tiles"].actions = actions;
                 //update the text for this row
@@ -150,7 +169,7 @@ export class ActionConfig extends FormApplication {
         }
     }
 
-    changeAction() {
+    async changeAction() {
         let command = $('select[name="action"]', this.element).val();
         let action = MonksActiveTiles.triggerActions[command];
 
@@ -174,16 +193,18 @@ export class ActionConfig extends FormApplication {
                     case 'list':
                         let list;
                         if (typeof ctrl.list == 'function')
-                            list = ctrl.list.call();
+                            list = await ctrl.list.call(action, data);
                         else
                             list = (action.values && action.values[ctrl.list]);
 
+                        let select = $('<select>').attr({ name: id, 'data-dtype': 'String' });
+                        field.append(select);
                         if (list != undefined) {
-                            field.append($('<select>').attr({ name: id, 'data-dtype': 'String' }).append(
+                            select.append(
                                 (list instanceof Array
-                                    ? list.map(g => { return $('<optgroup>').attr('label', i18n(g.text)).append(Object.entries(g.groups).map(([k, v]) => { return $('<option>').attr('value', g.id + ":" + k).html(i18n(v)).prop('selected', (g.id + ":" + k) == data[ctrl.id]) })) })
-                                    : Object.entries(list).map(([k, v]) => { return $('<option>').attr('value', k).html(i18n(v)).prop('selected', k == data[ctrl.id]) }))
-                            ));
+                                    ? list.map(g => { return $('<optgroup>').attr('label', i18n(g.text)).append(Object.entries(g.groups).map(([k, v]) => { return $('<option>').attr('value', g.id + ":" + k).html(i18n(v)).prop('selected', (g.id + ":" + k) == (data[ctrl.id]?.id || data[ctrl.id])) })) })
+                                    : Object.entries(list).map(([k, v]) => { return $('<option>').attr('value', k).html(i18n(v)).prop('selected', k == (data[ctrl.id]?.id || data[ctrl.id])) }))
+                            );
                         }
                         break;
                     case 'select':

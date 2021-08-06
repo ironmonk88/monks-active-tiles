@@ -47,10 +47,12 @@
   "MonksActiveTiles.action.openjournal": "Open a Journal Entry",
   "MonksActiveTiles.action.additem": "Add Item",
   "MonksActiveTiles.action.permission": "Change Permissions",
+  "MonksActiveTiles.action.attack": "Attack",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
   "MonksActiveTiles.ctrl.select-entity": "Select Entity",
+  "MonksActiveTiles.ctrl.select-actor": "Select Actor",
   "MonksActiveTiles.ctrl.state": "State",
   "MonksActiveTiles.ctrl.attribute": "Attribute",
   "MonksActiveTiles.ctrl.value": "Value",
@@ -75,6 +77,7 @@
   "MonksActiveTiles.ctrl.flavor": "Flavor",
   "MonksActiveTiles.ctrl.changefor": "Change For",
   "MonksActiveTiles.ctrl.permission": "Permission",
+  "MonksActiveTiles.ctrl.attack": "Attack",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",

@@ -133,8 +133,9 @@ export class MonksActiveTiles {
                 }*/
             ],
             fn: async (tiledoc, tokendoc, action, userid) => {
-                let onMovementFrame = function (dt, anim, config) {
-                    log('movement frame', dt, anim, config);
+                if (!tokendoc) {
+                    ui.notifications.info('No token to teleport');
+                    return;
                 }
 
                 let token = tokendoc.object;
@@ -265,8 +266,8 @@ export class MonksActiveTiles {
                     id: "location",
                     name: "MonksActiveTiles.ctrl.select-coordinates",
                     type: "select",
-                    subtype: "location",
-                    restrict: (scene) => { return this.scene.id == scene.id; }
+                    subtype: "either",
+                    restrict: (entity) => { return (entity instanceof Tile && this.scene.id == entity.parent.id) || this.scene.id == entity.id; }
                 },
                 {
                     id: "snap",   //using remote snap because I don't want this to trigger the token to be snapped to the grid on the tile
@@ -282,41 +283,43 @@ export class MonksActiveTiles {
             ],
             fn: async (tile, token, action, userid) => {
                 //wait for animate movement
-                try {
-                    let entities = await MonksActiveTiles.getEntities(tile, token, action.data.entity.id);
+                let entities = await MonksActiveTiles.getEntities(tile, token, action.data.entity.id);
                     
-                    if (entities && entities.length > 0) {
-                        //set or toggle visible
-                        for (let tokendoc of entities) {
-                            let token = tokendoc.object;
-                            await token.stopAnimation();
-
-                            let newPos = {
-                                x: action.data.location.x - (token.w / 2),
-                                y: action.data.location.y - (token.h / 2)
-                            };
-
-                            if (!canvas.grid.hitArea.contains(newPos.x, newPos.y)) {
-                                //+++find the closest spot on the edge of the scene
-                                ui.notifications.error("MonksActiveTiles.msg.prevent-teleport");
-                                return;
-                            }
-                            if (action.data.snap)
-                                newPos = canvas.grid.getSnappedPosition(newPos.x, newPos.y);
-
-                            if (action.data.wait) {
-                                await token.setPosition(newPos.x, newPos.y);
-                                await tokendoc.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false });
-                            } else
-                                tokendoc.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: true });
-                        }
+                if (entities && entities.length > 0) {
+                    if (action.data.location.id) {
+                        //this is directing to a Tile
+                        let destTile = await fromUuid(action.data.location.id);
+                        action.data.location.x = destTile.data.x + (destTile.data.width / 2);
+                        action.data.location.y = destTile.data.y + (destTile.data.height / 2);
                     }
-                } catch {
+                    //set or toggle visible
+                    for (let tokendoc of entities) {
+                        let token = tokendoc.object;
+                        await token.stopAnimation();
 
+                        let newPos = {
+                            x: action.data.location.x - (token.w / 2),
+                            y: action.data.location.y - (token.h / 2)
+                        };
+
+                        if (!canvas.grid.hitArea.contains(newPos.x, newPos.y)) {
+                            //+++find the closest spot on the edge of the scene
+                            ui.notifications.error("MonksActiveTiles.msg.prevent-teleport");
+                            return;
+                        }
+                        if (action.data.snap)
+                            newPos = canvas.grid.getSnappedPosition(newPos.x, newPos.y);
+
+                        if (action.data.wait) {
+                            await token.setPosition(newPos.x, newPos.y);
+                            await tokendoc.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false });
+                        } else
+                            tokendoc.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: true });
+                    }
                 }
             },
             content: (trigger, action) => {
-                return i18n(trigger.name) + ' ' + action.data?.entity.name + ' to [' + action.data?.location.x + ',' + action.data?.location.y + ']' + (action.data?.snap ? ' (snap to grid)' : '') + (action.data?.wait ? ' (wait)' : '');
+                return i18n(trigger.name) + ' ' + action.data?.entity.name + ' to ' + (action.data?.location.id ? action.data?.location.name : '[' + action.data?.location.x + ',' + action.data?.location.y + ']') + (action.data?.snap ? ' (snap to grid)' : '') + (action.data?.wait ? ' (wait)' : '');
             }
         },
         'showhide': {
@@ -346,17 +349,13 @@ export class MonksActiveTiles {
             },
             fn: async (tile, token, action) => {
                 //find the item in question
-                try {
-                    let entities = await MonksActiveTiles.getEntities(tile, token, action.data.entity.id);
+                let entities = await MonksActiveTiles.getEntities(tile, token, action.data.entity.id);
 
-                    if (entities && entities.length > 0) {
-                        //set or toggle visible
-                        for (let e of entities) {
-                            await e.update({ hidden: (action.data.hidden == 'toggle' ? !e.data.hidden : action.data.hidden !== 'show') });
-                        }
+                if (entities && entities.length > 0) {
+                    //set or toggle visible
+                    for (let e of entities) {
+                        await e.update({ hidden: (action.data.hidden == 'toggle' ? !e.data.hidden : action.data.hidden !== 'show') });
                     }
-                } catch {
-
                 }
             },
             content: (trigger, action) => {
@@ -380,7 +379,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-coordinates",
                     type: "select",
                     subtype: "either",
-                    restrict: (entity) => { return (entity instanceof Tile) || this.scene.id == entity.id; }
+                    restrict: (entity) => { return (entity instanceof Tile && this.scene.id == entity.parent.id) || this.scene.id == entity.id; }
                 },
                 {
                     id: "snap",   //using remote snap because I don't want this to trigger the token to be snapped to the grid on the tile
@@ -397,66 +396,62 @@ export class MonksActiveTiles {
             ],
             fn: async (tile, token, action) => {
                 //find the item in question
-                try {
-                    let entities = await MonksActiveTiles.getEntities(tile, token, action.data.entity.id);
+                let entities = await MonksActiveTiles.getEntities(tile, token, action.data.entity.id);
 
-                    if (entities && entities.length > 0) {
-                        if (action.data.location.id) {
-                            //this is directing to a Tile
-                            let destTile = await fromUuid(action.data.location.id);
-                            action.data.location.x = destTile.data.x + (destTile.data.width / 2);
-                            action.data.location.y = destTile.data.y + (destTile.data.height / 2);
-                        }
-                        //set or toggle visible
-                        for (let actor of entities) {
-                            //let actor = await Actor.implementation.fromDropData({id: entity.id, type: 'Actor'});
-                            if (actor.compendium) {
-                                const actorData = game.actors.fromCompendium(actor);
-                                actor = await Actor.implementation.create(actorData);
-                            }
-
-                            let data = {
-                                x: action.data.location.x,
-                                y: action.data.location.y,
-                                hidden: false
-                            };
-                            // Prepare the Token data
-                            const td = await actor.getTokenData(data);
-
-                            // Bypass snapping
-                            if (!action.data.snap) {
-                                td.update({
-                                    x: td.x - (td.width * canvas.grid.w / 2),
-                                    y: td.y - (td.height * canvas.grid.h / 2)
-                                });
-                            }
-                            // Otherwise snap to nearest vertex, adjusting for large tokens
-                            else {
-                                const hw = canvas.grid.w / 2;
-                                const hh = canvas.grid.h / 2;
-                                td.update(canvas.grid.getSnappedPosition(td.x - (td.width * hw), td.y - (td.height * hh)));
-                            }
-
-                            // Validate the final position
-                            if (!canvas.dimensions.rect.contains(td.x, td.y)) continue;
-
-                            if (action.data.invisible)
-                                td.hidden = true;
-
-                            // Submit the Token creation request and activate the Tokens layer (if not already active)
-                            const cls = getDocumentClass("Token");
-                            let tkn = await cls.create(td, { parent: tile.parent });
-
-                            if (action.data.invisible)
-                                tkn.update({hidden: true});
-                        }
+                if (entities && entities.length > 0) {
+                    if (action.data.location.id) {
+                        //this is directing to a Tile
+                        let destTile = await fromUuid(action.data.location.id);
+                        action.data.location.x = destTile.data.x + (destTile.data.width / 2);
+                        action.data.location.y = destTile.data.y + (destTile.data.height / 2);
                     }
-                } catch {
+                    //set or toggle visible
+                    for (let actor of entities) {
+                        //let actor = await Actor.implementation.fromDropData({id: entity.id, type: 'Actor'});
+                        if (actor.compendium) {
+                            const actorData = game.actors.fromCompendium(actor);
+                            actor = await Actor.implementation.create(actorData);
+                        }
 
+                        let data = {
+                            x: action.data.location.x,
+                            y: action.data.location.y,
+                            hidden: false
+                        };
+                        // Prepare the Token data
+                        const td = await actor.getTokenData(data);
+
+                        // Bypass snapping
+                        if (!action.data.snap) {
+                            td.update({
+                                x: td.x - (td.width * canvas.grid.w / 2),
+                                y: td.y - (td.height * canvas.grid.h / 2)
+                            });
+                        }
+                        // Otherwise snap to nearest vertex, adjusting for large tokens
+                        else {
+                            const hw = canvas.grid.w / 2;
+                            const hh = canvas.grid.h / 2;
+                            td.update(canvas.grid.getSnappedPosition(td.x - (td.width * hw), td.y - (td.height * hh)));
+                        }
+
+                        // Validate the final position
+                        if (!canvas.dimensions.rect.contains(td.x, td.y)) continue;
+
+                        if (action.data.invisible)
+                            td.hidden = true;
+
+                        // Submit the Token creation request and activate the Tokens layer (if not already active)
+                        const cls = getDocumentClass("Token");
+                        let tkn = await cls.create(td, { parent: tile.parent });
+
+                        if (action.data.invisible)
+                            tkn.update({hidden: true});
+                    }
                 }
             },
             content: (trigger, action) => {
-                return i18n(trigger.name) + ' ' + action.data?.entity.name + ' to [' + action.data?.location.x + ',' + action.data?.location.y + ']' + (action.data?.snap ? ' (snap to grid)' : '');
+                return i18n(trigger.name) + ' ' + action.data?.entity.name + ' to ' + (action.data?.location.id ? action.data?.location.name : '[' + action.data?.location.x + ',' + action.data?.location.y + ']') + (action.data?.snap ? ' (snap to grid)' : '');
             }
         },
         'activate': {
@@ -543,65 +538,61 @@ export class MonksActiveTiles {
                 }
             },
             fn: async (tile, token, action, userid) => {
-                try {
-                    let entities = await MonksActiveTiles.getEntities(tile, token, action.data.entity.id);
+                let entities = await MonksActiveTiles.getEntities(tile, token, action.data.entity.id);
 
-                    if (entities && entities.length > 0) {
-                        for (let entity of entities) {
-                            let attr = action.data.attribute;
+                if (entities && entities.length > 0) {
+                    for (let entity of entities) {
+                        let attr = action.data.attribute;
 
-                            let prop = getProperty(entity.data, attr);
-                            if (prop == undefined && entity instanceof TokenDocument) {
-                                entity = entity.actor;
-                                attr = 'data.' + attr;
-                                prop = getProperty(entity.data, attr);
-                            }
+                        let prop = getProperty(entity.data, attr);
+                        if (prop == undefined && entity instanceof TokenDocument) {
+                            entity = entity.actor;
+                            attr = 'data.' + attr;
+                            prop = getProperty(entity.data, attr);
+                        }
 
-                            if (prop == undefined) {
-                                debug("Couldn't find attribute", entity, attr);
+                        if (prop == undefined) {
+                            debug("Couldn't find attribute", entity, attr);
+                            return;
+                        }
+
+                        if (typeof prop == 'object') {
+                            if (prop.value == undefined) {
+                                debug("Attribute reurned an object and the object doesn't have a value property", entity, attr, prop);
                                 return;
                             }
 
-                            if (typeof prop == 'object') {
-                                if (prop.value == undefined) {
-                                    debug("Attribute reurned an object and the object doesn't have a value property", entity, attr, prop);
-                                    return;
-                                }
-
-                                attr = attr + '.value';
-                                prop = prop.value;
-                            }
-
-
-                            let update = {};
-                            let value = action.data.value;
-
-                            if (value == 'true') value = true;
-                            else if (value == 'false') value = false;
-                            else {
-                                let context = { actor: token?.actor.data, token: token?.data, tile: tile.data, user: game.users.get(userid) };
-
-                                if (value.includes("{{")) {
-                                    const compiled = Handlebars.compile(value);
-                                    value = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
-                                }
-
-                                const rgx = /\[\[(\/[a-zA-Z]+\s)?(.*?)([\]]{2,3})(?:{([^}]+)})?/gi;
-                                value = await MonksActiveTiles.inlineRoll(value, rgx, action.data.chatMessage, action.data.rollmode, token);
-
-                                if (value.startsWith('+ ') || value.startsWith('- ')) {
-                                    value = eval(prop + value);
-                                }
-
-                                if (!isNaN(value) && !isNaN(parseFloat(value)))
-                                    value = parseFloat(value);
-                            }
-                            update[attr] = value;
-                            await entity.update(update);
+                            attr = attr + '.value';
+                            prop = prop.value;
                         }
-                    }
-                } catch {
 
+
+                        let update = {};
+                        let value = action.data.value;
+
+                        if (value == 'true') value = true;
+                        else if (value == 'false') value = false;
+                        else {
+                            let context = { actor: token?.actor.data, token: token?.data, tile: tile.data, user: game.users.get(userid) };
+
+                            if (value.includes("{{")) {
+                                const compiled = Handlebars.compile(value);
+                                value = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
+                            }
+
+                            const rgx = /\[\[(\/[a-zA-Z]+\s)?(.*?)([\]]{2,3})(?:{([^}]+)})?/gi;
+                            value = await MonksActiveTiles.inlineRoll(value, rgx, action.data.chatMessage, action.data.rollmode, token);
+
+                            if (value.startsWith('+ ') || value.startsWith('- ')) {
+                                value = eval(prop + value);
+                            }
+
+                            if (!isNaN(value) && !isNaN(parseFloat(value)))
+                                value = parseFloat(value);
+                        }
+                        update[attr] = value;
+                        await entity.update(update);
+                    }
                 }
             },
             content: (trigger, action) => {
@@ -851,12 +842,10 @@ export class MonksActiveTiles {
             ],
             fn: async (tile, token, action, userid) => {
                 //Find the macro to be run, call it with the data from the trigger
-                try {
-                    let macro = game.macros.get(action.data.macroid);
-                    if (macro instanceof Macro) {
-                        return await MonksActiveTiles._executeMacro(macro, tile, token, action, userid);
-                    }
-                } catch{}
+                let macro = game.macros.get(action.data.macroid);
+                if (macro instanceof Macro) {
+                    return await MonksActiveTiles._executeMacro(macro, tile, token, action, userid);
+                }
             },
             content: (trigger, action) => {
                 let macro = game.macros.get(action.data?.macroid);
@@ -896,14 +885,12 @@ export class MonksActiveTiles {
             },
             fn: async (tile, token, action) => {
                 //Find the roll table
-                try {
-                    let rolltable = game.tables.get(action.data?.rolltableid);
-                    if (rolltable instanceof RollTable) {
-                        //Make a roll
-                        let result = rolltable.draw({rollMode: action.data.rollmode});
-                        //Check to see what the privacy rules are
-                    }
-                } catch{ }
+                let rolltable = game.tables.get(action.data?.rolltableid);
+                if (rolltable instanceof RollTable) {
+                    //Make a roll
+                    let result = rolltable.draw({rollMode: action.data.rollmode});
+                    //Check to see what the privacy rules are
+                }
             },
             content: (trigger, action) => {
                 let rolltable = game.tables.get(action.data?.rolltableid);
@@ -1243,6 +1230,76 @@ export class MonksActiveTiles {
             content: (trigger, action) => {
                 return i18n(trigger.name) + ' of ' + action.data?.entity.name + ' to ' + i18n(trigger.values.permissions[action.data?.permission]);
             }
+        },
+        'attack': {
+            name: "MonksActiveTiles.action.attack",
+            options: { allowDelay: false },
+            ctrls: [
+                {
+                    id: "entity",
+                    name: "MonksActiveTiles.ctrl.select-entity",
+                    type: "select",
+                    subtype: "entity",
+                    options: { showTile: false, showToken: true, showWithin: true, showPlayers: true },
+                    restrict: (entity) => { return (entity instanceof Token ); }
+                },
+                {
+                    id: "actor",
+                    name: "MonksActiveTiles.ctrl.select-actor",
+                    type: "select",
+                    subtype: "entity",
+                    options: { showTile: false, showToken: false, showWithin: false, showPlayers: false },
+                    restrict: (entity) => { return (entity instanceof Actor ); }
+                },
+                {
+                    id: "attack",
+                    name: "MonksActiveTiles.ctrl.attack",
+                    list: async function (data) {
+                        if (!data?.actor?.id)
+                            return;
+
+                        let actor = await fromUuid(data?.actor?.id);
+                        if (!actor)
+                            return;
+
+                        let attacks = {};
+                        for (let item of actor.items) {
+                            if (item.type == 'weapon')
+                                attacks[item.id] = item.name;
+                        }
+
+                        return attacks;
+                    },
+                    type: "list"
+                }
+
+            ],
+            fn: async (tile, token, action, userid) => {
+                let entities = await MonksActiveTiles.getEntities(tile, token, action.data.entity.id);
+                if (entities.length == 0)
+                    return;
+
+                //get the actor and the attack and the entities to apply this to.
+                if (action.data?.actor.id) {
+                    let actor = await fromUuid(action.data?.actor.id);
+                    let item = actor.items.get(action.data?.attack?.id);
+
+                    if (item) {
+                        item.roll();
+                    }
+                }
+
+                for (let entity of entities) {
+                    entity.object.setTarget(true, { releaseOthers: false });
+                }
+            },
+            content: (trigger, action) => {
+                if (!action.data?.actor.id)
+                    return i18n(trigger.name);
+                //let actor = fromUuid(action.data?.actor.id);
+                //let item = actor.items.get(action.data.attack);
+                return i18n(trigger.name) + ' using ' + action.data?.actor.name + ', ' + action.data?.attack?.name;
+            }
         }
     }
 
@@ -1305,24 +1362,20 @@ export class MonksActiveTiles {
         context.args = args;
 
         if (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active) {
-            if (!(macro.getFlag("advanced-macros", "runAsGM") || macro.getFlag("furnace", "runAsGM") || token == undefined) && userid != game.user.id) {
-                //this one needs to be run as the player, so send it back
-                window.setTimeout(function () {
-                    game.socket.emit(
-                        MonksActiveTiles.SOCKET,
-                        {
-                            action: 'runmacro',
-                            userid: userid,
-                            macroid: macro.uuid,
-                            tileid: tile?.uuid,
-                            tokenid: token?.uuid,
-                            acts: action
-                        },
-                        (resp) => { }
-                    );
-                }, 100);
-            } else {
+            //if (!(macro.getFlag("advanced-macros", "runAsGM") || macro.getFlag("furnace", "runAsGM") || token == undefined) && userid != game.user.id) {
+            //if ((getProperty(macro, "data.flags.advanced-macros.runAsGM") || getProperty(macro, "data.flags.furnace.runAsGM") || token == undefined) && !game.user.isGM) {
+            if (getProperty(macro, "data.flags.advanced-macros.runAsGM") || getProperty(macro, "data.flags.furnace.runAsGM") || userid == game.user.id) {
+                //execute the macro if it's set to run as GM or it was the GM that actually moved the token.
                 return await macro.execute.apply(macro, [context]);
+            } else {
+                //this one needs to be run as the player, so send it back
+                MonksActiveTiles.emit('runmacro', {
+                    userid: userid,
+                    macroid: macro.uuid,
+                    tileid: tile?.uuid,
+                    tokenid: token?.uuid,
+                    args: args
+                });
             }
         } else
             return await macro.execute(context);
@@ -1612,6 +1665,105 @@ export class MonksActiveTiles {
                 return clickCompendiumEntry.call(this, oldOnClickEntry.bind(this), ...arguments);
             }
         }
+
+        let oldLightClickLeft = AmbientLight.prototype._onClickLeft;
+        AmbientLight.prototype._onClickLeft = function (event) {
+            MonksActiveTiles.controlEntity(this);
+            return oldLightClickLeft.call(this, event);
+        }
+
+        let oldSoundClickLeft = AmbientSound.prototype._onClickLeft;
+        AmbientSound.prototype._onClickLeft = function (event) {
+            MonksActiveTiles.controlEntity(this);
+            return oldSoundClickLeft.call(this, event);
+        }
+
+        if (!game.modules.get("drag-ruler")?.active && !game.modules.get("libruler")?.active) {
+            /*
+            let clear = function (wrapped, ...args) {
+                this.cancelMovement = false;
+                wrapped(...args);
+            }
+
+            if (game.modules.get("lib-wrapper")?.active) {
+                libWrapper.register("monks-active-tiles", "Ruler.prototype.clear", clear, "WRAPPER");
+            } else {
+                const oldClear = Ruler.prototype.clear;
+                Ruler.prototype.clear = function (event) {
+                    return clear.call(this, oldClear.bind(this));
+                }
+            }*/
+
+            let moveToken = async function (wrapped, ...args) {
+                //this.cancelMovement = false;
+                let wasPaused = game.paused;
+                if (wasPaused && !game.user.isGM) {
+                    ui.notifications.warn("GAME.PausedWarning", { localize: true });
+                    return false;
+                }
+                if (!this.visible || !this.destination) return false;
+                const token = this._getMovementToken();
+                if (!token) return false;
+
+                // Determine offset relative to the Token top-left.
+                // This is important so we can position the token relative to the ruler origin for non-1x1 tokens.
+                const origin = canvas.grid.getTopLeft(this.waypoints[0].x, this.waypoints[0].y);
+                const s2 = canvas.dimensions.size / 2;
+                const dx = Math.round((token.data.x - origin[0]) / s2) * s2;
+                const dy = Math.round((token.data.y - origin[1]) / s2) * s2;
+
+                // Get the movement rays and check collision along each Ray
+                // These rays are center-to-center for the purposes of collision checking
+                let rays = this._getRaysFromWaypoints(this.waypoints, this.destination);
+                let hasCollision = rays.some(r => canvas.walls.checkCollision(r));
+                if (hasCollision) {
+                    ui.notifications.error("ERROR.TokenCollide", { localize: true });
+                    return false;
+                }
+
+                // Execute the movement path defined by each ray.
+                this._state = Ruler.STATES.MOVING;
+                let priorDest = undefined;
+                for (let r of rays) {
+                    // Break the movement if the game is paused
+                    if (!wasPaused && game.paused) break;
+
+                    // Break the movement if Token is no longer located at the prior destination (some other change override this)
+                    if (priorDest && ((token.data.x !== priorDest.x) || (token.data.y !== priorDest.y))) break;
+
+                    // Adjust the ray based on token size
+                    const dest = canvas.grid.getTopLeft(r.B.x, r.B.y);
+                    const path = new Ray({ x: token.x, y: token.y }, { x: dest[0] + dx, y: dest[1] + dy });
+
+                    // Commit the movement and update the final resolved destination coordinates
+                    let animate = true;
+                    priorDest = duplicate(path.B);
+                    await token.document.update(path.B, { animate: animate });
+                    path.B.x = token.data.x;
+                    path.B.y = token.data.y;
+
+                    //if the movement has been canceled then stop processing rays
+                    //if (this.cancelMovement)
+                    //    break;
+
+                    // Update the path which may have changed during the update, and animate it
+                    if (animate)
+                        await token.animateMovement(path);
+                }
+
+                // Once all animations are complete we can clear the ruler
+                this._endMeasurement();
+            }
+
+            if (game.modules.get("lib-wrapper")?.active) {
+                libWrapper.register("monks-active-tiles", "Ruler.prototype.moveToken", moveToken, "OVERRIDE");
+            } else {
+                const oldMoveToken = Ruler.prototype.moveToken;
+                Ruler.prototype.moveToken = function (event) {
+                    return moveToken.call(this, oldMoveToken.bind(this));
+                }
+            }
+        }
     }
 
     static async onMessage(data) {
@@ -1643,7 +1795,9 @@ export class MonksActiveTiles {
                     let macro = await fromUuid(data.macroid);
                     let tile = await fromUuid(data.tileid);
                     let token = await fromUuid(data.tokenid);
-                    MonksActiveTiles._executeMacro(macro, tile, token, data.acts, data.userid);
+
+                    let context = { actor: token?.actor, token: token?.object, tile: tile.object, user: game.users.get(data.userid), args: data.args };
+                    await macro.execute.apply(macro, [context]);
                 }
             }
             case 'stopvideo': {
@@ -1879,16 +2033,24 @@ export class MonksActiveTiles {
                         if (action.delay > 0) {
                             let tile = this;
                             window.setTimeout(async function () {
-                                await fn.call(tile, tile, token, action, userid);
+                                try {
+                                    await fn.call(tile, tile, token, action, userid);
+                                } catch (err) {
+                                    error(err);
+                                }
                             }, action.delay * 1000);
                         } else {
                             let cancall = await Hooks.call("preTriggerTile", this, this, token, action, userid);
                             if (cancall) {
-                                let result = await fn.call(this, this, token, action, userid);
-                                if (result instanceof TokenDocument)
-                                    token = result;
-                                let cancontinue = await Hooks.call("triggerTile", this, this, token, action, userid);
-                                if (result === false || cancontinue === false) break;
+                                try {
+                                    let result = await fn.call(this, this, token, action, userid);
+                                    if (result instanceof TokenDocument)
+                                        token = result;
+                                    let cancontinue = await Hooks.call("triggerTile", this, this, token, action, userid);
+                                    if (result === false || cancontinue === false) break;
+                                } catch (err) {
+                                    error(err);
+                                }
                             }
                         }
                     }
@@ -1901,116 +2063,8 @@ export class MonksActiveTiles {
                 }
             } else {
                 //post this to the GM
-                game.socket.emit(
-                    MonksActiveTiles.SOCKET,
-                    {
-                        action: 'trigger',
-                        senderId: game.user.id,
-                        tileid: this.uuid,
-                        tokenid: token?.uuid
-                    },
-                    (resp) => { }
-                );
+                MonksActiveTiles.emit('trigger', { tileid: this.uuid, tokenid: token?.uuid } );
             }
-        }
-
-        if (!game.modules.get("drag-ruler")?.active) {
-            /*
-            let clear = function (wrapped, ...args) {
-                this.cancelMovement = false;
-                wrapped(...args);
-            }
-
-            if (game.modules.get("lib-wrapper")?.active) {
-                libWrapper.register("monks-active-tiles", "Ruler.prototype.clear", clear, "WRAPPER");
-            } else {
-                const oldClear = Ruler.prototype.clear;
-                Ruler.prototype.clear = function (event) {
-                    return clear.call(this, oldClear.bind(this));
-                }
-            }*/
-
-            let moveToken = async function (wrapped, ...args) {
-                this.cancelMovement = false;
-                let wasPaused = game.paused;
-                if (wasPaused && !game.user.isGM) {
-                    ui.notifications.warn("GAME.PausedWarning", { localize: true });
-                    return false;
-                }
-                if (!this.visible || !this.destination) return false;
-                const token = this._getMovementToken();
-                if (!token) return false;
-
-                // Determine offset relative to the Token top-left.
-                // This is important so we can position the token relative to the ruler origin for non-1x1 tokens.
-                const origin = canvas.grid.getTopLeft(this.waypoints[0].x, this.waypoints[0].y);
-                const s2 = canvas.dimensions.size / 2;
-                const dx = Math.round((token.data.x - origin[0]) / s2) * s2;
-                const dy = Math.round((token.data.y - origin[1]) / s2) * s2;
-
-                // Get the movement rays and check collision along each Ray
-                // These rays are center-to-center for the purposes of collision checking
-                let rays = this._getRaysFromWaypoints(this.waypoints, this.destination);
-                let hasCollision = rays.some(r => canvas.walls.checkCollision(r));
-                if (hasCollision) {
-                    ui.notifications.error("ERROR.TokenCollide", { localize: true });
-                    return false;
-                }
-
-                // Execute the movement path defined by each ray.
-                this._state = Ruler.STATES.MOVING;
-                let priorDest = undefined;
-                for (let r of rays) {
-                    // Break the movement if the game is paused
-                    if (!wasPaused && game.paused) break;
-
-                    // Break the movement if Token is no longer located at the prior destination (some other change override this)
-                    if (priorDest && ((token.data.x !== priorDest.x) || (token.data.y !== priorDest.y))) break;
-
-                    // Adjust the ray based on token size
-                    const dest = canvas.grid.getTopLeft(r.B.x, r.B.y);
-                    const path = new Ray({ x: token.x, y: token.y }, { x: dest[0] + dx, y: dest[1] + dy });
-
-                    // Commit the movement and update the final resolved destination coordinates
-                    let animate = true;
-                    await token.document.update(path.B, { animate: animate });
-                    path.B.x = token.data.x;
-                    path.B.y = token.data.y;
-
-                    //if the movement has been canceled then stop processing rays
-                    if (this.cancelMovement)
-                        break;
-
-                    // Update the path which may have changed during the update, and animate it
-                    priorDest = path.B;
-                    if (animate)
-                        await token.animateMovement(path);
-                }
-
-                // Once all animations are complete we can clear the ruler
-                this._endMeasurement();
-            }
-
-            if (game.modules.get("lib-wrapper")?.active) {
-                libWrapper.register("monks-active-tiles", "Ruler.prototype.moveToken", moveToken, "OVERRIDE");
-            } else {
-                const oldMoveToken = Ruler.prototype.moveToken;
-                Ruler.prototype.moveToken = function (event) {
-                    return moveToken.call(this, oldMoveToken.bind(this));
-                }
-            }
-        }
-
-        let oldLightClickLeft = AmbientLight.prototype._onClickLeft;
-        AmbientLight.prototype._onClickLeft = function (event) {
-            MonksActiveTiles.controlEntity(this);
-            return oldLightClickLeft.call(this, event);
-        }
-
-        let oldSoundClickLeft = AmbientSound.prototype._onClickLeft;
-        AmbientSound.prototype._onClickLeft = function (event) {
-            MonksActiveTiles.controlEntity(this);
-            return oldSoundClickLeft.call(this, event);
         }
     }
 
@@ -2051,7 +2105,7 @@ Hooks.on('canvasInit', () => {
 });*/
 
 Hooks.on('preUpdateToken', async (document, update, options, userId) => { 
-    //log('preupdate token', document, update, options, MonksActiveTiles._rejectRemaining);
+    log('preupdate token', document, update, options, MonksActiveTiles._rejectRemaining);
 
     /*
     if (MonksActiveTiles._rejectRemaining[document.id] && options.bypass !== true) {
@@ -2064,6 +2118,14 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
     if ((update.x != undefined || update.y != undefined) && options.bypass !== true && options.animate !== false) { //(!game.modules.get("drag-ruler")?.active || options.animate)) {
         let token = document.object;
 
+        if (document.caught) {
+            delete update.x;
+            delete update.y;
+            return;
+        }
+
+        log('triggering for', token.id);
+
         //Does this cross a tile
         for (let layer of [canvas.background.tiles, canvas.foreground.tiles]) {
             for (let tile of layer) {
@@ -2075,14 +2137,17 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                     let dest = { x: update.x || document.data.x, y: update.y || document.data.y };
                     let collision = tile.document.checkCollision(document, dest);
 
+                    log('Here1', token.id);
                     if (collision.length > 0) {
-                        
+                        log('Here2', token.id);
                         let tpts = tile.document.canTrigger(document.object, collision, dest);
                         if (tpts) {
+                            log('Here3', token.id);
                             //preload any teleports to other scenes
                             tile.document.preloadScene();
 
                             let doTrigger = async function (idx) {
+                                log('Here4', token.id, idx);
                                 if (idx >= tpts.length)
                                     return;
 
@@ -2123,15 +2188,24 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                                     delete update.x;
                                     delete update.y;
 
+                                    //make sure spamming the arrow keys is prevented
+                                    document.caught = true;
+                                    window.setTimeout(function () { delete document.caught; }, 1500);
+
                                     //try to disrupt the remaining path if there is one, by setting an update
                                     //MonksActiveTiles._rejectRemaining[document.id] = { x: triggerPt.x, y: triggerPt.y };
                                     //window.setTimeout(function () { delete MonksActiveTiles._rejectRemaining[document.id]; }, 500); //Hopefully half a second is enough to clear any of the remaining animations
 
-                                    let ruler = canvas.controls.getRulerForUser(game.user.id);
-                                    if (ruler) ruler.cancelMovement = true;
-                                    options.animate = false;
-
-                                    await document.update({ x: triggerPt.x, y: triggerPt.y }, { bypass: true });
+                                    if (game.modules.get("drag-ruler")?.active) {
+                                        let ruler = canvas.controls.getRulerForUser(game.user.id);
+                                        if (ruler) ruler.cancelMovement = true;
+                                        options.animate = false;
+                                        await document.update({ x: triggerPt.x, y: triggerPt.y }, { bypass: true });
+                                    } else {
+                                        update.x = triggerPt.x;
+                                        update.y = triggerPt.y;
+                                        //options.bypass = true;
+                                    }
                                 }
 
                                 //if there's a scene to teleport to, then preload it.
@@ -2145,8 +2219,9 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                                 const duration = (ray.distance * 1000) / speed;
 
                                 window.setTimeout(function () {
+                                    log('Tile is triggering', document);
                                     tile.document.trigger(document);
-                                    if(!stop)
+                                    if(!stop)   //If this fires on Enter, and a stop is request then we don't need to run the On Exit code.
                                         doTrigger(idx + 1);
                                 }, duration);
                                 //}
@@ -2154,6 +2229,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                                 return duration;
                             }
 
+                            //Do this so Enter/Exit will both fire.  But we have to wait for the Enter to finish first.
                             doTrigger(0);
                         }
                     }
@@ -2215,4 +2291,25 @@ Hooks.on('controlWall', (wall, control) => {
 Hooks.on('controlTile', (tile, control) => {
     if (control)
         MonksActiveTiles.controlEntity(tile);
+});
+
+Hooks.on('libRulerReady', () => {
+    Ruler.prototype.animateToken = async function (token, ray, dx, dy, segment_num) {
+        log(`Animating token for segment_num ${segment_num}`);
+
+        // Adjust the ray based on token size
+        const dest = canvas.grid.getTopLeft(ray.B.x, ray.B.y);
+        const path = new Ray({ x: token.data.x, y: token.data.y }, { x: dest[0] + dx, y: dest[1] + dy });
+
+        // Commit the movement and update the final resolved destination coordinates
+        const priorDest = duplicate(path.B);
+        await token.document.update(path.B);
+        path.B.x = token.data.x;
+        path.B.y = token.data.y;
+
+        // Update the path which may have changed during the update, and animate it
+        await token.animateMovement(path);
+
+        return priorDest;
+    }
 });

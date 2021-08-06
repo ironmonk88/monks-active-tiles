@@ -1,3 +1,23 @@
+## Version 1.0.22
+
+Fixed issue with the action config if there aren't any actors added to the world yet.
+
+Added info if there's no token to teleport when a teleport action is triggered.
+
+Allow Move Token action to move to a Tile and not just a location.
+
+Removed the try catch blocks from individual actions and put it up one level, so that if any actions have an error it can be reported.
+
+Creating a token can now use a Tile instead of just a location as a destination for the Token.
+
+Added Attack action.  You'll need to set up an actor with the attack you wish to use but this can be used to calculate the damage of a trap.
+
+Changed how macros are executed.  Before I was passing it back to the player to run the full macro, changed the code so the player runs a previously calculated version.  Means I don't have to recalculate arguments and hopefully I've fixed a bug where the macro won't run.
+
+Fixed up issues with stopping the Token from moving.  Make it integrate with libRuler a little better and not require as many saves to the database.
+
+Added cool down period for movement so if the player spams the movement key, and the Tile requests a stop, that it will briefly halt the movement of that Token even if more movement keys are pressed.
+
 ## Version 1.0.21
 
 Added typeahead to the Alter action Attribute field to make it a bit easier to know what goes there.
