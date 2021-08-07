@@ -1273,12 +1273,37 @@ export class MonksActiveTiles {
                                 attacks[item.id] = item.name;
                         }
 
-                        return attacks;
+                        let spells = {};
+                        for (let item of actor.items) {
+                            if (item.type == 'spell')
+                                spells[item.id] = item.name;
+                        }
+
+                        let result = [];
+                        if (Object.entries(attacks).length > 0)
+                            result.push({ text: 'Attacks', groups: attacks });
+                        if (Object.entries(spells).length > 0)
+                            result.push({ text: 'Spells', groups: spells });
+
+                        return result;
                     },
                     type: "list"
+                },
+                {
+                    id: "rollmode",
+                    name: 'MonksActiveTiles.ctrl.rollmode',
+                    list: "rollmode",
+                    type: "list"
                 }
-
             ],
+            values: {
+                'rollmode': {
+                    "roll": 'MonksActiveTiles.rollmode.public',
+                    "gmroll": 'MonksActiveTiles.rollmode.private',
+                    "blindroll": 'MonksActiveTiles.rollmode.blind',
+                    "selfroll": 'MonksActiveTiles.rollmode.self'
+                }
+            },
             fn: async (tile, token, action, userid) => {
                 let entities = await MonksActiveTiles.getEntities(tile, token, action.data.entity.id);
                 if (entities.length == 0)
@@ -1290,7 +1315,7 @@ export class MonksActiveTiles {
                     let item = actor.items.get(action.data?.attack?.id);
 
                     if (item) {
-                        item.roll();
+                        item.displayCard({ rollMode:(action.data?.rollmode || 'roll'), createMessage:true }); //item.roll({configureDialog:false});
                     }
                 }
 
@@ -1304,6 +1329,46 @@ export class MonksActiveTiles {
                 //let actor = fromUuid(action.data?.actor.id);
                 //let item = actor.items.get(action.data.attack);
                 return i18n(trigger.name) + ' using ' + action.data?.actor.name + ', ' + action.data?.attack?.name;
+            }
+        },
+        'trigger': {
+            name: "MonksActiveTiles.action.trigger",
+            options: { allowDelay: true },
+            ctrls: [
+                {
+                    id: "entity",
+                    name: "MonksActiveTiles.ctrl.select-entity",
+                    type: "select",
+                    subtype: "entity",
+                    options: { showTile: false, showToken: false, showWithin: false, showPlayers: false },
+                    restrict: (entity) => { return (entity instanceof Tile); }
+                }
+            ],
+            fn: async (tile, token, action, userid) => {
+                let entities = await MonksActiveTiles.getEntities(tile, token, action.data.entity.id);
+                if (entities.length == 0)
+                    return;
+
+                let entity = entities[0];
+                //make sure we're not in a loop
+                if (MonksActiveTiles.triggered == undefined)
+                    MonksActiveTiles.triggered = [];
+
+                //Add this trigger if it's the original one
+                MonksActiveTiles.triggered.push(tile.id);
+
+                //make sure the trigger to be called isn't on the list
+                if (!MonksActiveTiles.triggered.includes(entity.id)) {
+                    await entity.trigger.call(entity, token, userid);
+                } else {
+                    log('Preventing a trigger loop');
+                }
+
+                //remove this trigger as it's done
+                MonksActiveTiles.triggered.pop();
+            },
+            content: (trigger, action) => {
+                return i18n(trigger.name) + ', ' + action.data?.entity.name;
             }
         }
     }
@@ -2142,17 +2207,13 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                     let dest = { x: update.x || document.data.x, y: update.y || document.data.y };
                     let collision = tile.document.checkCollision(document, dest);
 
-                    log('Here1', token.id);
                     if (collision.length > 0) {
-                        log('Here2', token.id);
                         let tpts = tile.document.canTrigger(document.object, collision, dest);
                         if (tpts) {
-                            log('Here3', token.id);
                             //preload any teleports to other scenes
                             tile.document.preloadScene();
 
                             let doTrigger = async function (idx) {
-                                log('Here4', token.id, idx);
                                 if (idx >= tpts.length)
                                     return;
 

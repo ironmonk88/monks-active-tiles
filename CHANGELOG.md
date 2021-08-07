@@ -1,3 +1,11 @@
+## Version 1.0.23
+
+Added a new action, trigger another Tile.  So now one Tile can trigger a different one
+
+Added spells to the Attack action.
+
+Added roll mode option tot he Attack action.
+
 ## Version 1.0.22
 
 Fixed issue with the action config if there aren't any actors added to the world yet.

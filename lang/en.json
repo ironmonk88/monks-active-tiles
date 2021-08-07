@@ -48,6 +48,7 @@
   "MonksActiveTiles.action.additem": "Add Item",
   "MonksActiveTiles.action.permission": "Change Permissions",
   "MonksActiveTiles.action.attack": "Attack",
+  "MonksActiveTiles.action.trigger": "Trigger Tile",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",

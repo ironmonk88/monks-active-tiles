@@ -62,6 +62,12 @@ export class ActionConfig extends FormApplication {
         });
     }
 
+    fillList(list, id) {
+        return (list instanceof Array
+            ? list.map(g => { return $('<optgroup>').attr('label', i18n(g.text)).append(Object.entries(g.groups).map(([k, v]) => { return $('<option>').attr('value', (g.id ? g.id + ":" : '') + k).html(i18n(v)).prop('selected', ((g.id ? g.id + ":" : '') + k) == id) })) })
+            : Object.entries(list).map(([k, v]) => { return $('<option>').attr('value', k).html(i18n(v)).prop('selected', k == id) }))
+    }
+
     async selectEntity(event) {
         let btn = $(event.currentTarget);
         let field = $('input[name="' + btn.attr('data-target') + '"]', this.element);
@@ -96,14 +102,14 @@ export class ActionConfig extends FormApplication {
         await this.options.parent.maximize();
 
         if (this.waitingfield.attr('name') == 'data.actor') {
-            $('select[name="data.attack"]', this.element).empty();
+            let select = $('select[name="data.attack"]', this.element);
+            select.empty();
             if (selection.id) {
-                let actor = await fromUuid(selection.id);
+                let ctrl = select.parent().data('ctrl');
 
-                if (actor) {
-                    let items = actor.items.map(i => { return (i.type == 'weapon' ? `<option value="${i.id}">${i.name}</option>` : null); }).filter(i => i);
-                    $('select[name="data.attack"]', this.element).append(items.join(''));
-                }
+                let list = await ctrl.list.call(ctrl, { actor: { id: selection.id }});
+
+                select.append(this.fillList(list, ''));
             }
         }
 
@@ -179,7 +185,7 @@ export class ActionConfig extends FormApplication {
 
         for (let ctrl of (action.ctrls || [])) {
             let options = mergeObject({ showTile: true, showToken: true, showWithin: true, showPlayers: true }, ctrl.options);
-            let field = $('<div>').addClass('form-fields');
+            let field = $('<div>').addClass('form-fields').data('ctrl', ctrl);
             let id = 'data.' + ctrl.id;
 
             if (ctrl.conditional == undefined || (typeof ctrl.conditional == 'function' ? ctrl.conditional() : ctrl.conditional)) {
@@ -200,11 +206,7 @@ export class ActionConfig extends FormApplication {
                         let select = $('<select>').attr({ name: id, 'data-dtype': 'String' });
                         field.append(select);
                         if (list != undefined) {
-                            select.append(
-                                (list instanceof Array
-                                    ? list.map(g => { return $('<optgroup>').attr('label', i18n(g.text)).append(Object.entries(g.groups).map(([k, v]) => { return $('<option>').attr('value', g.id + ":" + k).html(i18n(v)).prop('selected', (g.id + ":" + k) == (data[ctrl.id]?.id || data[ctrl.id])) })) })
-                                    : Object.entries(list).map(([k, v]) => { return $('<option>').attr('value', k).html(i18n(v)).prop('selected', k == (data[ctrl.id]?.id || data[ctrl.id])) }))
-                            );
+                            select.append(this.fillList(list, (data[ctrl.id]?.id || data[ctrl.id])));
                         }
                         break;
                     case 'select':
