@@ -78,6 +78,7 @@
   "MonksActiveTiles.ctrl.changefor": "Change For",
   "MonksActiveTiles.ctrl.permission": "Permission",
   "MonksActiveTiles.ctrl.attack": "Attack",
+  "MonksActiveTiles.ctrl.scenerestrict": "Restrict to Scene",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",

@@ -18,6 +18,8 @@ Fixed up issues with stopping the Token from moving.  Make it integrate with lib
 
 Added cool down period for movement so if the player spams the movement key, and the Tile requests a stop, that it will briefly halt the movement of that Token even if more movement keys are pressed.
 
+Added option to restrict a sound to a scene.  So only the players viewing the scene will hear it, GM's will still hear the sound though so they know what's happening.
+
 ## Version 1.0.21
 
 Added typeahead to the Alter action Attribute field to make it a bit easier to know what goes there.

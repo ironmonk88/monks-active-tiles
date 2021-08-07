@@ -616,6 +616,11 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.for",
                     list: "audiofor",
                     type: "list"
+                },
+                {
+                    id: "scenerestrict",
+                    name: "MonksActiveTiles.ctrl.scenerestrict",
+                    type: "checkbox"
                 }
             ],
             values: {
@@ -627,10 +632,10 @@ export class MonksActiveTiles {
             },
             fn: (tile, token, action, userid) => {
                 //play the sound
-                if (action.data.audiofor != 'token')
-                    AudioHelper.play({ src: action.data.audiofile }, action.data.audiofor !== 'gm');
-                else
-                    MonksActiveTiles.emit('playsound', { src: action.data.audiofile, userid: userid });
+                if (action.data.audiofor != 'gm')
+                    MonksActiveTiles.emit('playsound', { src: action.data.audiofile, userid: (action.data.audiofor == 'token' ? userid : null), sceneid: (action.data.audiofor == 'token' ? null : tile.parent.id) });
+                if (action.data.audiofor != 'token' || userid == game.user.id)
+                    AudioHelper.play({ src: action.data.audiofile }, false);
             },
             content: (trigger, action) => {
                 return i18n(trigger.name) + ' for ' + i18n(trigger.values.audiofor[action.data.audiofor]);
@@ -1810,7 +1815,7 @@ export class MonksActiveTiles {
                 }
             } break;
             case 'playsound': {
-                if (data.userid == game.user.id) {
+                if ((data.userid == undefined || data.userid == game.user.id) && (data.sceneid == undefined || canvas.scene.id == data.sceneid)) {
                     AudioHelper.play({ src: data.src }, false);
                 }
             } break;
