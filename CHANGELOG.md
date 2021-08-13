@@ -1,3 +1,23 @@
+## Version 1.0.24
+
+Add option for teleport to delete the source Token instead of just making it invisible.
+
+Allow both Tiles and Drawing to be moved.
+
+Allow Drawings to be shown/hidden.
+
+Update the attack action for PF2 and PF1
+
+Add option to roll the attack instead of just displaying the chat card of the attack.
+
+Added an action, You can now change the scene for a player.
+
+Added another action, Add to combat, so you can add tokens to a combat.
+
+BREAKING CHANGE, Updated the macro execution, thank you tposney, so that it should handle arguments the same way that Trigger Happy does.
+
+Removed some debug information that was constantly being added.
+
 ## Version 1.0.23
 
 Added a new action, trigger another Tile.  So now one Tile can trigger a different one

@@ -49,6 +49,8 @@
   "MonksActiveTiles.action.permission": "Change Permissions",
   "MonksActiveTiles.action.attack": "Attack",
   "MonksActiveTiles.action.trigger": "Trigger Tile",
+  "MonksActiveTiles.action.scene": "Change Scene",
+  "MonksActiveTiles.action.addtocombat": "Add to Combat",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
@@ -80,6 +82,11 @@
   "MonksActiveTiles.ctrl.permission": "Permission",
   "MonksActiveTiles.ctrl.attack": "Attack",
   "MonksActiveTiles.ctrl.scenerestrict": "Restrict to Scene",
+  "MonksActiveTiles.ctrl.scene": "Scene",
+  "MonksActiveTiles.ctrl.animatepan": "Animate Canvas Pan",
+  "MonksActiveTiles.ctrl.deletesource": "Delete Source Token",
+  "MonksActiveTiles.ctrl.avoidtokens": "Avoid other tokens at Destination",
+  "MonksActiveTiles.ctrl.rollattack": "Roll Attack",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -125,6 +132,12 @@
   "MonksActiveTiles.showto.players": "Only Players",
   "MonksActiveTiles.showto.trigger": "Triggering Player",
 
+  "MonksActiveTiles.attack.attack": "Attack",
+  "MonksActiveTiles.attack.spell": "Spell",
+  "MonksActiveTiles.attack.ranged": "Ranged",
+  "MonksActiveTiles.attack.action": "Action",
+  "MonksActiveTiles.attack.weapon": "Weapon",
+  "MonksActiveTiles.attack.melee": "Melee",
 
   "MonksActiveTiles.rollmode.public": "Public Roll",
   "MonksActiveTiles.rollmode.private": "Private GM Roll",
@@ -146,5 +159,6 @@
   "MonksActiveTiles.msg.usetile": "Use this Tile",
   "MonksActiveTiles.msg.usetoken": "Use the triggering Token",
   "MonksActiveTiles.msg.useplayers": "Use player Tokens",
-  "MonksActiveTiles.msg.usewithin": "Use Tokens within triggering Tile"
+  "MonksActiveTiles.msg.usewithin": "Use Tokens within triggering Tile",
+  "MonksActiveTiles.msg.noteleporttoken": "No token to teleport"
 }
