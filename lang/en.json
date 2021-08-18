@@ -7,6 +7,8 @@
   "MonksActiveTiles.TriggeringToken": "Triggering Token",
   "MonksActiveTiles.PlayerTokens": "Player Tokens",
   "MonksActiveTiles.WithinTile": "Tokens within Tile",
+  "MonksActiveTiles.PreviousData": "From Previous",
+  "MonksActiveTiles.Controlled": "Controlled Tokens",
 
   "MonksActiveTiles.After": "After",
   "MonksActiveTiles.Action": "Action",
@@ -86,7 +88,10 @@
   "MonksActiveTiles.ctrl.animatepan": "Animate Canvas Pan",
   "MonksActiveTiles.ctrl.deletesource": "Delete Source Token",
   "MonksActiveTiles.ctrl.avoidtokens": "Avoid other tokens at Destination",
-  "MonksActiveTiles.ctrl.rollattack": "Roll Attack",
+  "MonksActiveTiles.ctrl.rollattack": "Display as Roll Message",
+  "MonksActiveTiles.ctrl.volume": "Volume",
+  "MonksActiveTiles.ctrl.incharacter": "In Character",
+  "MonksActiveTiles.ctrl.speaker": "Speaker",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -160,5 +165,7 @@
   "MonksActiveTiles.msg.usetoken": "Use the triggering Token",
   "MonksActiveTiles.msg.useplayers": "Use player Tokens",
   "MonksActiveTiles.msg.usewithin": "Use Tokens within triggering Tile",
+  "MonksActiveTiles.msg.useprevious": "Use Data from the previous action",
+  "MonksActiveTiles.msg.usecontrolled": "Use Tokens currently controlled",
   "MonksActiveTiles.msg.noteleporttoken": "No token to teleport"
 }

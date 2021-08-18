@@ -1,3 +1,31 @@
+## Version 1.0.25
+
+Changes the way the trigger functions are called.  This isn't really visible to the players/GM but should make it easier behind the scenes to pass variables.
+
+Added option to Pan Canvas to choose who the canvas pans for.
+
+Fixed an issue with Canvas pan that was preventing the panning from being animated.
+
+Added option of "From Previous" for Create Token, and Add Item actions.  What this will allow, is if a Roll Table is immediately above the Create or Add Item action, it will take the values from the Roll Table and use them.  So you can automatically create a monster from a rolltable, or automatically add an item from a Roll Table.
+
+Activate can now be passed multiple entities.
+
+On Click will now use the currently controlled Tokens.
+
+Macros will get passed all the results from previous actions in the values property.  Accessed via arguments[0].values.
+
+Added option to set the volume ofa Play Sound action.  If you want to set it to a specific volume, use a floating point number for percentage.  If you want to set ti as a percentage of the Core Ambient volume, use actual percent.  So 0.5 will set it to 50% volume.  And 50% will set it to 50% of the Foundry Ambient volume.
+
+Updated the Chat Message so that it will use the correct TOken.  And can even be used to specify what Token does the Chat Message.  Along with allowing in character chat bubbles.
+
+Fixing the Chat Message resulting from a Roll Table roll.  Before it was always from the GM, now if a Player activates it, it will show as coming from the player.
+
+Updated the permissions action so that setting the permissions for everyone will set the default permission.
+
+Repositioned the set target code in the attack action so that target are added before the attack happens.
+
+
+
 ## Version 1.0.24
 
 Add option for teleport to delete the source Token instead of just making it invisible.

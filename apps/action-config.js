@@ -26,7 +26,7 @@ export class ActionConfig extends FormApplication {
             classes: ["form", "action-sheet"],
             title: "MonksActiveTiles.TriggerAction",
             template: "modules/monks-active-tiles/templates/action-config.html",
-            width: 500,
+            width: 550,
             height: 'auto'
         });
     }
@@ -80,6 +80,10 @@ export class ActionConfig extends FormApplication {
             field.val('{"id":"players","name":"' + i18n("MonksActiveTiles.PlayerTokens") + '"}').next().html(i18n("MonksActiveTiles.PlayerTokens"));
         else if (btn.attr('data-type') == 'within')
             field.val('{"id":"within","name":"' + i18n("MonksActiveTiles.WithinTile") + '"}').next().html(i18n("MonksActiveTiles.WithinTile"));
+        else if (btn.attr('data-type') == 'controlled')
+            field.val('{"id":"controlled","name":"' + i18n("MonksActiveTiles.Controlled") + '"}').next().html(i18n("MonksActiveTiles.Controlled"));
+        else if (btn.attr('data-type') == 'previous')
+            field.val('{"id":"previous","name":"' + i18n("MonksActiveTiles.PreviousData") + '"}').next().html(i18n("MonksActiveTiles.PreviousData"));
         else {
             if (!this._minimized)
                 await this.minimize();
@@ -184,7 +188,7 @@ export class ActionConfig extends FormApplication {
         let data = this.object.data || {};
 
         for (let ctrl of (action.ctrls || [])) {
-            let options = mergeObject({ showTile: true, showToken: true, showWithin: true, showPlayers: true }, ctrl.options);
+            let options = mergeObject({ showTile: false, showToken: false, showWithin: false, showPlayers: false, showPrevious: false, showControlled: false }, ctrl.options);
             let field = $('<div>').addClass('form-fields').data('ctrl', ctrl);
             let id = 'data.' + ctrl.id;
 
@@ -225,7 +229,9 @@ export class ActionConfig extends FormApplication {
                                 .append($('<button>').attr({ 'type': 'button', 'data-type': 'tile', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetile") }).toggle(options.showTile).addClass('entity-picker').html('<i class="fas fa-cubes fa-sm"></i>').click(this.selectEntity.bind(this)))
                                 .append($('<button>').attr({ 'type': 'button', 'data-type': 'token', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetoken") }).toggle(options.showToken).addClass('entity-picker').html('<i class="fas fa-user-alt fa-sm"></i>').click(this.selectEntity.bind(this)))
                                 .append($('<button>').attr({ 'type': 'button', 'data-type': 'within', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usewithin") }).toggle(options.showWithin).addClass('entity-picker').html('<i class="fas fa-street-view fa-sm"></i>').click(this.selectEntity.bind(this)))
-                                .append($('<button>').attr({ 'type': 'button', 'data-type': 'players', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useplayers") }).toggle(options.showPlayers).addClass('entity-picker').html('<i class="fas fa-users fa-sm"></i>').click(this.selectEntity.bind(this)));
+                                .append($('<button>').attr({ 'type': 'button', 'data-type': 'players', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useplayers") }).toggle(options.showPlayers).addClass('entity-picker').html('<i class="fas fa-users fa-sm"></i>').click(this.selectEntity.bind(this)))
+                                .append($('<button>').attr({ 'type': 'button', 'data-type': 'previous', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useprevious") }).toggle(options.showPrevious).addClass('entity-picker').html('<i class="fas fa-history fa-sm"></i>').click(this.selectEntity.bind(this)))
+                                .append($('<button>').attr({ 'type': 'button', 'data-type': 'controlled', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usecontrolled") }).toggle(options.showControlled).addClass('entity-picker').html('<i class="fas fa-bullhorn fa-sm"></i>').click(this.selectEntity.bind(this)));
                         }
                         break;
                     case 'text':
