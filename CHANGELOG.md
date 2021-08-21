@@ -18,7 +18,13 @@ Added option to only animate a Tile for the triggering player, instead of for ev
 
 Fixed issue with setting permissions.  And prevented the canvas from panning to a random token.
 
+Fixed issue where once per token was not being set by the On Click action.
 
+Fixed issue where actions that were delayed by some time weren't firing.
+
+Added API to support macros adding, checking, and reseting the once per token data.
+
+Added elevation action, which is pretty much just a shorthand for alter.
 
 ## Version 1.0.25
 
