@@ -137,7 +137,7 @@ export const WithActiveTileConfig = (TileConfig) => {
         }
 
         resetPerToken() {
-            this.object.setFlag("monks-active-tiles", "tokens", []);
+            this.object.resetPerToken();
         }
     }
 

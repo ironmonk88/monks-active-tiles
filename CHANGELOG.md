@@ -1,3 +1,25 @@
+## Version 1.0.26
+
+Allow sound files to use wildcard when selecting.  So the Play Sound action can be randomized.
+
+Added entity and current values to the Alter action.  Entity could be different than the triggering token, and current value will let you alter something based on the returned results of a previous action.
+
+Added looping the the play sound action
+
+Added Stop sound action, so you can now stop the looping sound of a Tile.
+
+Added current values to the notification handlebars context, so you can use returned results in notifications.
+
+Added the same to the chat message, and also added the current entity which might differ from the triggering token.
+
+Fixed issue with polyglot language not being set.
+
+Added option to only animate a Tile for the triggering player, instead of for everyone.
+
+Fixed issue with setting permissions.  And prevented the canvas from panning to a random token.
+
+
+
 ## Version 1.0.25
 
 Changes the way the trigger functions are called.  This isn't really visible to the players/GM but should make it easier behind the scenes to pass variables.
@@ -23,8 +45,6 @@ Fixing the Chat Message resulting from a Roll Table roll.  Before it was always 
 Updated the permissions action so that setting the permissions for everyone will set the default permission.
 
 Repositioned the set target code in the attack action so that target are added before the attack happens.
-
-
 
 ## Version 1.0.24
 

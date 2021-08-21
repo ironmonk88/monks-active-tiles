@@ -35,6 +35,7 @@
   "MonksActiveTiles.action.activate": "Activate/Deactivate",
   "MonksActiveTiles.action.alter": "Alter",
   "MonksActiveTiles.action.playsound": "Play sound",
+  "MonksActiveTiles.action.stopsound": "Stop sound",
   "MonksActiveTiles.action.changedoor": "Change door state",
   "MonksActiveTiles.action.notification": "Send Notification",
   "MonksActiveTiles.action.chatmessage": "Chat Message",
@@ -53,6 +54,7 @@
   "MonksActiveTiles.action.trigger": "Trigger Tile",
   "MonksActiveTiles.action.scene": "Change Scene",
   "MonksActiveTiles.action.addtocombat": "Add to Combat",
+  "MonksActiveTiles.action.elevation": "Elevation",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
@@ -92,6 +94,7 @@
   "MonksActiveTiles.ctrl.volume": "Volume",
   "MonksActiveTiles.ctrl.incharacter": "In Character",
   "MonksActiveTiles.ctrl.speaker": "Speaker",
+  "MonksActiveTiles.ctrl.loop": "Loop",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",

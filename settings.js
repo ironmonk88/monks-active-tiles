@@ -4,6 +4,13 @@ export const registerSettings = function () {
 	// Register any custom module settings here
 	let modulename = "monks-active-tiles";
 
+	game.settings.register(modulename, "prevent-cycle", {
+		scope: "world",
+		config: false,
+		default: false,
+		type: Boolean
+	});
+
 	/*
 	 * game.settings.register(modulename, "allow-player", {
 		name: i18n("MonksEnhancedJournal.allow-player.name"),
