@@ -2911,23 +2911,23 @@ Hooks.on('controlDrawing', (drawing, control) => {
         MonksActiveTiles.controlEntity(drawing);
 });
 
-Hooks.on('libRulerReady', () => {
-    Ruler.prototype.animateToken = async function (token, ray, dx, dy, segment_num) {
-        log(`Animating token for segment_num ${segment_num}`);
-
-        // Adjust the ray based on token size
-        const dest = canvas.grid.getTopLeft(ray.B.x, ray.B.y);
-        const path = new Ray({ x: token.data.x, y: token.data.y }, { x: dest[0] + dx, y: dest[1] + dy });
-
-        // Commit the movement and update the final resolved destination coordinates
-        const priorDest = duplicate(path.B);
-        await token.document.update(path.B);
-        path.B.x = token.data.x;
-        path.B.y = token.data.y;
-
-        // Update the path which may have changed during the update, and animate it
-        await token.animateMovement(path);
-
-        return priorDest;
-    }
-});
+// Hooks.on('libRulerReady', () => {
+//     Ruler.prototype.animateToken = async function (token, ray, dx, dy, segment_num) {
+//         log(`Animating token for segment_num ${segment_num}`);
+// 
+//         // Adjust the ray based on token size
+//         const dest = canvas.grid.getTopLeft(ray.B.x, ray.B.y);
+//         const path = new Ray({ x: token.data.x, y: token.data.y }, { x: dest[0] + dx, y: dest[1] + dy });
+// 
+//         // Commit the movement and update the final resolved destination coordinates
+//         const priorDest = duplicate(path.B);
+//         await token.document.update(path.B);
+//         path.B.x = token.data.x;
+//         path.B.y = token.data.y;
+// 
+//         // Update the path which may have changed during the update, and animate it
+//         await token.animateMovement(path);
+// 
+//         return priorDest;
+//     }
+// });
