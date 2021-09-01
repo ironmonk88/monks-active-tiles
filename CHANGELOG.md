@@ -12,7 +12,7 @@ Added the Reset Trigger History action, so you can reset the triggering history 
 
 Updated the stop sound action so that it can stop playing all ambient sounds and not just the Tile sounds.
 
-Removed libRuler patching, since the module has now been patched with updates.
+Removed libRuler patching, since the module has now been patched with updates.  Thank you very much caewok!
 
 ## Version 1.0.26
 
