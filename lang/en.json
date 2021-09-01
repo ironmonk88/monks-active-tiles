@@ -9,6 +9,8 @@
   "MonksActiveTiles.WithinTile": "Tokens within Tile",
   "MonksActiveTiles.PreviousData": "From Previous",
   "MonksActiveTiles.Controlled": "Controlled Tokens",
+  "MonksActiveTiles.TileHistory": "Tile History",
+  "MonksActiveTiles.ResetHistory": "Reset History",
 
   "MonksActiveTiles.After": "After",
   "MonksActiveTiles.Action": "Action",
@@ -27,6 +29,7 @@
   "MonksActiveTiles.DeleteAction": "Delete Action",
   "MonksActiveTiles.Actions": "Actions",
   "MonksActiveTiles.ManualTrigger": "Manually Trigger Actions",
+  "MonksActiveTiles.MinRequired": "Min. Required to Trigger",
 
   "MonksActiveTiles.action.pause": "Pause Game",
   "MonksActiveTiles.action.stopmovement": "Stop Token Movement",
@@ -55,6 +58,8 @@
   "MonksActiveTiles.action.scene": "Change Scene",
   "MonksActiveTiles.action.addtocombat": "Add to Combat",
   "MonksActiveTiles.action.elevation": "Elevation",
+  "MonksActiveTiles.action.hurtheal": "Hurt/Heal",
+  "MonksActiveTiles.action.resethistory": "Reset Tile Trigger History",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
@@ -95,6 +100,7 @@
   "MonksActiveTiles.ctrl.incharacter": "In Character",
   "MonksActiveTiles.ctrl.speaker": "Speaker",
   "MonksActiveTiles.ctrl.loop": "Loop",
+  "MonksActiveTiles.ctrl.audiotype": "Audio Type",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -126,6 +132,9 @@
   "MonksActiveTiles.for.all": "Everyone",
   "MonksActiveTiles.for.gm": "GM Only",
   "MonksActiveTiles.for.token": "Token Owner",
+
+  "MonksActiveTiles.audiotype.all": "Ambient Sounds",
+  "MonksActiveTiles.audiotype.tile": "Tile Sounds",
 
   "MonksActiveTiles.state.open": "Open",
   "MonksActiveTiles.state.closed": "Closed",

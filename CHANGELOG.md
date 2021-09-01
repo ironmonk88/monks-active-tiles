@@ -1,3 +1,19 @@
+## Version 1.0.27
+
+Added option for triggering with a minimum number of tokens.  So if you want the entire party to walk across a Tile before it triggers you can now do that.
+
+Per Token has now changed to keeping a history of all the triggereing events that have happened to the Tile.  That way I can, in the future, improve upon what conditions trigger the Tile.
+
+In line with changing from Per Token information to keeping a history, I've change the interface to using hasTriggered(tokenid, method, userid), countTriggered(), addHistory(tokenid, method, userid), removeHistory(id), and getHistory(tokenid)
+
+Added the Hurt/Heal action to make it easier to alter HP while still respecting temporary hitpoints
+
+Added the Reset Trigger History action, so you can reset the triggering history of a Tile.
+
+Updated the stop sound action so that it can stop playing all ambient sounds and not just the Tile sounds.
+
+Removed libRuler patching, since the module has now been patched with updates.
+
 ## Version 1.0.26
 
 Allow sound files to use wildcard when selecting.  So the Play Sound action can be randomized.

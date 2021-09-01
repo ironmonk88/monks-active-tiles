@@ -1,4 +1,4 @@
-.monks-active-tiles.sheet .items-list.action-items {
+.monks-active-tiles.sheet .items-list {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -8,13 +8,13 @@
     margin-bottom: 10px;
 }
 
-.monks-active-tiles.sheet .items-list.action-items .item-list {
+.monks-active-tiles.sheet .items-list .item-list {
     list-style: none;
     margin: 0;
     padding: 0;
 }
 
-.monks-active-tiles.sheet .items-list.action-items .item-name {
+.monks-active-tiles.sheet .items-list .item-name {
     flex: 2;
     margin: 0;
     overflow: hidden;
@@ -23,38 +23,38 @@
     align-items: center;
 }
 
-.monks-active-tiles.sheet .items-list.action-items .item-name h3,
-.monks-active-tiles.sheet .items-list.action-items .item-name h4 {
+.monks-active-tiles.sheet .items-list .item-name h3,
+.monks-active-tiles.sheet .items-list .item-name h4 {
     margin: 0;
     white-space: nowrap;
     overflow-x: hidden;
 }
 
-.monks-active-tiles.sheet .items-list.action-items .item-controls {
+.monks-active-tiles.sheet .items-list .item-controls {
     flex: 0 0 60px;
     justify-content: space-between;
 }
 
-.monks-active-tiles.sheet .items-list.action-items .item-controls a {
+.monks-active-tiles.sheet .items-list .item-controls a {
     font-size: 12px;
     text-align: center;
 }
 
-.monks-active-tiles.sheet .items-list.action-items .item {
+.monks-active-tiles.sheet .items-list .item {
     align-items: center;
     padding: 4px 2px;
     border-bottom: 1px solid #c9c7b8;
 }
 
-.monks-active-tiles.sheet .items-list.action-items .item:last-child {
+.monks-active-tiles.sheet .items-list .item:last-child {
     border-bottom: none;
 }
 
-.monks-active-tiles.sheet .items-list.action-items .item .item-name {
+.monks-active-tiles.sheet .items-list .item .item-name {
     color: #191813;
 }
 
-.monks-active-tiles.sheet .items-list.action-items .item .item-name .item-image {
+.monks-active-tiles.sheet .items-list .item .item-name .item-image {
     flex: 0 0 30px;
     height: 30px;
     background-size: 30px;
@@ -62,12 +62,12 @@
     margin-right: 5px;
 }
 
-.monks-active-tiles.sheet .items-list.action-items .item.received .item-name .item-image {
+.monks-active-tiles.sheet .items-list .item.received .item-name .item-image {
     filter: grayscale(100%);
     opacity: 0.7;
 }
 
-.monks-active-tiles.sheet .items-list.action-items .items-header {
+.monks-active-tiles.sheet .items-list .items-header {
     height: 28px;
     margin: 2px 0;
     padding: 0;
@@ -77,12 +77,12 @@
     font-weight: bold;
 }
 
-.monks-active-tiles.sheet .items-list.action-items .items-header > * {
+.monks-active-tiles.sheet .items-list .items-header > * {
     font-size: 12px;
     text-align: center;
 }
 
-.monks-active-tiles.sheet .items-list.action-items .items-header h3 {
+.monks-active-tiles.sheet .items-list .items-header h3 {
     padding-left: 5px;
     font-family: "Modesto Condensed", "Palatino Linotype", serif;
     font-size: 20px;

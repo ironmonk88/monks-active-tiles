@@ -1,0 +1,42 @@
+<form class="monks-active-tiles sheet trigger-action" autocomplete="off" onsubmit="event.preventDefault();">
+    <ol class="items-list encounter-items">
+        <li class="items-header flexrow">
+            <h3 class="item-name flexrow">Token</h3>
+            <div class="item-controls" style="flex: 0 0 160px;">When</div>
+            <div class="item-controls" style="flex: 0 0 100px;">How</div>
+            <div class="item-controls" style="flex: 0 0 120px;">Who</div>
+            <div class="item-controls flexrow"></div>
+        </li>
+
+        <ol class="item-list">
+            {{#each history.list}}
+            <li class="item flexrow" data-id="{{this.id}}">
+                <div class="item-name flexrow">
+                    <h4>{{this.name}}</h4>
+                </div>
+
+                <div class="item-controls" style="flex: 0 0 160px;text-align:center;">
+                    {{this.whenfrmt}}
+                </div>
+
+                <div class="item-controls" style="flex: 0 0 100px;text-align:center;">
+                    {{this.how}}
+                </div>
+
+                <div class="item-controls" style="flex: 0 0 120px;text-align:center;">
+                    {{this.username}}
+                </div>
+
+                <div class="item-controls flexrow">
+                    <a class="item-control item-delete" title="Delete Item"><i class="fas fa-trash"></i></a>
+                </div>
+            </li>
+            {{/each}}
+        </ol>
+    </ol>
+    <footer class="sheet-footer flexrow">
+        <button type="button" name="reset">
+            <i class="far fa-save"></i> {{localize "MonksActiveTiles.ResetHistory"}}
+        </button>
+    </footer>
+</form>

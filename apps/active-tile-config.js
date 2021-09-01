@@ -1,5 +1,6 @@
 import { MonksActiveTiles, log, setting, i18n, makeid } from '../monks-active-tiles.js';
 import { ActionConfig } from "../apps/action-config.js";
+import { TileHistory } from './tile-history.js';
 
 export const WithActiveTileConfig = (TileConfig) => {
     class ActiveTileConfig extends TileConfig {
@@ -18,7 +19,7 @@ export const WithActiveTileConfig = (TileConfig) => {
 
         async getData(options) {
             this.object._normalize();
-            const data = super.getData(options);
+            const data = mergeObject({ 'data.flags.monks-active-tiles.minrequired': 0 }, super.getData(options));
 
             data.triggerModes = {
                 'enter': i18n("MonksActiveTiles.mode.enter"),
@@ -40,14 +41,6 @@ export const WithActiveTileConfig = (TileConfig) => {
                         content: content
                     };
                 });
-
-            data.pertoken = this.object.data.flags['monks-active-tiles']?.tokens?.map(tid => {
-                let token = canvas.tokens.get(tid);
-                if (token)
-                    return { id: token.id, name: token.name };
-                else
-                    return null;
-            }).filter(t => t);
 
             return data;
         }
@@ -103,11 +96,14 @@ export const WithActiveTileConfig = (TileConfig) => {
 
         activateListeners(html) {
             super.activateListeners(html);
+            var that = this;
 
             $('.action-create', html).click(this._createAction.bind(this));
             $('.action-edit', html).click(this._editAction.bind(this));
             $('.action-delete', html).click(this._deleteAction.bind(this));
-            $('.reset-pertoken', html).click(this.resetPerToken.bind(this));
+            $('.view-history', html).click(function () {
+                new TileHistory(that.object).render(true);
+            });
         }
 
         _createAction(event) {
