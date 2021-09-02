@@ -88,6 +88,27 @@ export const WithActiveTileConfig = (TileConfig) => {
             }
         }
 
+        async _onActionHoverIn(event) {
+            event.preventDefault();
+            if (!canvas.ready) return;
+            const li = event.currentTarget;
+
+            let action = (this.object.data.flags["monks-active-tiles"].actions || []).find(a => a.id == li.dataset.id);
+            if (action && action.data.entity && !['tile', 'token', 'players', 'within', 'controlled', 'previous'].includes(action.data.entity.id)) {
+                let entity = await fromUuid(action.data.entity.id);
+                if (entity && entity._object) {
+                    entity._object._onHoverIn(event);
+                    this._highlighted = entity;
+                }
+            }
+        }
+
+        _onActionHoverOut(event) {
+            event.preventDefault();
+            if (this._highlighted) this._highlighted._object._onHoverOut(event);
+            this._highlighted = null;
+        }
+
         _getSubmitData(updateData = {}) {
             let data = super._getSubmitData(updateData);
             data["flags.monks-active-tiles.actions"] = this.object.data.flags["monks-active-tiles"].actions;
@@ -104,6 +125,8 @@ export const WithActiveTileConfig = (TileConfig) => {
             $('.view-history', html).click(function () {
                 new TileHistory(that.object).render(true);
             });
+
+            //$('div[data-tab="triggers"] .item-list li.item', html).hover(this._onActionHoverIn.bind(this), this._onActionHoverOut.bind(this));
         }
 
         _createAction(event) {

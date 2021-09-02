@@ -1,3 +1,9 @@
+## Version 1.0.28
+
+Fixed issue with getHistory not returning to correct countTriggered
+
+Fixed issue with resetHistory when deleting token history when multiple tokens have history.
+
 ## Version 1.0.27
 
 Added option for triggering with a minimum number of tokens.  So if you want the entire party to walk across a Tile before it triggers you can now do that.

@@ -2902,18 +2902,25 @@ export class MonksActiveTiles {
         }
 
         TileDocument.prototype.resetHistory = async function (tokenid) {
-            let tileHistory = duplicate(this.data.flags["monks-active-tiles"]?.history || {});
+            //let tileHistory = duplicate(this.data.flags["monks-active-tiles"]?.history || {});
             if (tokenid == undefined) {
-                tileHistory = {};
+                this.data.flags["monks-active-tiles"].history = {};
+                await this.unsetFlag("monks-active-tiles", "history");
             } else {
-                delete tileHistory[tokenid];
+                delete this.data.flags["monks-active-tiles"].history[tokenid];
+                let key = `flags.monks-active-tiles.history.-=${tokenid}`;
+                let updates = {};
+                updates[key] = null;
+                await this.update(updates);
             }
-
+            /*
             this.data.flags["monks-active-tiles"].history = tileHistory; //Due to a race condition we need to set the actual value before trying to save it
             if (Object.entries(tileHistory).length == 0)
                 this.unsetFlag("monks-active-tiles", "history");
-            else
-                await this.setFlag("monks-active-tiles", "history", tileHistory);
+            else {
+                await this.update({ 'flags.monks-active-tiles.history' : tileHistory }, { diff: false });
+                //await this.setFlag("monks-active-tiles", "history", tileHistory);
+            }*/
         }
 
         TileDocument.prototype.getHistory = function (tokenid) {
@@ -2949,6 +2956,8 @@ export class MonksActiveTiles {
                         stats.first = mergeObject(tknstat.first, { tokenid: k });
                     if (tknstat.last && (stats.last == undefined || tknstat.last.when > stats.last.when))
                         stats.last = mergeObject(tknstat.last, { tokenid: k });
+
+                    stats.count += tknstat.count;
                 }
 
             }
