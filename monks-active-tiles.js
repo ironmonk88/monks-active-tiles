@@ -553,21 +553,22 @@ export class MonksActiveTiles {
                 'activate': {
                     'deactivate': "MonksActiveTiles.activate.deactivate",
                     'activate': "MonksActiveTiles.activate.activate",
-                    'toggle': "MonksActiveTiles.activate.toggle"
+                    'toggle': "MonksActiveTiles.activate.toggle",
+                    'previous': "MonksActiveTiles.activate.previous"
 
                 }
             },
             fn: async (args = {}) => {
-                const { action } = args;
+                const { action, value } = args;
                 let entities = await MonksActiveTiles.getEntities(args);
                 if (entities.length == 0)
                     return;
 
                 for (let entity of entities) {
                     if (entity instanceof AmbientLightDocument || entity instanceof AmbientSoundDocument)
-                        await entity.update({ hidden: (action.data.activate == 'toggle' ? !entity.data.hidden : (action.data.activate != 'activate')) });
+                        await entity.update({ hidden: (action.data.activate == 'toggle' ? !entity.data.hidden : (action.data.activate == 'previous' ? !value.activate : action.data.activate != 'activate')) });
                     else if(entity instanceof TileDocument)
-                        await entity.setFlag('monks-active-tiles', 'active', (action.data.activate == 'toggle' ? !entity.getFlag('monks-active-tiles', 'active') : action.data.activate == 'activate'));
+                        await entity.setFlag('monks-active-tiles', 'active', (action.data.activate == 'toggle' ? !entity.getFlag('monks-active-tiles', 'active') : (action.data.activate == 'previous' ? !value.activate : action.data.activate == 'activate')));
                 }
             },
             content: (trigger, action) => {
@@ -961,8 +962,8 @@ export class MonksActiveTiles {
                         });
                     }
                     if (action.data.audiofor != 'token' || userid == game.user.id) {
-                        if (tile.soundeffect != undefined) {
-                            tile.soundeffect.stop();
+                        if (entity.soundeffect != undefined) {
+                            entity.soundeffect.stop();
                         }
                     }
                 }
@@ -1107,10 +1108,11 @@ export class MonksActiveTiles {
                     id: "language",
                     name: "MonksActiveTiles.ctrl.language",
                     list: () => {
-                        let languages = mergeObject({'': ''}, duplicate(CONFIG[game.system.id.toUpperCase()].languages));
+                        let syslang = CONFIG[game.system.id.toUpperCase()]?.languages || {};
+                        let languages = mergeObject({ '': '' }, duplicate(syslang));
                         return languages;
                     },
-                    conditional: () => { return (game.modules.get("polyglot")?.active); },
+                    conditional: () => { return (game.modules.get("polyglot")?.active && CONFIG[game.system.id.toUpperCase()]?.languages); },
                     type: "list"
                 }
             ],
@@ -1487,7 +1489,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    restrict: (entity) => { return (entity instanceof JournalEntry); }
+                    restrict: (entity) => { return (entity instanceof JournalEntry || entity instanceof Actor); }
                 },
                 {
                     id: "showto",
@@ -1514,7 +1516,7 @@ export class MonksActiveTiles {
 
                 //open journal
                 if (entity)
-                    MonksActiveTiles.emit('journal', { showto: action.data.showto, userid: userid, entityid: entity.id });
+                    MonksActiveTiles.emit('journal', { showto: action.data.showto, userid: userid, entityid: entity.uuid });
                 if (game.user.isGM && (action.data.showto == 'everyone' || action.data.showto == undefined || (action.data.showto == 'trigger' && userid == game.user.id)))
                     entity.sheet.render(true);
             },
@@ -2241,6 +2243,9 @@ export class MonksActiveTiles {
 
         game.MonksActiveTiles = this;
 
+        if (game.modules.get("lib-wrapper")?.active)
+            libWrapper.ignore_conflicts("monks-active-tiles", "monks-enhanced-journal", "JournalDirectory.prototype._onClickEntityName");
+
         MonksActiveTiles.SOCKET = "module.monks-active-tiles";
 
         //MonksActiveTiles._oldObjectClass = CONFIG.Tile.objectClass;
@@ -2615,7 +2620,7 @@ export class MonksActiveTiles {
             } break;
             case 'journal': {
                 if ((data.showto == 'players' && !game.user.isGM) || (data.showto == 'trigger' && game.user.id == data.userid) || data.showto == 'everyone' || data.showto == undefined) {
-                    let entity = game.journal.get(data.entityid);
+                    let entity = await fromUuid(data.entityid);
                     entity.sheet.render(true);
                 }
             } break;
@@ -2878,15 +2883,26 @@ export class MonksActiveTiles {
         }
 
         TileDocument.prototype.addHistory = async function (tokenid, method, userid) {
-            let tileHistory = duplicate(this.data.flags["monks-active-tiles"]?.history || {});
+            let tileHistory = this.data.flags["monks-active-tiles"]?.history || {};
             let data = { id: makeid(), who: userid, how: method, when: Date.now() };
             if (!tileHistory[tokenid])
                 tileHistory[tokenid] = { tokenid: tokenid, triggered: [data] };
             else
                 tileHistory[tokenid].triggered.push(data);
 
-            this.data.flags = mergeObject(this.data.flags, { "monks-active-tiles.history": tileHistory }); //Due to a race condition we need to set the actual value before trying to save it
-            await this.setFlag("monks-active-tiles", "history", tileHistory);
+            //this.data.flags = mergeObject(this.data.flags, { "monks-active-tiles.history": tileHistory }); //Due to a race condition we need to set the actual value before trying to save it
+
+            await this.setFlag("monks-active-tiles", "history", duplicate(this.data.flags["monks-active-tiles"]?.history));
+            canvas.perception.schedule({
+                sight: {
+                    initialize: true,
+                    refresh: true,
+                    forceUpdateFog: true // Update exploration even if the token hasn't moved
+                },
+                lighting: { refresh: true },
+                sounds: { refresh: true },
+                foreground: { refresh: true }
+            });
         }
 
         TileDocument.prototype.removeHistory = async function (id) {
@@ -3088,10 +3104,10 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                                 }
 
                                 //if there's a scene to teleport to, then preload it.
-                                let sceneId = tile.document.data.flags['monks-active-tiles'].actions.find(a => { return a.action.id == 'teleport' })?.sceneId;
+                                /*let sceneId = tile.document.data.flags['monks-active-tiles'].actions.find(a => { return a.action.id == 'teleport' })?.sceneId;
                                 if (sceneId && sceneId != canvas.scene.id)
                                     game.scenes.preload(sceneId, true);
-
+*/
                                 //calculate how much time until the token reaches the trigger point, and wait to call the trigger
                                 const s = canvas.dimensions.size;
                                 const speed = s * 10;
@@ -3103,7 +3119,6 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                                     if(!stop)   //If this fires on Enter, and a stop is request then we don't need to run the On Exit code.
                                         doTrigger(idx + 1);
                                 }, duration);
-                                //}
 
                                 return duration;
                             }

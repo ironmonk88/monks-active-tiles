@@ -50,7 +50,7 @@
   "MonksActiveTiles.action.movement": "Move",
   "MonksActiveTiles.action.createtoken": "Create Token",
   "MonksActiveTiles.action.playanimation": "Play Animation",
-  "MonksActiveTiles.action.openjournal": "Open a Journal Entry",
+  "MonksActiveTiles.action.openjournal": "Open an Entity Sheet",
   "MonksActiveTiles.action.additem": "Add Item",
   "MonksActiveTiles.action.permission": "Change Permissions",
   "MonksActiveTiles.action.attack": "Attack",
@@ -124,6 +124,7 @@
   "MonksActiveTiles.activate.activate": "Activate",
   "MonksActiveTiles.activate.deactivate": "Deactivate",
   "MonksActiveTiles.activate.toggle": "Toggle",
+  "MonksActiveTiles.activate.previous": "Previous",
 
   "MonksActiveTiles.add.add": "Add",
   "MonksActiveTiles.add.remove": "Remove",
