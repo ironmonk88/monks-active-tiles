@@ -1,3 +1,9 @@
+## Version 1.0.30
+
+Fixed issue with the tile history saving.
+
+Added option to open journal entry just for the GM.
+
 ## Version 1.0.29
 
 Added option to use the previous value for Activate.  So if module returns {activate: Boolean} you can use that value for Activate/Deactivate.
@@ -6,7 +12,7 @@ Fixed an issue with sound effects stopping.  Instead of using the requested enti
 
 Fixed an issue with Chat Message where it was failing if there were no system languages.
 
-Changed "Open JOurnal Entry" to "Open Entity Sheet" to allow the option to open up both Journal Entries and Actor sheets.
+Changed "Open Journal Entry" to "Open Entity Sheet" to allow the option to open up both Journal Entries and Actor sheets.
 
 Fixed an issue with lighting effects that would disappear when walking over a Tile.  It's a bit of a patch though as I think there's an issue with Foundry code.
 

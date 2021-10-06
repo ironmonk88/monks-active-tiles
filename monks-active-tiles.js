@@ -1501,6 +1501,7 @@ export class MonksActiveTiles {
             values: {
                 'showto': {
                     'everyone': "MonksActiveTiles.showto.everyone",
+                    'gm': "MonksActiveTiles.showto.gm",
                     'players': "MonksActiveTiles.showto.players",
                     'trigger': "MonksActiveTiles.showto.trigger"
 
@@ -1515,9 +1516,9 @@ export class MonksActiveTiles {
                 let entity = entities[0];
 
                 //open journal
-                if (entity)
+                if (entity && action.data.showto != 'gm')
                     MonksActiveTiles.emit('journal', { showto: action.data.showto, userid: userid, entityid: entity.uuid });
-                if (game.user.isGM && (action.data.showto == 'everyone' || action.data.showto == undefined || (action.data.showto == 'trigger' && userid == game.user.id)))
+                if (game.user.isGM && (action.data.showto == 'everyone' || action.data.showto == 'gm' || action.data.showto == undefined || (action.data.showto == 'trigger' && userid == game.user.id)))
                     entity.sheet.render(true);
             },
             content: (trigger, action) => {
@@ -2810,7 +2811,7 @@ export class MonksActiveTiles {
                 let triggerData = this.data.flags["monks-active-tiles"];
                 //if (this.data.flags["monks-active-tiles"]?.pertoken)
                 for (let tkn of token)
-                    this.addHistory(tkn.id, method, userid);    //changing this to always register tokens that have triggered it.
+                    await this.addHistory(tkn.id, method, userid);    //changing this to always register tokens that have triggered it.
 
                 //only complete a trigger once the minimum is reached
                 if (triggerData.minrequired && this.countTriggered() < triggerData.minrequired)
@@ -2892,7 +2893,7 @@ export class MonksActiveTiles {
 
             //this.data.flags = mergeObject(this.data.flags, { "monks-active-tiles.history": tileHistory }); //Due to a race condition we need to set the actual value before trying to save it
 
-            await this.setFlag("monks-active-tiles", "history", duplicate(this.data.flags["monks-active-tiles"]?.history));
+            await this.setFlag("monks-active-tiles", "history", duplicate(this.data.flags["monks-active-tiles"]?.history || tileHistory));
             canvas.perception.schedule({
                 sight: {
                     initialize: true,

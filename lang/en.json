@@ -147,6 +147,7 @@
   "MonksActiveTiles.animate.stop": "Stop",
 
   "MonksActiveTiles.showto.everyone": "Everyone",
+  "MonksActiveTiles.showto.gm": "GM Only",
   "MonksActiveTiles.showto.players": "Only Players",
   "MonksActiveTiles.showto.trigger": "Triggering Player",
 
