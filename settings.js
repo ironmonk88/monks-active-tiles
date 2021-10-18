@@ -10,14 +10,4 @@ export const registerSettings = function () {
 		default: false,
 		type: Boolean
 	});
-
-	/*
-	 * game.settings.register(modulename, "allow-player", {
-		name: i18n("MonksEnhancedJournal.allow-player.name"),
-		hint: i18n("MonksEnhancedJournal.allow-player.hint"),
-		scope: "world",
-		config: true,
-		default: false,
-		type: Boolean,
-	});*/
 }

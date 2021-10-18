@@ -126,6 +126,14 @@ export class MonksActiveTiles {
             stop:true,
             ctrls: [
                 {
+                    id: "entity",
+                    name: "MonksActiveTiles.ctrl.select-entity",
+                    type: "select",
+                    subtype: "entity",
+                    options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true },
+                    restrict: (entity) => { return (entity instanceof Token); }
+                },
+                {
                     id: "location",
                     name: "MonksActiveTiles.ctrl.select-coordinates",
                     type: "select",
@@ -154,20 +162,24 @@ export class MonksActiveTiles {
                 }
             ],
             fn: async (args = {}) => {
-                const { tokens, action, userid } = args;
-                if (!tokens || tokens.length == 0) {
+                const { action, userid } = args;
+
+                let entities = await MonksActiveTiles.getEntities(args);
+
+                if (!entities || entities.length == 0) {
                     ui.notifications.info(i18n('MonksActiveTiles.msg.noteleporttoken'));
                     return;
                 }
 
-                let result = { result: true, _replacetoken: [] };
+                let result = { continue: true, tokens: entities };
 
-                for (let tokendoc of tokens) {
-                    let token = tokendoc.object;
+                for (let tokendoc of entities) {
+                    let tokenWidth = ((tokendoc.parent.dimensions.size * tokendoc.data.width) / 2);
+                    let tokenHeight = ((tokendoc.parent.dimensions.size * tokendoc.data.height) / 2);
 
                     let oldPos = {
-                        x: token.x + (token.width / 2),
-                        y: token.y + (token.height / 2)
+                        x: tokendoc.data.x + tokenWidth,
+                        y: tokendoc.data.y + tokenHeight
                     }
 
                     let destTile;
@@ -178,7 +190,7 @@ export class MonksActiveTiles {
                         action.data.location.x = destTile.data.x + (destTile.data.width / 2);
                         action.data.location.y = destTile.data.y + (destTile.data.height / 2);
 
-                        if (destTile.parent.id != canvas.scene.id)
+                        if (destTile.parent.id != tokendoc.parent.id)
                             sceneId = destTile.parent.id;
                     }
 
@@ -188,9 +200,9 @@ export class MonksActiveTiles {
                         y: action.data.location.y
                     };
 
-                    if (sceneId == undefined || sceneId == canvas.scene.id) {
-                        await token.stopAnimation();
-                        if (!canvas.grid.hitArea.contains(newPos.x, newPos.y)) {
+                    if (sceneId == undefined || sceneId == tokendoc.parent.id) {
+                        await tokendoc._object?.stopAnimation();   //+++ need to stop the animation for everyone, even if they're not on the same scene
+                        if (!tokendoc.parent.dimensions.rect.contains(newPos.x, newPos.y)) {
                             //+++find the closest spot on the edge of the scene
                             ui.notifications.error(i18n("MonksActiveTiles.msg.prevent-teleport"));
                             return;
@@ -198,17 +210,15 @@ export class MonksActiveTiles {
 
                         //find a vacant spot
                         if (action.data.avoidtokens)
-                            newPos = MonksActiveTiles.findVacantSpot(newPos, token, canvas.scene, destTile, action.data.remotesnap);
+                            newPos = MonksActiveTiles.findVacantSpot(newPos, tokendoc, tokendoc.parent, destTile, action.data.remotesnap);
 
-                        newPos.x -= (token.w / 2);
-                        newPos.y -= (token.h / 2);
+                        newPos.x -= tokenWidth;
+                        newPos.y -= tokenHeight;
 
-                        if (action.data.remotesnap)
-                            newPos = canvas.grid.getSnappedPosition(newPos.x, newPos.y);
-                        //else {
-                        //    newPos.x -= (token.w / 2);
-                        //    newPos.y -= (token.h / 2);
-                        //}
+                        if (action.data.remotesnap) {
+                            newPos.x = newPos.x.toNearest(tokendoc.parent.dimensions.size);
+                            newPos.y = newPos.y.toNearest(tokendoc.parent.dimensions.size);
+                        }
 
                         //fade in backdrop
                         if (userid != game.user.id) {
@@ -220,11 +230,10 @@ export class MonksActiveTiles {
                         await tokendoc.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false });
 
                         if (userid != game.user.id)
-                            MonksActiveTiles.emit('offsetpan', { userid: userid, animatepan: action.data.animatepan, x: offset.dx - (token.w / 2), y: offset.dy - (token.h / 2) });
+                            MonksActiveTiles.emit('offsetpan', { userid: userid, animatepan: action.data.animatepan, x: offset.dx - (tokendoc.data.width / 2), y: offset.dy - (tokendoc.data.height / 2) });
                     } else {
+                        result.tokens = [];
                         //if the end spot is on a different scene then hide this token, check the new scene for a token for that actor and move it, otherwise create the token on the new scene
-                        //let offset = { dx: canvas.scene._viewPosition.x - oldPos.x, dy: canvas.scene._viewPosition.y - oldPos.y };
-                        //let offset = { dx: oldPos.x - newPos.x, dy: oldPos.y - newPos.y };
 
                         if (userid != game.user.id) {
                             MonksActiveTiles.emit('fade', { userid: userid, time: 1000 });
@@ -232,14 +241,14 @@ export class MonksActiveTiles {
                         }
 
                         let scene = game.scenes.get(sceneId);
-                        let newtoken = (token.actor?.id ? scene.tokens.find(t => { return t.actor?.id == token.actor?.id }) : null);
+                        let newtoken = (tokendoc.actor?.id ? scene.tokens.find(t => { return t.actor?.id == tokendoc.actor?.id }) : null);
 
                         //find a vacant spot
                         if (action.data.avoidtokens)
-                            newPos = MonksActiveTiles.findVacantSpot(newPos, token, scene, destTile, action.data.remotesnap);
+                            newPos = MonksActiveTiles.findVacantSpot(newPos, tokendoc, scene, destTile, action.data.remotesnap);
 
-                        newPos.x -= ((token.data.width * scene.data.size) / 2);
-                        newPos.y -= ((token.data.height * scene.data.size) / 2);
+                        newPos.x -= tokenWidth;
+                        newPos.y -= tokenHeight;
 
                         if (action.data.remotesnap) {
                             newPos.x = newPos.x.toNearest(scene.data.size);
@@ -247,19 +256,19 @@ export class MonksActiveTiles {
                         }
 
                         if (newtoken) {
-                            await newtoken.update({ x: newPos.x, y: newPos.y, hidden: token.data.hidden }, { bypass: true, animate: false });
+                            await newtoken.update({ x: newPos.x, y: newPos.y, hidden: tokendoc.data.hidden }, { bypass: true, animate: false });
                         }
                         else {
-                            const td = await token.actor.getTokenData({ x: newPos.x, y: newPos.y });
+                            const td = await tokendoc.actor.getTokenData({ x: newPos.x, y: newPos.y });
                             const cls = getDocumentClass("Token");
                             newtoken = await cls.create(td, { parent: scene });
                         }
-                        let oldhidden = token.document.data.hidden;
+                        let oldhidden = tokendoc.data.hidden;
                         if (action.data.deletesource)
                             tokendoc.delete();
                         else
                             tokendoc.update({ hidden: true });   //hide the old one
-                        newtoken.update({ hidden: oldhidden, img: token.data.img });   //preserve the image, and hiddenness of the old token
+                        newtoken.update({ hidden: oldhidden, img: tokendoc.data.img });   //preserve the image, and hiddenness of the old token
                         //tokendoc = newtoken;
                         //let scale = canvas.scene._viewPosition.scale;
 
@@ -267,9 +276,9 @@ export class MonksActiveTiles {
                             //pass this back to the player
                             MonksActiveTiles.emit('switchview', { userid: userid, sceneid: scene.id, newpos: newPos, oldpos: oldPos });
                         }
-                        ui.notifications.warn(`${token.name} has teleported to ${scene.name}`);
+                        ui.notifications.warn(`${tokendoc.name} has teleported to ${scene.name}`);
 
-                        result._replacetoken.push(newtoken);
+                        result.tokens.push(newtoken);
                     }
                 }
 
@@ -289,7 +298,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    options: { showToken: true, showWithin: true, showPlayers: true },
+                    options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true },
                     restrict: (entity) => { return (entity instanceof Token || entity instanceof Tile || entity instanceof Drawing); }
                 },
                 {
@@ -378,11 +387,14 @@ export class MonksActiveTiles {
                             };
 
                             if (action.data.wait)
-                                await animate().then(() => { entity.update({ x: newPos.x, y: newPos.y }); });
+                                await animate().then(async () => { await entity.update({ x: newPos.x, y: newPos.y }); });
                             else
-                                animate().then(() => { entity.update({ x: newPos.x, y: newPos.y }); });
+                                animate().then(async () => { await entity.update({ x: newPos.x, y: newPos.y }); });
                         }
                     }
+
+                    if (entities[0] instanceof TokenDocument)
+                        return { tokens: entities };
                 }
             },
             content: (trigger, action) => {
@@ -398,7 +410,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    options: { showTile: true, showToken: true, showWithin: true, showPlayers: true },
+                    options: { showTile: true, showToken: true, showWithin: true, showPlayers: true, showPrevious: true },
                     restrict: (entity) => { return (entity instanceof Token || entity instanceof Tile || entity instanceof Drawing); }
                 },
                 {
@@ -423,8 +435,11 @@ export class MonksActiveTiles {
                 if (entities && entities.length > 0) {
                     //set or toggle visible
                     for (let entity of entities) {
-                        await entity.update({ hidden: (action.data.hidden == 'toggle' ? !entity.data.hidden : action.data.hidden !== 'show') });
+                        await entity.update({ hidden: (action.data.hidden == 'toggle' ? !entity.data.hidden : (action.data.hidden == 'previous' ? !value.visible : action.data.hidden !== 'show')) });
                     }
+
+                    if (entities[0] instanceof TokenDocument)
+                        return { tokens: entities };
                 }
             },
             content: (trigger, action) => {
@@ -466,7 +481,7 @@ export class MonksActiveTiles {
             fn: async (args = {}) => {
                 const { tile, action } = args;
                 //find the item in question
-                let entities = await MonksActiveTiles.getEntities(args);
+                let entities = await MonksActiveTiles.getEntities(args, null, 'actors');
 
                 if (entities && entities.length > 0) {
                     if (action.data.location.id) {
@@ -476,7 +491,7 @@ export class MonksActiveTiles {
                         action.data.location.y = destTile.data.y + (destTile.data.height / 2);
                     }
 
-                    let result = { result: true, tokens: [] };
+                    let result = { continue: true, tokens: [] };
                     for (let actor of entities) {
                         if (actor instanceof Actor) {
                             //let actor = await Actor.implementation.fromDropData({id: entity.id, type: 'Actor'});
@@ -584,7 +599,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    options: { showTile: true, showToken: true, showWithin: true, showPlayers: true }
+                    options: { showTile: true, showToken: true, showWithin: true, showPlayers: true, showPrevious: true }
                 },
                 {
                     id: "attribute",
@@ -673,6 +688,8 @@ export class MonksActiveTiles {
                         update[attr] = val;
                         await entity.update(update);
                     }
+
+                    return { tokens: entities };
                 }
             },
             content: (trigger, action) => {
@@ -690,7 +707,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    options: { showToken: true, showWithin: true, showPlayers: true }
+                    options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true }
                 },
                 {
                     id: "value",
@@ -780,6 +797,8 @@ export class MonksActiveTiles {
                             }
                         }
                     }
+
+                    return { tokens: entities };
                 }
             },
             content: (trigger, action) => {
@@ -1246,41 +1265,97 @@ export class MonksActiveTiles {
                 let rolltable = game.tables.get(action.data?.rolltableid);
                 if (rolltable instanceof RollTable) {
                     //Make a roll
-                    let result = await rolltable.draw({ rollMode: action.data.rollmode, displayChat:false});
-                    //Check to see what the privacy rules are
+                    let results = { continue: true };
+                    if (game.modules.get("better-rolltables")?.active) {
+                        let BRTBuilder = await import('/modules/better-rolltables/scripts/core/brt-builder.js');
+                        let BetterResults = await import('/modules/better-rolltables/scripts/core/brt-table-results.js');
+                        let LootChatCard = await import('/modules/better-rolltables/scripts/loot/loot-chat-card.js');
 
-                    let user = game.users.find(u => u.id == userid);
-                    let scene = game.scenes.find(s => s.id == user.viewedScene);
-                    const speaker = { scene: scene?.id, actor: user?.character?.id, token: tokens[0]?.id, alias: user.name };
-                    // Override the toMessage so that I can change the speaker
+                        const brtBuilder = new BRTBuilder.BRTBuilder(rolltable);
+                        const results = await brtBuilder.betterRoll();
 
-                    // Construct chat data
-                    const nr = result.results.length > 1 ? `${result.results.length} results` : "a result";
-                    let messageData = {
-                        flavor: `Draws ${nr} from the ${rolltable.name} table.`,
-                        user: userid,
-                        speaker: speaker,
-                        type: CONST.CHAT_MESSAGE_TYPES.ROLL,
-                        roll: result.roll,
-                        sound: result.roll ? CONFIG.sounds.dice : null,
-                        flags: { "core.RollTable": rolltable.id }
-                    };
+                        if (game.settings.get('better-rolltables', 'use-condensed-betterroll')) {
+                            const br = new BetterResults.BetterResults(results);
+                            const betterResults = await br.buildResults(tableEntity);
+                            const currencyData = br.getCurrencyData();
 
-                    // Render the chat card which combines the dice roll with the drawn results
-                    messageData.content = await renderTemplate(CONFIG.RollTable.resultTemplate, {
-                        description: TextEditor.enrichHTML(rolltable.data.description, { entities: true }),
-                        results: result.results.map(r => {
-                            r.text = r.getChatText();
-                            return r;
-                        }),
-                        rollHTML: rolltable.data.displayRoll ? await result.roll.render() : null,
-                        table: rolltable
-                    });
+                            const lootChatCard = new LootChatCard.LootChatCard(betterResults, currencyData);
+                            await lootChatCard.createChatCard(tableEntity);
+                        } else {
+                            await brtBuilder.createChatCard(results);
+                        }
 
-                    // Create the chat message
-                    ChatMessage.create(messageData, { rollMode: action.data.rollmode });
+                        if (results.length) {
+                            //roll table result
+                            entity = [];
+                            for (let tableresult of value.results) {
+                                let collection = game.collections.get(tableresult.data.collection);
+                                let item = collection.get(tableresult.data.resultId);
+                                entity.push(item);
+                            }
 
-                    return { result: true, results: result.results, roll: result.roll };
+                            entity = entity.filter(e => e);
+                        }
+
+                        results.results = results;
+                        results.roll = brtBuilder.mainRoll;
+                    } else {
+                        let result = await rolltable.draw({ rollMode: action.data.rollmode, displayChat: false });
+                        //Check to see what the privacy rules are
+
+                        let user = game.users.find(u => u.id == userid);
+                        let scene = game.scenes.find(s => s.id == user.viewedScene);
+                        const speaker = { scene: scene?.id, actor: user?.character?.id, token: tokens[0]?.id, alias: user.name };
+                        // Override the toMessage so that I can change the speaker
+
+                        // Construct chat data
+                        const nr = result.results.length > 1 ? `${result.results.length} results` : "a result";
+                        let messageData = {
+                            flavor: `Draws ${nr} from the ${rolltable.name} table.`,
+                            user: userid,
+                            speaker: speaker,
+                            type: CONST.CHAT_MESSAGE_TYPES.ROLL,
+                            roll: result.roll,
+                            sound: result.roll ? CONFIG.sounds.dice : null,
+                            flags: { "core.RollTable": rolltable.id }
+                        };
+
+                        // Render the chat card which combines the dice roll with the drawn results
+                        messageData.content = await renderTemplate(CONFIG.RollTable.resultTemplate, {
+                            description: TextEditor.enrichHTML(rolltable.data.description, { entities: true }),
+                            results: result.results.map(r => {
+                                r.text = r.getChatText();
+                                return r;
+                            }),
+                            rollHTML: rolltable.data.displayRoll ? await result.roll.render() : null,
+                            table: rolltable
+                        });
+
+                        // Create the chat message
+                        ChatMessage.create(messageData, { rollMode: action.data.rollmode });
+
+                        results.results = result.results;
+                        results.roll = result.roll;
+                    }
+
+                    if (results.results.length) {
+                        //roll table result
+                        results.actors = [];
+                        results.items = [];
+                        for (let tableresult of result.results) {
+                            let collection = game.collections.get(tableresult.data.collection);
+                            let entity = collection.get(tableresult.data.resultId);
+                            if (entity instanceof Item)
+                                results.items.push(entity);
+                            else if(entity instanceof Actor)
+                                results.actors.push(entity);
+                        }
+
+                        results.actors = results.actors.filter(e => e);
+                        results.items = results.items.filter(e => e);
+                    }
+
+                    return results;
                 }
             },
             content: (trigger, action) => {
@@ -1326,7 +1401,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    options: { showToken: true, showWithin: true, showPlayers: true },
+                    options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true },
                     restrict: (entity) => { return (entity instanceof Token); }
                 },
                 {
@@ -1403,6 +1478,8 @@ export class MonksActiveTiles {
                         }
                     }
                 }
+
+                return { tokens: entities };
             },
             content: (trigger, action) => {
                 let effect = CONFIG.statusEffects.find(e => e.id === action.data?.effectid);
@@ -1496,6 +1573,11 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.showto",
                     list: "showto",
                     type: "list"
+                },
+                {
+                    id: "permission",
+                    name: "MonksActiveTiles.ctrl.usepermission",
+                    type: "checkbox"
                 }
             ],
             values: {
@@ -1517,7 +1599,7 @@ export class MonksActiveTiles {
 
                 //open journal
                 if (entity && action.data.showto != 'gm')
-                    MonksActiveTiles.emit('journal', { showto: action.data.showto, userid: userid, entityid: entity.uuid });
+                    MonksActiveTiles.emit('journal', { showto: action.data.showto, userid: userid, entityid: entity.uuid, permission: action.data.permission });
                 if (game.user.isGM && (action.data.showto == 'everyone' || action.data.showto == 'gm' || action.data.showto == undefined || (action.data.showto == 'trigger' && userid == game.user.id)))
                     entity.sheet.render(true);
             },
@@ -1534,7 +1616,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    options: { showToken: true, showWithin: true, showPlayers: true },
+                    options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true },
                     restrict: (entity) => { return (entity instanceof Token); }
                 },
                 {
@@ -1548,7 +1630,7 @@ export class MonksActiveTiles {
             ],
             fn: async (args = {}) => {
                 const { action } = args;
-                let entities = await MonksActiveTiles.getEntities(args);
+                let entities = await MonksActiveTiles.getEntities(args, null, 'items');
                 if (entities.length == 0)
                     return;
 
@@ -1568,6 +1650,8 @@ export class MonksActiveTiles {
                         }
                     }
                 }
+
+                return { tokens: entities };
             },
             content: (trigger, action) => {
                 return i18n(trigger.name) + ', ' + action.data?.item.name + ' to ' + action.data?.entity.name;
@@ -1653,6 +1737,9 @@ export class MonksActiveTiles {
                 }
                 game.settings.set('monks-active-tiles', 'prevent-cycle', false);
                 //MonksActiveTiles.preventCycle = false;
+
+                if (entities[0] instanceof TokenDocument)
+                    return { tokens: entities };
             },
             content: (trigger, action) => {
                 return i18n(trigger.name) + ' of ' + action.data?.entity.name + ' to ' + i18n(trigger.values.permissions[action.data?.permission]);
@@ -1667,7 +1754,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    options: { showToken: true, showWithin: true, showPlayers: true },
+                    options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true },
                     restrict: (entity) => { return (entity instanceof Token ); }
                 },
                 {
@@ -1751,6 +1838,8 @@ export class MonksActiveTiles {
                             item.toChat(); //item.roll({configureDialog:false});
                     }
                 }
+
+                return { tokens: entities };
             },
             content: (trigger, action) => {
                 if (!action.data?.actor.id)
@@ -1814,19 +1903,24 @@ export class MonksActiveTiles {
                         return result;
                     },
                     type: "list"
+                },
+                {
+                    id: "activate",
+                    name: "MonksActiveTiles.ctrl.activate",
+                    type: "checkbox"
                 }
             ],
             fn: async (args = {}) => {
                 const { action, userid } = args;
                 let scene = game.scenes.find(s => s.id == action.data.sceneid);
                 if (game.user.id == userid)
-                    await scene.view();
+                    await (action.data.activate ? scene.activate() : scene.view());
                 else
-                    MonksActiveTiles.emit('switchview', { userid: userid, sceneid: scene.id });
+                    MonksActiveTiles.emit('switchview', { userid: userid, sceneid: scene.id, activate: action.data.sceneid });
             },
             content: (trigger, action) => {
                 let scene = game.scenes.find(s => s.id == action.data.sceneid);
-                return i18n(trigger.name) + ' to ' + scene?.name;
+                return (action.data.activate ? i18n("MonksActiveTiles.ctrl.activate") : i18n(trigger.name) + ' to ') + scene?.name;
             }
         },
         'addtocombat': {
@@ -1837,7 +1931,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    options: { showToken: true, showWithin: true, showPlayers: true },
+                    options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true },
                     restrict: (entity) => { return (entity instanceof Token); }
                 }
             ],
@@ -1854,6 +1948,8 @@ export class MonksActiveTiles {
 
                 let tokens = entities.filter(t => !t.inCombat).map(t => { return { tokenId: t.id, actorId: t.data.actorId, hidden: t.data.hidden } });
                 await combat.createEmbeddedDocuments("Combatant", tokens);
+
+                return { tokens: entities };
             },
             content: (trigger, action) => {
                 return i18n(trigger.name) + ' to ' + action.data?.entity.name;
@@ -1867,7 +1963,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    options: { showToken: true, showWithin: true, showPlayers: true },
+                    options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true },
                     restrict: (entity) => { return (entity instanceof Token); }
                 },
                 {
@@ -1916,6 +2012,8 @@ export class MonksActiveTiles {
                         update.elevation = val;
                         await entity.update(update);
                     }
+
+                    return { tokens: entities };
                 }
             },
             content: (trigger, action) => {
@@ -1953,55 +2051,45 @@ export class MonksActiveTiles {
         }
     }
 
-    static async getEntities(args, id) {
+    static async getEntities(args, id, previousType) {
         const { tile, tokens, action, value, userid } = args;
         id = id || action.data.entity.id;
 
-        let entity = [];
+        let entities = [];
         if (id == 'tile')
-            entity = [tile];
+            entities = [tile];
         else if (id == 'token') {
-            entity = tokens;
-            for (let i = 0; i < entity.length; i++) {
-                if (typeof entity[i] == 'string')
-                    entity[i] = await fromUuid(entity[i]);
+            entities = tokens;
+            for (let i = 0; i < entities.length; i++) {
+                if (typeof entities[i] == 'string')
+                    entities[i] = await fromUuid(entities[i]);
             }
         }
         else if (id == 'players') {
-            entity = canvas.tokens.placeables.filter(t => {
+            entities = canvas.tokens.placeables.filter(t => {
                 return t.actor != undefined && t.actor?.hasPlayerOwner && t.actor?.data.type != 'npc';
             }).map(t => t.document);
         }
         else if (id == 'within') {
             //find all tokens with this Tile
-            entity = canvas.tokens.placeables.filter(t => {
+            entities = canvas.tokens.placeables.filter(t => {
                 let offsetW = t.w / 2;
                 let offsetH = t.h / 2;
                 return tile.object.hitArea.contains((t.x + offsetW) - tile.data.x, (t.y + offsetH) - tile.data.y);
             }).map(t => t.document);
         }
         else if (id == 'controlled') {
-            entity = canvas.tokens.controlled.map(t => t.document);
+            entities = canvas.tokens.controlled.map(t => t.document);
         }
-        else if (id == 'previous') {
-            if (value.results && value.results.length) {
-                //roll table result
-                entity = [];
-                for (let tableresult of value.results) {
-                    let collection = game.collections.get(tableresult.data.collection);
-                    let item = collection.get(tableresult.data.resultId);
-                    entity.push(item);
-                }
-
-                entity = entity.filter(e => e);
-            }
+        else if (id == undefined || id == '' || id == 'previous') {
+            entities = value[(previousType || 'tokens')];
         }
         else if (id) {
-            entity = await fromUuid(id);
-            entity = [entity];
-        }
+            entities = await fromUuid(id);
+            entities = [entities];
+        } 
 
-        return entity;
+        return entities;
     }
 
     static async _executeMacro(macro, mainargs = {}) {
@@ -2622,6 +2710,12 @@ export class MonksActiveTiles {
             case 'journal': {
                 if ((data.showto == 'players' && !game.user.isGM) || (data.showto == 'trigger' && game.user.id == data.userid) || data.showto == 'everyone' || data.showto == undefined) {
                     let entity = await fromUuid(data.entityid);
+                    if (!entity)
+                        return;
+
+                    if (data.permission === true && !entity.testUserPermission(game.user, "LIMITED"))
+                        return ui.notifications.warn(`You do not have permission to view ${entity.name}.`);
+
                     entity.sheet.render(true);
                 }
             } break;
@@ -2807,7 +2901,7 @@ export class MonksActiveTiles {
         }
 
         TileDocument.prototype.trigger = async function ({ token = [], userid = game.user.id, method }) {
-            if (game.user.isGM) {
+            if (game.user.isGM || game.users.find(u => u.isGM) == undefined) {
                 let triggerData = this.data.flags["monks-active-tiles"];
                 //if (this.data.flags["monks-active-tiles"]?.pertoken)
                 for (let tkn of token)
@@ -2820,7 +2914,7 @@ export class MonksActiveTiles {
                 //A token has triggered this tile, what actions do we need to do
                 let actions = this.data.flags["monks-active-tiles"]?.actions || [];
                 let values = [];
-                let value = {};
+                let value = { tokens: token };
                 for (let action of actions) {
                     let fn = MonksActiveTiles.triggerActions[action.action]?.fn;
                     if (fn) {
@@ -2839,13 +2933,13 @@ export class MonksActiveTiles {
                                 try {
                                     let result = await fn.call(this, { tile: this, tokens: token, action: action, userid: userid, values: values, value: value });
                                     if (typeof result == 'object') {
-                                        if (result._replacetoken) {
+                                        /*if (result._replacetoken) {
                                             token = result._replacetoken;
                                             delete result._replacetoken;
-                                        }
+                                        }*/
                                         value = mergeObject(value, result);
                                         values.push(mergeObject(result, { action: action }));
-                                        result = result.result;
+                                        result = result.continue;
                                     }
                                     let cancontinue = await Hooks.call("triggerTile", this, this, token, action, userid, values);
                                     if (result === false || cancontinue === false) break;
@@ -3191,4 +3285,23 @@ Hooks.on('controlTile', (tile, control) => {
 Hooks.on('controlDrawing', (drawing, control) => {
     if (control)
         MonksActiveTiles.controlEntity(drawing);
+});
+
+Hooks.on('hoverTile', (tile, hover) => {
+    let triggerData = tile.data.flags["monks-active-tiles"];
+    if (triggerData && triggerData.active && ((triggerData.trigger == 'hoverin' && hover) || (triggerData.trigger == 'hoverout' && !hover))) {
+        //check to see if this trigger is restricted by control type
+        if ((triggerData.controlled == 'gm' && !game.user.isGM) || (triggerData.controlled == 'player' && game.user.isGM))
+            return;
+
+        let tokens = canvas.tokens.controlled.map(t => t.document);
+        //check to see if this trigger is per token, and already triggered
+        if (triggerData.pertoken) {
+            tokens = tokens.filter(t => !tile.hasTriggered(t.id)); //.uuid
+            if (tokens.length == 0)
+                return;
+        }
+
+        tile.document.trigger({ token: tokens, method: 'Hover' + (hover ? 'In' : 'Out') });
+    }
 });

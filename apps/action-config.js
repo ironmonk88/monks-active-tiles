@@ -4,18 +4,28 @@ export class ActionConfig extends FormApplication {
     constructor(object, options = {}) {
         super(object, options);
 
+        this.tokenAttr = [];
+        this.tileAttr = [];
+
         //let's just grab the first player character we can find
         let token = canvas.scene.tokens?.contents[0]?.data;
         if (token) {
             let attributes = TokenDocument.getTrackedAttributes(token ?? {});
             if (attributes)
-                this.attributes = attributes.value.concat(attributes.bar).map(a => a.join('.'));
+                this.tokenAttr = (this.tokenAttr || []).concat(attributes.value.concat(attributes.bar).map(a => a.join('.')));
         }
         let player = game.actors.find(a => a.type == 'character');
         if (player) {
             let attributes = TokenDocument.getTrackedAttributes(player.data.data ?? {});
             if (attributes)
-                this.attributes = (this.attributes || []).concat(attributes.value.concat(attributes.bar).map(a => a.join('.')));
+                this.tokenAttr = (this.tokenAttr || []).concat(attributes.value.concat(attributes.bar).map(a => a.join('.')));
+        }
+
+        let tile = canvas.scene.data.tiles?.contents[0]?.data;
+        if (tile) {
+            let attributes = TokenDocument.getTrackedAttributes(tile ?? {});
+            if (attributes)
+                this.tileAttr = attributes.value.concat(attributes.bar).map(a => a.join('.'));
         }
     }
 
@@ -81,8 +91,14 @@ export class ActionConfig extends FormApplication {
         let btn = $(event.currentTarget);
         let field = $('input[name="' + btn.attr('data-target') + '"]', this.element);
 
-        if (btn.attr('data-type') == 'tile')
+        this.attributes = this.tokenAttr;
+        //$('input[name="data.attribute"]', this.element).data('typeahead').source = this.tokenAttr;
+
+        if (btn.attr('data-type') == 'tile') {
             field.val('{"id":"tile","name":"' + i18n("MonksActiveTiles.ThisTile") + '"}').next().html(i18n("MonksActiveTiles.ThisTile"));
+            //$('input[name="data.attribute"]', this.element).data('typeahead').source = this.tileAttr;
+            this.attributes = this.tileAttr;
+        }
         else if (btn.attr('data-type') == 'token')
             field.val('{"id":"token","name":"' + i18n("MonksActiveTiles.TriggeringToken") + '"}').next().html(i18n("MonksActiveTiles.TriggeringToken"));
         else if (btn.attr('data-type') == 'players')
@@ -257,10 +273,12 @@ export class ActionConfig extends FormApplication {
                     .append(field)
                     .appendTo($('.action-controls', this.element));
 
-                if (ctrl.id == 'attribute' && this.attributes) {
+                if (ctrl.id == 'attribute') {
                     let that = this;
 
-                    var substringMatcher = function (strs) {
+                    this.attributes = this.tokenAttr;
+
+                    var substringMatcher = function () {
                         return function findMatches(q, cb) {
                             var matches, substrRegex;
 
@@ -272,7 +290,7 @@ export class ActionConfig extends FormApplication {
 
                             // iterate through the pool of strings and for any string that
                             // contains the substring `q`, add it to the `matches` array
-                            $.each(strs, function (i, str) {
+                            $.each(that.attributes, function (i, str) {
                                 if (substrRegex.test(str)) {
                                     matches.push(str);
                                 }
@@ -289,7 +307,7 @@ export class ActionConfig extends FormApplication {
                             highlight: true
                         },
                         {
-                            source: substringMatcher(that.attributes)
+                            source: substringMatcher()
                         }
                     );
                 }

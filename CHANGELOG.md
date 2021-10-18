@@ -1,3 +1,28 @@
+## Version 1.0.31
+
+Changed the Action config so that the autofill for Tokens will populate with token attributes and Tiles will populate with tile attributes.
+
+Added HoverIn and HoverOut as ways to trigger a Tile.  Unfortunately it only works if the Tile layer is active.  Working on providing it for the Token layer aswell.
+
+Added french translation
+
+Added macro packs with a Macro to set all Active Tiles to active.
+
+Added option to select what tokens are teleported rather than just relying on the triggering token.
+
+Fixed up teleport so that if the the player is on a different scene than the GM the token can still be moved.
+
+Added integration with Better Tables
+
+Added option to check permissions for opening Journal Entries.
+
+Added option to activate the scene when switching scenes.
+
+BREAKING CHANGE
+Changed to using continue as the value to alter if yuo want actions to continue.  This will unfortunately have an effect on any Macros that currently return {result: false}, this will need to be changed to {continue:false}
+
+I've also updated the way that tokens are passed between actions.  It will start with the triggering Tokens, but the currently viewed Tokens can be changed.  So if you request a saving roll, you can now set the current tokens to be the ones that passed or failed, and then further actions can switch the current tokens back to the triggering tokens.  What this means is you can now have a trap, that takes the tokens that failed and apply an active effect to them, then teleport all the tokens to a new location if any of them failed.
+
 ## Version 1.0.30
 
 Fixed issue with the tile history saving.

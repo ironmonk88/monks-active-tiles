@@ -27,6 +27,8 @@ export const WithActiveTileConfig = (TileConfig) => {
                 'both': i18n("MonksActiveTiles.mode.both"),
                 'movement': i18n("MonksActiveTiles.mode.movement"),
                 'click': i18n("MonksActiveTiles.mode.click"),
+                'hoverin': i18n("MonksActiveTiles.mode.hoverin"),
+                'hoverout': i18n("MonksActiveTiles.mode.hoverout"),
                 'manual': i18n("MonksActiveTiles.mode.manual")
             };
             data.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
