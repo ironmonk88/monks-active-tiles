@@ -41,7 +41,6 @@
   "styles": [
     "css/monks-active-tiles.css"
   ],
-  "packs": [],
   "url": "https://github.com/ironmonk88/monks-active-tiles",
   "download": "https://github.com/ironmonk88/monks-active-tiles/archive/1.0.31.zip",
   "manifest": "https://github.com/ironmonk88/monks-active-tiles/releases/latest/download/module.json",
