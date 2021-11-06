@@ -42,13 +42,29 @@ export class ActionConfig extends FormApplication {
     }
 
     getData(options) {
-        let temp = [];
-        for (let [k, v] of Object.entries(MonksActiveTiles.triggerActions))
-            temp.push({ id: k, name: i18n(v.name) });
+        let groups = {};
+        for (let [k, v] of Object.entries(MonksActiveTiles.triggerActions)) {
+            let group = v.group || 'actions';
+            if (groups[group] == undefined)
+                groups[group] = [];
+            groups[group].push({ id: k, name: i18n(v.name)});
+        }
+
+        let availableActions = Object.entries(groups).map(([k, v]) => {
+            return {
+                text: i18n(`MonksActiveTiles.group.${k}`),
+                groups: v.sort((a, b) => { return (a.name > b.name ? 1 : (a.name < b.name ? -1 : 0)) }).reduce(function (result, item) {
+                    result[item.id] = item.name;
+                    return result;
+                }, {})
+            };
+        });
+
+        /*
         let availableActions = temp.sort((a, b) => { return (a.name > b.name ? 1 : (a.name < b.name ? -1 : 0)) }).reduce(function (result, item) {
             result[item.id] = item.name;
             return result;
-        }, {});
+        }, {});*/
 
         return mergeObject(super.getData(options), {
             availableActions: availableActions
@@ -185,6 +201,9 @@ export class ActionConfig extends FormApplication {
                     .append($('<a>').addClass('item-control action-edit').attr('title', 'Edit Action').html('<i class="fas fa-edit"></i>').click(this.options.parent._editAction.bind(this.options.parent)))
                     .append($('<a>').addClass('item-control action-delete').attr('title', 'Delete Action').html('<i class="fas fa-trash"></i>').click(this.options.parent._deleteAction.bind(this.options.parent))))
                 .appendTo($(`.action-items .item-list`, this.options.parent.element));
+
+            this.options.parent._dragDrop = this.options.parent._createDragDropHandlers();
+
             this.options.parent.setPosition();
         } else {
             let actions = duplicate(this.options.parent.object.getFlag("monks-active-tiles", "actions") || []);

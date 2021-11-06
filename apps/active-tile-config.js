@@ -83,6 +83,7 @@ export const WithActiveTileConfig = (TileConfig) => {
 
                 let from = actions.findIndex(a => a.id == data.id);
                 let to = actions.findIndex(a => a.id == target.dataset.id);
+                log('from', from, 'to', to);
                 actions.splice(to, 0, actions.splice(from, 1)[0]);
 
                 this.object.data.flags["monks-active-tiles"].actions = actions;

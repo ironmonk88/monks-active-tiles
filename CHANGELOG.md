@@ -1,3 +1,21 @@
+## Version 1.0.34
+
+There is now a filter to remove Tokens that aren't within a specific distance to the Tile.
+
+There is some rudimentary logic now, you can set anchor points, jumpt to those anchor points, or stop any remaining actions.
+
+You can now pause or unpause the game using an action
+
+You can now activate Difficult Terrain from the Enhanced Terrain Layer
+
+Changed the tile trigger action so that it can now trigger the original tile.  This was originally put in place to stop infinte loops... but with it removed you can now do repetative tasks.
+
+It will now stop any remaining tasks if the Tile is deactivated and it was in the middle of processing tasks.
+
+Added the method that the tile was triggered to the information sent to a macro.
+
+Manually triggering a Tile will now select the currently controlled tokens.  So when a Tile is set to maually trigger and another Tile triggers it, you can use tokens.
+
 ## Version 1.0.31
 
 Changed the Action config so that the autofill for Tokens will populate with token attributes and Tiles will populate with tile attributes.

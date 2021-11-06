@@ -31,6 +31,10 @@
   "MonksActiveTiles.ManualTrigger": "Manually Trigger Actions",
   "MonksActiveTiles.MinRequired": "Min. Required to Trigger",
 
+  "MonksActiveTiles.group.actions": "Actions",
+  "MonksActiveTiles.group.filters": "Filters",
+  "MonksActiveTiles.group.logic": "Logic",
+
   "MonksActiveTiles.action.pause": "Pause Game",
   "MonksActiveTiles.action.stopmovement": "Stop Token Movement",
   "MonksActiveTiles.action.teleport": "Teleport",
@@ -60,6 +64,12 @@
   "MonksActiveTiles.action.elevation": "Elevation",
   "MonksActiveTiles.action.hurtheal": "Hurt/Heal",
   "MonksActiveTiles.action.resethistory": "Reset Tile Trigger History",
+
+  "MonksActiveTiles.filter.distance": "Filter tokens by distance",
+
+  "MonksActiveTiles.logic.anchor": "Anchor",
+  "MonksActiveTiles.logic.goto": "Jump to Anchor",
+  "MonksActiveTiles.logic.stop": "Stop remaining actions",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
@@ -103,6 +113,8 @@
   "MonksActiveTiles.ctrl.audiotype": "Audio Type",
   "MonksActiveTiles.ctrl.activate": "Activate",
   "MonksActiveTiles.ctrl.usepermission": "Check Permission",
+  "MonksActiveTiles.ctrl.distance": "Distance (px)",
+  "MonksActiveTiles.ctrl.name": "Name",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -151,6 +163,9 @@
   "MonksActiveTiles.animate.pause": "Pause",
   "MonksActiveTiles.animate.stop": "Stop",
 
+  "MonksActiveTiles.pause.pause": "Pause",
+  "MonksActiveTiles.pause.unpause": "Unpause",
+
   "MonksActiveTiles.showto.everyone": "Everyone",
   "MonksActiveTiles.showto.gm": "GM Only",
   "MonksActiveTiles.showto.players": "Only Players",
@@ -184,7 +199,7 @@
   "MonksActiveTiles.msg.usetoken": "Use the triggering Token",
   "MonksActiveTiles.msg.useplayers": "Use player Tokens",
   "MonksActiveTiles.msg.usewithin": "Use Tokens within triggering Tile",
-  "MonksActiveTiles.msg.useprevious": "Use Data from the previous action",
+  "MonksActiveTiles.msg.useprevious": "Use current Tokens",
   "MonksActiveTiles.msg.usecontrolled": "Use Tokens currently controlled",
   "MonksActiveTiles.msg.noteleporttoken": "No token to teleport"
 }

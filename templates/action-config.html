@@ -3,7 +3,7 @@
         <label for="action">{{localize "MonksActiveTiles.Action"}}</label>
         <div class="form-fields">
             <select name="action" data-dtype="String">
-                {{ selectOptions availableActions selected=object.action }}
+                {{ selectGroups availableActions selected=object.action }}
             </select>
         </div>
     </div>
