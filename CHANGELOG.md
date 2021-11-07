@@ -1,3 +1,11 @@
+## Version 1.0.35
+
+Added chat buttle checkbox for Chat Messages, just in case you don't want the chat bubble to appear.
+
+Change the functionality of the in character checkbox to better match what Foundry uses.  I think it was using the players name too soon.
+
+Fixed an issue with Manually Triggering the tile.
+
 ## Version 1.0.34
 
 There is now a filter to remove Tokens that aren't within a specific distance to the Tile.

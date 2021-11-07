@@ -1214,6 +1214,11 @@ export class MonksActiveTiles {
                     type: "checkbox"
                 },
                 {
+                    id: "chatbubble",
+                    name: "MonksActiveTiles.ctrl.chatbubble",
+                    type: "checkbox"
+                },
+                {
                     id: "for",
                     name: "MonksActiveTiles.ctrl.for",
                     list: "for",
@@ -1250,7 +1255,7 @@ export class MonksActiveTiles {
 
                 let tkn = (entity?.object || tokens[0]?.object);
 
-                const speaker = { scene: scene?.id, actor: tkn?.actor.id || user?.character?.id, token: tkn?.id, alias: (action.data.incharacter ? tkn?.name : null) || user?.name };
+                const speaker = { scene: scene?.id, actor: tkn?.actor.id || user?.character?.id, token: tkn?.id, alias: tkn?.name || user?.name };
 
                 let context = { actor: tokens[0]?.actor.data, token: tokens[0]?.data, speaker: tokens[0], tile: tile.data, entity: entity, user: game.users.get(userid), value: value };
                 let content = action.data.text;
@@ -1280,7 +1285,7 @@ export class MonksActiveTiles {
                 if (action.data.language != '')
                     mergeObject(messageData, { flags: { 'monks-active-tiles': { language: action.data.language } }, lang: action.data.language });
 
-                ChatMessage.create(messageData, { chatBubble: action.data.incharacter });
+                ChatMessage.create(messageData, { chatBubble: action.data.chatbubble });
             },
             content: (trigger, action) => {
                 return i18n(trigger.name) + ' for ' + i18n(trigger.values.for[action.data?.for]);
@@ -2998,6 +3003,17 @@ export class MonksActiveTiles {
                 tokenRay.intersectSegment([tileX1, tileY1, tileX1, tileY2])
             ].filter(i => i);
 
+            /*
+            let gr = MonksActiveTiles.debugGr;
+            if (!gr) {
+                gr = new PIXI.Graphics();
+                MonksActiveTiles.debugGr = gr;
+                canvas.tokens.addChild(gr);
+            }
+            for (let pt of intersect) {
+                gr.beginFill(0x00ff00).drawCircle(pt.x, pt.y, 4).endFill();
+            }*/
+
             if (when == 'movement' && intersect.length == 0) {
                 //check to see if there's moving within the Tile
                 if (this.object.hitArea.contains(tokenRay.A.x - this.data.x, tokenRay.A.y - this.data.y) && this.object.hitArea.contains(tokenRay.B.x - this.data.x, tokenRay.B.y - this.data.y)) {
@@ -3315,8 +3331,9 @@ export class MonksActiveTiles {
 
         let tokens = canvas.tokens.controlled.map(t => t.document);
         //check to see if this trigger is per token, and already triggered
+        let triggerData = this.object.document.data.flags["monks-active-tiles"];
         if (triggerData.pertoken)
-            tokens = tokens.filter(t => !tile.hasTriggered(t.id)); //.uuid
+            tokens = tokens.filter(t => !this.object.document.hasTriggered(t.id)); //.uuid
 
         //Trigger this Tile
         this.object.document.trigger({ token: tokens, method: 'Manual'});

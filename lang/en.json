@@ -115,6 +115,7 @@
   "MonksActiveTiles.ctrl.usepermission": "Check Permission",
   "MonksActiveTiles.ctrl.distance": "Distance (px)",
   "MonksActiveTiles.ctrl.name": "Name",
+  "MonksActiveTiles.ctrl.chatbubble": "Chat Bubble",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
