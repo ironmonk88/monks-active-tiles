@@ -168,6 +168,11 @@ export class ActionConfig extends FormApplication {
     async _updateObject(event, formData) {
         log('updating action', event, formData, this.object);
 
+        for (let check of ['location', 'entity', 'item', 'actor']) {
+            if (formData[`data.${check}`])
+                formData[`data.${check}`] = (formData[`data.${check}`].startsWith('{') ? JSON.parse(formData[`data.${check}`]) : formData[`data.${check}`]);
+        }
+        /*
         if (formData['data.location'])
             formData['data.location'] = (formData['data.location'].startsWith('{') ? JSON.parse(formData['data.location']) : formData['data.location']);
         if (formData['data.entity'])
@@ -176,6 +181,7 @@ export class ActionConfig extends FormApplication {
             formData['data.item'] = (formData['data.item'].startsWith('{') ? JSON.parse(formData['data.item']) : formData['data.item']);
         if (formData['data.actor'])
             formData['data.actor'] = (formData['data.actor'].startsWith('{') ? JSON.parse(formData['data.actor']) : formData['data.actor']);
+            */
 
         if (formData['data.attack'])
             formData['data.attack'] = { id: formData['data.attack'], name: $('select[name="data.attack"] option:selected', this.element).text()};
@@ -234,7 +240,8 @@ export class ActionConfig extends FormApplication {
         for (let ctrl of (action.ctrls || [])) {
             let options = mergeObject({ showTile: false, showToken: false, showWithin: false, showPlayers: false, showPrevious: false, showControlled: false }, ctrl.options);
             let field = $('<div>').addClass('form-fields').data('ctrl', ctrl);
-            let id = 'data.' + ctrl.id;
+            let id = 'data.' + ctrl.id + (ctrl.variation ? '.value' : '');
+            let val = data[ctrl.id] != undefined ? (data[ctrl.id].value != undefined ? data[ctrl.id].value : data[ctrl.id]) : ctrl.defvalue;
 
             if (ctrl.conditional == undefined || (typeof ctrl.conditional == 'function' ? ctrl.conditional() : ctrl.conditional)) {
 
@@ -279,18 +286,34 @@ export class ActionConfig extends FormApplication {
                         }
                         break;
                     case 'text':
-                        field.append($('<input>').attr({ type: 'text', name: id }).val(data[ctrl.id] != undefined ? data[ctrl.id] : ctrl.defvalue));
+                        field.append($('<input>').attr({ type: 'text', name: id }).val(val));
                         break;
+                    case 'slider':
+                        field.append($('<input>').attr({ type: 'range', name: id, min: ctrl.min || 0, max: ctrl.max || 1.0, step: ctrl.step || 0.1 }).val(val != undefined ? val : 1.0))
+                            .append($('<span>').addClass('range-value').html(val != undefined ? val : 1.0));
+                        break
                     case 'checkbox':
                         field.append($('<input>').attr({ type: 'checkbox', name: id }).prop('checked', (data[ctrl.id] != undefined ? data[ctrl.id] : ctrl.defvalue ))).css({flex: '0 0 30px'});
                         break;
                 }
 
-                $('<div>')
+                const div = $('<div>')
                     .addClass('form-group')
                     .append($('<label>').html(i18n(ctrl.name)))
-                    .append(field)
-                    .appendTo($('.action-controls', this.element));
+                    .append(field);
+
+                if (ctrl.variation) {
+                    let list = (action.values && action.values[ctrl.variation]);
+
+                    let select = $('<select>').addClass('variant').attr({ name:'data.' + ctrl.id + '.var', 'data-dtype': 'String' });
+                    div.append(select);
+                    if (list != undefined) {
+
+                        select.append(this.fillList(list, (data[ctrl.id]?.var)));
+                    }
+                }
+
+                div.appendTo($('.action-controls', this.element));
 
                 if (ctrl.id == 'attribute') {
                     let that = this;

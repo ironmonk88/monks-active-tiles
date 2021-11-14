@@ -1,3 +1,27 @@
+## Version 1.0.36
+
+Added option to play playlist track.
+
+Added option to run chat commands using the chat action
+
+Fixed issue with how chat messages are sent, and who is shown to have sent them.
+
+Added option to reset history after a delay, so there can be a cooldown period.
+
+Revamped the run macro action so that running as GM or Player is now an option from Active Tiles and doesn't need additional modules.
+
+Macros run by players can now return results to the GM and stay in sync with the remaining actions.
+
+Added Hook so that other modules can add options to the actions list.
+
+Added support for Levels 3D so that tokens can be clicked while using that module.
+
+Corrected French tanslations, thank you Sasmira
+
+Fixed issues with rotated Tiles not activating correctly.
+
+Added the option to pause remaining actions while an action completes.  This means that Tokenbar requests can now be rolled by players... provided Tokenbar is updated.
+
 ## Version 1.0.35
 
 Added chat buttle checkbox for Chat Messages, just in case you don't want the chat bubble to appear.

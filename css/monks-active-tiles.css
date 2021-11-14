@@ -135,6 +135,11 @@
     z-index: 1;
 }
 
+#trigger-action .variant {
+    flex: 0 0 75px;
+    margin-left: 10px;
+}
+
 #trigger-action .tt-hint {
     color: #999;
     width: 100%;

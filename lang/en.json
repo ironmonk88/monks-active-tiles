@@ -41,7 +41,8 @@
   "MonksActiveTiles.action.showhide": "Show/Hide",
   "MonksActiveTiles.action.activate": "Activate/Deactivate",
   "MonksActiveTiles.action.alter": "Alter",
-  "MonksActiveTiles.action.playsound": "Play sound",
+  "MonksActiveTiles.action.playsound": "Play sound file",
+  "MonksActiveTiles.action.playlist": "Play Playlist sound",
   "MonksActiveTiles.action.stopsound": "Stop sound",
   "MonksActiveTiles.action.changedoor": "Change door state",
   "MonksActiveTiles.action.notification": "Send Notification",
@@ -79,6 +80,7 @@
   "MonksActiveTiles.ctrl.attribute": "Attribute",
   "MonksActiveTiles.ctrl.value": "Value",
   "MonksActiveTiles.ctrl.audiofile": "Sound File",
+  "MonksActiveTiles.ctrl.playlist": "Playlist Sound",
   "MonksActiveTiles.ctrl.for": "For",
   "MonksActiveTiles.ctrl.selectdoor": "Select Door",
   "MonksActiveTiles.ctrl.selectrolltable": "Select Roll Table",
@@ -116,6 +118,7 @@
   "MonksActiveTiles.ctrl.distance": "Distance (px)",
   "MonksActiveTiles.ctrl.name": "Name",
   "MonksActiveTiles.ctrl.chatbubble": "Chat Bubble",
+  "MonksActiveTiles.ctrl.runasgm": "Run as",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -187,6 +190,9 @@
   "MonksActiveTiles.notification.info": "Info",
   "MonksActiveTiles.notification.warning": "Warning",
   "MonksActiveTiles.notification.error": "Error",
+
+  "MonksActiveTiles.runas.gm": "GM",
+  "MonksActiveTiles.runas.player": "Triggering Player",
 
   "MonksActiveTiles.msg.prevent-teleport": "Teleporting off the map has been prevented",
   "MonksActiveTiles.msg.invalid-entity": "Invalid Entity Type",
