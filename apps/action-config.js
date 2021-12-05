@@ -188,8 +188,8 @@ export class ActionConfig extends FormApplication {
 
         //make sure delay is not set for one of the controls that can't delay
         let trigger = MonksActiveTiles.triggerActions[formData.action];
-        if (!trigger.options?.allowDelay)
-            formData["delay"] = null;
+        //if (!trigger.options?.allowDelay)
+        //    formData["delay"] = null;
 
         if (this.object.id == undefined) {
             mergeObject(this.object, formData);
@@ -201,14 +201,14 @@ export class ActionConfig extends FormApplication {
             });
             //add this row to the parent
             let trigger = MonksActiveTiles.triggerActions[this.object.action];
-            $('<li>').addClass('item flexrow').attr('data-id', this.object.id).attr('draggable', true)
+            let li = $('<li>').addClass('item flexrow').attr('data-id', this.object.id).attr('draggable', true)
                 .append($('<div>').addClass('item-name flexrow').append($('<h4>').css({ 'white-space': 'normal' }).html(trigger.content ? trigger.content(trigger, this.object) : i18n(trigger.name))))
                 .append($('<div>').addClass('item-controls flexrow')
                     .append($('<a>').addClass('item-control action-edit').attr('title', 'Edit Action').html('<i class="fas fa-edit"></i>').click(this.options.parent._editAction.bind(this.options.parent)))
                     .append($('<a>').addClass('item-control action-delete').attr('title', 'Delete Action').html('<i class="fas fa-trash"></i>').click(this.options.parent._deleteAction.bind(this.options.parent))))
                 .appendTo($(`.action-items .item-list`, this.options.parent.element));
 
-            this.options.parent._dragDrop = this.options.parent._createDragDropHandlers();
+            li[0].ondragstart = this.options.parent._dragDrop[0]._handleDragStart.bind(this.options.parent._dragDrop[0]);
 
             this.options.parent.setPosition();
         } else {
@@ -286,7 +286,11 @@ export class ActionConfig extends FormApplication {
                         }
                         break;
                     case 'text':
-                        field.append($('<input>').attr({ type: 'text', name: id }).val(val));
+                    case 'number':
+                        let input = $('<input>').attr({ type: ctrl.type, name: id }).val(val);
+                        if (ctrl.attr)
+                            input.attr(ctrl.attr);
+                        field.append(input);
                         break;
                     case 'slider':
                         field.append($('<input>').attr({ type: 'range', name: id, min: ctrl.min || 0, max: ctrl.max || 1.0, step: ctrl.step || 0.1 }).val(val != undefined ? val : 1.0))
@@ -356,7 +360,7 @@ export class ActionConfig extends FormApplication {
             }
         }
 
-        $('[data-type="delay"]', this.element).toggle(action?.options?.allowDelay === true);
+        $('[data-type="delay"]', this.element).toggle(!!this.object.delay && command != 'delay'); //action?.options?.allowDelay === true);
 
         if(this.rendered)
             this.setPosition();

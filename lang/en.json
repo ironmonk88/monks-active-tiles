@@ -65,6 +65,7 @@
   "MonksActiveTiles.action.elevation": "Elevation",
   "MonksActiveTiles.action.hurtheal": "Hurt/Heal",
   "MonksActiveTiles.action.resethistory": "Reset Tile Trigger History",
+  "MonksActiveTiles.action.delay": "Delay actions",
 
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
 
@@ -119,15 +120,19 @@
   "MonksActiveTiles.ctrl.name": "Name",
   "MonksActiveTiles.ctrl.chatbubble": "Chat Bubble",
   "MonksActiveTiles.ctrl.runasgm": "Run as",
+  "MonksActiveTiles.ctrl.startcombat": "Start Combat",
+  "MonksActiveTiles.ctrl.delay": "Delay by (seconds)",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
   "MonksActiveTiles.mode.both": "On Enter/Exit",
   "MonksActiveTiles.mode.movement": "On Movement",
   "MonksActiveTiles.mode.click": "On Click",
+  "MonksActiveTiles.mode.dblclick": "On Double Click",
   "MonksActiveTiles.mode.hoverin": "On Hover In",
   "MonksActiveTiles.mode.hoverout": "On Hover Out",
   "MonksActiveTiles.mode.manual": "Manually Activate",
+  "MonksActiveTiles.mode.stop": "On Stop within Tile",
 
   "MonksActiveTiles.restrict.all": "Allow All Tokens",
   "MonksActiveTiles.restrict.player": "Only Player Tokens",
@@ -208,5 +213,10 @@
   "MonksActiveTiles.msg.usewithin": "Use Tokens within triggering Tile",
   "MonksActiveTiles.msg.useprevious": "Use current Tokens",
   "MonksActiveTiles.msg.usecontrolled": "Use Tokens currently controlled",
-  "MonksActiveTiles.msg.noteleporttoken": "No token to teleport"
+  "MonksActiveTiles.msg.noteleporttoken": "No token to teleport",
+
+  "MonksActiveTiles.allow-player.name": "Allow players",
+  "MonksActiveTiles.allow-player.hint": "Allow players to activate Tiles if there is no GM present.",
+  "MonksActiveTiles.use-core-macro.name": "Use Core Macro Execute",
+  "MonksActiveTiles.use-core-macro.hint": "Core macro execution doesn't pass all the information available so Active Tiles handles executing macros.  Turn this back on if it's causing issues.'"
 }

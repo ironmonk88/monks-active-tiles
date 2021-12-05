@@ -26,7 +26,9 @@ export const WithActiveTileConfig = (TileConfig) => {
                 'exit': i18n("MonksActiveTiles.mode.exit"),
                 'both': i18n("MonksActiveTiles.mode.both"),
                 'movement': i18n("MonksActiveTiles.mode.movement"),
+                'stop': i18n("MonksActiveTiles.mode.stop"),
                 'click': i18n("MonksActiveTiles.mode.click"),
+                'dblclick': i18n("MonksActiveTiles.mode.dblclick"),
                 'hoverin': i18n("MonksActiveTiles.mode.hoverin"),
                 'hoverout': i18n("MonksActiveTiles.mode.hoverout"),
                 'manual': i18n("MonksActiveTiles.mode.manual")

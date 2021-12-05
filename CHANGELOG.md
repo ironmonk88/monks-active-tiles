@@ -1,3 +1,33 @@
+## Version 1.0.37
+
+Fixed an issue with re-ordering a newly created action.
+
+Added option to add action controls as numbers and not just text
+
+Changed how delay works now.  I wasn't able to do it previously but now that Active Tiles can save a state and resume later, I've changed the delay to it's own action.  This means that actions needing to be delayed will stay in the action list.  Previously they'd be put in their own loop to complete and caused some strange issues.  It should not affect current actions that have delay set.  The control for delay will still show up for the old action but won't be available for newly created actions.
+
+This also gives some greater flexibility with how long you delay.  Using `1-5` will delay randomly between 1 to 5 seconds.  And using `1,4,8,12` will randomly pick between 1, 4, 8, or 12 seconds.  And they can be used together.
+
+Added Triggering Tile to the Move action.  You could always select it as the entity to use, but now there's a convenient button to click to select it.
+
+Added error checking to make sure an audiofile exists before trying to play it.
+
+Updated the Attack option to select either a Token or an Actor.  Previously you needed to select an Actor, but that was causing confusion.  If you select a Token instead it will then find the related Actor.
+
+Added option to start a combat after adding tokens to it.
+
+Added the option to call macros with extra data.  The core macro call wasn't sending everything that would be needed.  I was relying on Advanced Macros to provide the extra data, but if Advanced Macros aren't available I added code to handle it the same way.
+
+Added correct code fo Hover In and Hover Out.  I can't remember who provided the code as it's been awhile, but thank you!  I appreciate it.
+
+Added two new ways to trigger, On Stop when the token stops within the Tile, and On Double Click, same as click but more of it.
+
+Fixed issues with players calling Active TIles when the GM is away.
+
+Fixing an issue with clearing the save state.
+
+Fixed an issue where altering a null value was failing
+
 ## Version 1.0.36
 
 Added option to play playlist track.
