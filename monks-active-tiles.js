@@ -2328,6 +2328,34 @@ export class MonksActiveTiles {
                     + (action.data?.continue != 'always' ? ' Continue if ' + (action.data?.continue == 'within' ? 'Any Within Distance' : 'All Within Distance') : '');
             }
         },
+        'exists': {
+            name: "MonksActiveTiles.filter.exists",
+            ctrls: [
+                {
+                    id: "entity",
+                    name: "MonksActiveTiles.ctrl.select-entity",
+                    type: "select",
+                    subtype: "entity",
+                    options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true },
+                    restrict: (entity) => { return (entity instanceof Token); }
+                }
+            ],
+            values: {
+                'continue': {
+                    "always": "Always",
+                    "within": "Any Within Distance",
+                    "all": "All Within Distance"
+                }
+            },
+            group: "filters",
+            fn: async (args = {}) => {
+                let entities = await MonksActiveTiles.getEntities(args);
+                return { continue: entities.length > 0 };
+            },
+            content: (trigger, action) => {
+                return "Stop if " + action.data?.entity.name + " don't exist";
+            }
+        },
         'anchor': {
             name: "MonksActiveTiles.logic.anchor",
             ctrls: [

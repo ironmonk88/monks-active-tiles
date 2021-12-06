@@ -28,6 +28,8 @@ Fixing an issue with clearing the save state.
 
 Fixed an issue where altering a null value was failing
 
+Added a filter to make sure that tokens exist.  This is because requesting a roll will default to the current party if no tokens are selecting.  This could cause issues.
+
 ## Version 1.0.36
 
 Added option to play playlist track.

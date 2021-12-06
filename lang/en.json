@@ -68,6 +68,7 @@
   "MonksActiveTiles.action.delay": "Delay actions",
 
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
+  "MonksActiveTiles.filter.exists": "Check if tokens exist",
 
   "MonksActiveTiles.logic.anchor": "Anchor",
   "MonksActiveTiles.logic.goto": "Jump to Anchor",
