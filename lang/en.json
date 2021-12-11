@@ -123,6 +123,8 @@
   "MonksActiveTiles.ctrl.runasgm": "Run as",
   "MonksActiveTiles.ctrl.startcombat": "Start Combat",
   "MonksActiveTiles.ctrl.delay": "Delay by (seconds)",
+  "MonksActiveTiles.ctrl.limit": "Limit to (loops)",
+  "MonksActiveTiles.ctrl.resume": "Resume after limit",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",

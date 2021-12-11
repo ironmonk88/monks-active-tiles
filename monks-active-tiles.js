@@ -702,21 +702,24 @@ export class MonksActiveTiles {
                     for (let entity of entities) {
                         let attr = action.data.attribute;
                         let base = entity;
-                        if (!base.data.hasOwnProperty(attr) && entity instanceof TokenDocument) {
-                            base = entity.actor;
-                            attr = 'data.' + attr;
-                        }
 
-                        if (!base.data.hasOwnProperty(attr)) {
-                            warn("Couldn't find attribute", entity, attr);
-                            continue;
+                        if (!attr.startsWith('flags')) {
+                            if (!base.data.hasOwnProperty(attr) && entity instanceof TokenDocument) {
+                                base = entity.actor;
+                                attr = 'data.' + attr;
+                            }
+
+                            if (!base.data.hasOwnProperty(attr)) {
+                                warn("Couldn't find attribute", entity, attr);
+                                continue;
+                            }
                         }
 
                         let prop = getProperty(base.data, attr);
 
                         if (prop && typeof prop == 'object') {
                             if (prop.value == undefined) {
-                                debug("Attribute reurned an object and the object doesn't have a value property", entity, attr, prop);
+                                debug("Attribute returned an object and the object doesn't have a value property", entity, attr, prop);
                                 continue;
                             }
 
@@ -2377,12 +2380,32 @@ export class MonksActiveTiles {
                     id: "tag",
                     name: "MonksActiveTiles.ctrl.name",
                     type: "text"
+                },
+                {
+                    id: "limit",
+                    name: "MonksActiveTiles.ctrl.limit",
+                    type: "number"
+                },
+                {
+                    id: "resume",
+                    name: "MonksActiveTiles.ctrl.resume",
+                    type: "checkbox"
                 }
             ],
             group: "logic",
             fn: async (args = {}) => {
                 const { action } = args;
-                return { goto: action.data?.tag };
+
+                if (action.data?.limit) {
+                    let loop = args.value.loop || {};
+                    let loopval = (loop[action.id] || 0) + 1;
+                    loop[action.id] = loopval;
+                    if (loopval >= action.data?.limit)
+                        return { continue: action.data?.resume };
+                    else
+                        return { goto: action.data?.tag, loop: loop };
+                } else
+                    return { goto: action.data?.tag };
             },
             content: (trigger, action) => {
                 return `<b>${i18n(trigger.name)}:</b> ${action.data?.tag}`;
@@ -2788,7 +2811,7 @@ export class MonksActiveTiles {
 
                 let triggerData = tile.data.flags["monks-active-tiles"];
 
-                if (!triggerData || !triggerData.active || !triggerData.trigger.includes("hover")) continue;
+                if (!triggerData || !triggerData.active || !triggerData.trigger?.includes("hover")) continue;
 
                 //check to see if this trigger is restricted by control type
                 if ((triggerData.controlled === 'gm' && !game.user.isGM) || (triggerData.controlled === 'player' && game.user.isGM))
@@ -2808,14 +2831,14 @@ export class MonksActiveTiles {
                 if (!lastPositionContainsTile && currentPositionContainsTile && !hoveredTiles.has(tile)) {
                     hoveredTiles.add(tile)
                     if (triggerData.trigger === "hoverin") {
-                        tile.trigger({ token: tokens, method: 'HoverIn' });
+                        tile.trigger({ token: tokens, method: 'HoverIn', pt: currentPosition });
                     }
                 }
 
                 if (lastPositionContainsTile && !currentPositionContainsTile && hoveredTiles.has(tile)) {
                     hoveredTiles.delete(tile)
                     if (triggerData.trigger === "hoverout") {
-                        tile.trigger({ token: tokens, method: 'HoverOut' });
+                        tile.trigger({ token: tokens, method: 'HoverOut', pt: currentPosition });
                     }
                 }
             }
@@ -3050,7 +3073,7 @@ export class MonksActiveTiles {
                         tokens[i] = await fromUuid(tokens[i]);
                     let tile = await fromUuid(data.tileid);
 
-                    tile.trigger({ token: tokens, userid: data.senderId, method: data.method });
+                    tile.trigger({ token: tokens, userid: data.senderId, method: data.method, pt: data.pt });
                 }
             } break;
             case 'switchview': {
@@ -3206,26 +3229,7 @@ export class MonksActiveTiles {
 
     static checkClick(pt, clicktype = "click") {
         for (let tile of canvas.scene.tiles) {
-            let triggerData = tile.data.flags["monks-active-tiles"];
-            if (triggerData && triggerData.active && triggerData.trigger == clicktype) {
-
-                //check to see if this trigger is restricted by control type
-                if ((triggerData.controlled == 'gm' && !game.user.isGM) || (triggerData.controlled == 'player' && game.user.isGM))
-                    continue;
-
-                let tokens = canvas.tokens.controlled.map(t => t.document);
-                //check to see if this trigger is per token, and already triggered
-                if (triggerData.pertoken) {
-                    tokens = tokens.filter(t => !tile.hasTriggered(t.id)); //.uuid
-                    if (tokens.length == 0)
-                        continue;
-                }
-
-                //check to see if the clicked point is within the Tile
-                if (!(pt.x < tile.data.x || pt.y < tile.data.y || pt.x > tile.data.x + tile.data.width || pt.y > tile.data.y + tile.data.height)) {
-                    tile.trigger({ token: tokens, method: (clicktype == 'dblclick' ? 'DoubleClick' : 'Click') });
-                }
-            }
+            tile.checkClick(pt, clicktype);
         }
     }
 
@@ -3265,6 +3269,28 @@ export class MonksActiveTiles {
                 this.data.flags["monks-active-tiles"].controlled = 'all';
             if (this.data.flags["monks-active-tiles"].actions == undefined)
                 this.data.flags["monks-active-tiles"].actions = [];
+        }
+
+        TileDocument.prototype.checkClick = function (pt, clicktype = 'click') {
+            let triggerData = this.data.flags["monks-active-tiles"];
+            if (triggerData && triggerData.active && triggerData.trigger == clicktype) {
+                //check to see if this trigger is restricted by control type
+                if ((triggerData.controlled == 'gm' && !game.user.isGM) || (triggerData.controlled == 'player' && game.user.isGM))
+                    return;
+
+                let tokens = canvas.tokens.controlled.map(t => t.document);
+                //check to see if this trigger is per token, and already triggered
+                if (triggerData.pertoken) {
+                    tokens = tokens.filter(t => !this.hasTriggered(t.id)); //.uuid
+                    if (tokens.length == 0)
+                        return;
+                }
+
+                //check to see if the clicked point is within the Tile
+                if (pt == undefined || !(pt.x < this.data.x || pt.y < this.data.y || pt.x > this.data.x + this.data.width || pt.y > this.data.y + this.data.height)) {
+                    this.trigger({ token: tokens, method: (clicktype == 'dblclick' ? 'DoubleClick' : 'Click'), pt: pt });
+                }
+            }
         }
 
         TileDocument.prototype.checkCollision = function (token, destination) {
@@ -3444,7 +3470,7 @@ export class MonksActiveTiles {
             return (stoppage.length == 0 ? false : (stoppage.find(a => a.data?.snap) ? 'snap' : true));
         }
 
-        TileDocument.prototype.trigger = async function ({ token = [], userid = game.user.id, method }) {
+        TileDocument.prototype.trigger = async function ({ token = [], userid = game.user.id, method, pt }) {
             if (game.user.isGM || (game.users.find(u => u.isGM && u.active) == undefined && setting("allow-player"))) {
                 let triggerData = this.data.flags["monks-active-tiles"];
                 //if (this.data.flags["monks-active-tiles"]?.pertoken)
@@ -3460,13 +3486,13 @@ export class MonksActiveTiles {
                 //A token has triggered this tile, what actions do we need to do
                 let values = [];
                 let value = { tokens: token };
-                let context = { tile: this, tokens: token, userid: userid, values: values, value: value, method: method };
+                let context = { tile: this, tokens: token, userid: userid, values: values, value: value, method: method, pt: pt };
 
                 this.runActions(context);
             } else {
                 //post this to the GM
                 let tokens = token.map(t => (t?.document?.uuid || t?.uuid));
-                MonksActiveTiles.emit('trigger', { tileid: this.uuid, tokens: tokens, method: method } );
+                MonksActiveTiles.emit('trigger', { tileid: this.uuid, tokens: tokens, method: method, pt: pt } );
             }
         }
 
@@ -3849,7 +3875,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
 
                                 window.setTimeout(function () {
                                     log('Tile is triggering', document);
-                                    tile.document.trigger({ token: [document], method: triggerPt.method });
+                                    tile.document.trigger({ token: [document], method: triggerPt.method, pt: { x: triggerPt.x, y: triggerPt.y } });
                                     if(!stop)   //If this fires on Enter, and a stop is request then we don't need to run the On Exit code.
                                         doTrigger(idx + 1);
                                 }, duration);

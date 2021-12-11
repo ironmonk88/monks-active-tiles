@@ -124,6 +124,10 @@ export const WithActiveTileConfig = (TileConfig) => {
             super.activateListeners(html);
             var that = this;
 
+            const contextOptions = this._getContextOptions();
+            Hooks.call(`getActiveTileConfigContext`, html, contextOptions);
+            new ContextMenu($(html), ".action-items .item", contextOptions);
+
             $('.action-create', html).click(this._createAction.bind(this));
             $('.action-edit', html).click(this._editAction.bind(this));
             $('.action-delete', html).click(this._deleteAction.bind(this));
@@ -160,8 +164,57 @@ export const WithActiveTileConfig = (TileConfig) => {
             //$(`li[data-id="${id}"]`, this.element).remove();
         }
 
+        cloneAction(id) {
+            let actions = duplicate(this.object.data.flags["monks-active-tiles"].actions || []);
+            let idx = actions.findIndex(obj => obj.id == id);
+            if (idx == -1)
+                return;
+
+            let action = actions[idx];
+            if (!action)
+                return;
+
+            let clone = duplicate(action);
+            clone.id = makeid();
+            actions.splice(idx + 1, 0, clone);
+            this.object.setFlag("monks-active-tiles", "actions", actions);
+        }
+
         resetPerToken() {
             this.object.resetPerToken();
+        }
+
+        _getContextOptions() {
+            return [
+                {
+                    name: "SIDEBAR.Duplicate",
+                    icon: '<i class="far fa-copy"></i>',
+                    condition: () => game.user.isGM,
+                    callback: elem => {
+                        let li = $(elem).closest('.item');
+                        const id = li.data("id");
+                        return this.cloneAction(id);
+                    }
+                },
+                {
+                    name: "SIDEBAR.Delete",
+                    icon: '<i class="fas fa-trash"></i>',
+                    condition: () => game.user.isGM,
+                    callback: elem => {
+                        let li = $(elem).closest('.item');
+                        const id = li.data("id");
+                        Dialog.confirm({
+                            title: `${game.i18n.localize("SIDEBAR.Delete")} action`,
+                            content: game.i18n.format("SIDEBAR.DeleteWarning", { type: 'action' }),
+                            yes: this.deleteAction.bind(this, id),
+                            options: {
+                                top: Math.min(li[0].offsetTop, window.innerHeight - 350),
+                                left: window.innerWidth - 720
+                            }
+                        });
+                    }
+                }
+            ];
         }
     }
 

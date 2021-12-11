@@ -1,3 +1,19 @@
+## Version 1.0.38
+
+Added context menu to action list so you can now clone an action.
+
+Fixed an issue when altering a flags property.  A previous fix was set to ignore anything that was null, but flags are commonly undefined.
+
+Added the option to limit the number of loops the jump to anchor will take, and added the option to end after the loop is done, or resume the remaining actions.
+
+Fixed an issue on hover if the Tile has no trigger data
+
+Added the point that triggered the Tile to the values being sent.  So Macros now know a bit more about where ont he Tile the click happened.
+
+Moved the click function to it's own code attached to the Tile.  This will let other modules send a click even directly to a Tile.
+
+
+
 ## Version 1.0.37
 
 Fixed an issue with re-ordering a newly created action.
