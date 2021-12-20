@@ -122,7 +122,7 @@ export const WithActiveTileConfig = (TileConfig) => {
 
         _getSubmitData(updateData = {}) {
             let data = super._getSubmitData(updateData);
-            data["flags.monks-active-tiles.actions"] = this.object.data.flags["monks-active-tiles"].actions;
+            data["flags.monks-active-tiles.actions"] = (this.object.getFlag("monks-active-tiles", "actions") || []);
             return data;
         }
 
