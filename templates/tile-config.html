@@ -1,0 +1,85 @@
+<p class="notes">{{ localize "MonksActiveTiles.TriggersHint" }}</p>
+
+<div class="form-group">
+    <label>{{ localize "MonksActiveTiles.Active" }}</label>
+    <div class="form-fields">
+        <button class="view-history" type="button" style="height: 20px; line-height: 15px;">View&nbsp;History</button>
+        <div></div>
+        <input type="checkbox" name="flags.monks-active-tiles.active" {{ checked data.flags.monks-active-tiles.active }}>
+    </div>
+</div>
+
+<div class="form-group">
+    <label>{{ localize "MonksActiveTiles.RestrictedTo" }}</label>
+    <div class="form-fields">
+        <select name="flags.monks-active-tiles.restriction" data-dtype="String">
+            {{ selectOptions triggerRestriction selected=data.flags.monks-active-tiles.restriction }}
+        </select>
+    </div>
+</div>
+
+<div class="form-group">
+    <label>{{ localize "MonksActiveTiles.ControlledBy" }}</label>
+    <div class="form-fields">
+        <select name="flags.monks-active-tiles.controlled" data-dtype="String">
+            {{ selectOptions triggerControlled selected=data.flags.monks-active-tiles.controlled }}
+        </select>
+    </div>
+</div>
+
+<div class="form-group">
+    <label>{{ localize "MonksActiveTiles.When" }}</label>
+    <div class="form-fields">
+        <select name="flags.monks-active-tiles.trigger" data-dtype="String">
+            {{ selectOptions triggerModes selected=data.flags.monks-active-tiles.trigger }}
+        </select>
+    </div>
+</div>
+
+<div class="form-group">
+    <label>{{ localize "MonksActiveTiles.PerToken" }}</label>
+    <div class="form-fields">
+        <input type="checkbox" name="flags.monks-active-tiles.pertoken" {{ checked data.flags.monks-active-tiles.pertoken }}>
+    </div>
+</div>
+
+<div class="form-group">
+    <label>{{ localize "MonksActiveTiles.MinRequired" }}</label>
+    <div class="form-fields" style="flex:0 0 100px;">
+        <input type="number" style="text-align:right;" name="flags.monks-active-tiles.minrequired" min="0" value="{{data.flags.monks-active-tiles.minrequired}}">
+    </div>
+</div>
+
+<div class="form-group">
+    <label>{{ localize "MonksActiveTiles.ChanceTrigger" }}</label>
+    <div class="form-fields">
+        {{ rangePicker name="flags.monks-active-tiles.chance" value=data.flags.monks-active-tiles.chance min="0" max="100" step="1" }}
+    </div>
+</div>
+
+<ol class="items-list action-items">
+    <li class="items-header flexrow">
+        <h3 class="item-name flexrow">{{ localize "MonksActiveTiles.Actions" }}</h3>
+
+        <div class="item-controls flexrow">
+            <a class="item-control action-create" title="{{ localize "MonksActiveTiles.CreateNewAction" }}" data-type="objective">
+                <i class="fas fa-plus"></i> {{ localize "MonksActiveTiles.Add" }}
+            </a>
+        </div>
+    </li>
+
+    <ol class="item-list">
+        {{#each actions}}
+        <li class="item flexrow " data-id="{{this.id}}" draggable="true">
+            <div class="item-name flexrow">
+                <h4 style="white-space: normal;">{{{this.content}}}</h4>
+            </div>
+
+            <div class="item-controls flexrow">
+                <a class="item-control action-edit" title="{{ localize "MonksActiveTiles.EditAction" }}"><i class="fas fa-edit"></i></a>
+                <a class="item-control action-delete" title="{{ localize "MonksActiveTiles.DeleteAction" }}"><i class="fas fa-trash"></i></a>
+            </div>
+        </li>
+        {{/each}}
+    </ol>
+</ol>

@@ -11,17 +11,20 @@ export const WithActiveTileConfig = (TileConfig) => {
         static get defaultOptions() {
             return foundry.utils.mergeObject(super.defaultOptions, {
                 classes: ["monks-active-tiles", "sheet"],
-                template: "modules/monks-active-tiles/templates/active-tile-config.html",
                 scrollY: ["ol.item-list"],
                 dragDrop: [{ dragSelector: ".item", dropSelector: ".item-list" }]
             });
         }
 
-        async getData(options) {
-            this.object._normalize();
-            const data = mergeObject({ 'data.flags.monks-active-tiles.minrequired': 0 }, super.getData(options));
+        async _renderInner(data) {
+            let html = await super._renderInner(data);
+            $('.sheet-tabs', html).append($('<a>').addClass('item').attr('data-tab', "triggers").html(`<i class="fas fa-running"></i> ${i18n("MonksActiveTiles.Triggers")}`));
+            let tab = $('<div>').addClass('tab').attr('data-tab', "triggers").insertAfter($('div[data-tab="animation"]', html));
 
-            data.triggerModes = {
+            let template = "modules/monks-active-tiles/templates/tile-config.html";
+            const tiledata = mergeObject({ 'data.flags.monks-active-tiles.minrequired': 0 }, data);
+
+            tiledata.triggerModes = {
                 'enter': i18n("MonksActiveTiles.mode.enter"),
                 'exit': i18n("MonksActiveTiles.mode.exit"),
                 'both': i18n("MonksActiveTiles.mode.both"),
@@ -33,10 +36,10 @@ export const WithActiveTileConfig = (TileConfig) => {
                 'hoverout': i18n("MonksActiveTiles.mode.hoverout"),
                 'manual': i18n("MonksActiveTiles.mode.manual")
             };
-            data.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
-            data.triggerControlled = { 'all': i18n("MonksActiveTiles.control.all"), 'player': i18n("MonksActiveTiles.control.player"), 'gm': i18n("MonksActiveTiles.control.gm") };
+            tiledata.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
+            tiledata.triggerControlled = { 'all': i18n("MonksActiveTiles.control.all"), 'player': i18n("MonksActiveTiles.control.player"), 'gm': i18n("MonksActiveTiles.control.gm") };
 
-            data.actions = this.object.data.flags['monks-active-tiles'].actions
+            tiledata.actions = this.object.data.flags['monks-active-tiles'].actions
                 .map(a => {
                     let trigger = MonksActiveTiles.triggerActions[a.action];
                     let content = (trigger == undefined ? 'Unknown' : (trigger.content ? trigger.content(trigger, a) : i18n(trigger.name)) + (a.delay > 0 ? ' after ' + a.delay + ' seconds' : ''));
@@ -46,7 +49,10 @@ export const WithActiveTileConfig = (TileConfig) => {
                     };
                 });
 
-            return data;
+            let renderhtml = await renderTemplate(template, tiledata);
+            tab.append(renderhtml);
+
+            return html;
         }
 
         _onDragStart(event) {

@@ -1,6 +1,5 @@
 import { registerSettings } from "./settings.js";
 import { WithActiveTileConfig } from "./apps/active-tile-config.js"
-import { WithActiveTileHUD } from "./apps/active-tile-hud.js"
 
 let debugEnabled = 2;
 export let debug = (...args) => {
@@ -35,8 +34,6 @@ export let oldSheetClass = () => {
 export let oldObjectClass = () => {
     return MonksActiveTiles._oldObjectClass;
 };
-
-//+++ Add "selected tokens" as an option
 
 export class MonksActiveTiles {
     static _oldSheetClass;
@@ -94,7 +91,7 @@ export class MonksActiveTiles {
             fn: (args = {}) => {
                 const { action, tile } = args;
 
-                let times = action.data.delay.split(',').map(d => d.trim());
+                let times = ("" + action.data.delay).split(',').map(d => d.trim());
                 let time = times[Math.floor(Math.random() * times.length)];
 
                 if (time.indexOf('-') != -1) {
@@ -2097,12 +2094,9 @@ export class MonksActiveTiles {
                 //Add this trigger if it's the original one
                 MonksActiveTiles.triggered.push(tile.id);
 
-                //make sure the trigger to be called isn't on the list
-                //if (!MonksActiveTiles.triggered.includes(entity.id)) {
-                    await entity.trigger.call(entity, args);
-                //} else {
-                //    log('Preventing a trigger loop');
-                //}
+                let newargs = duplicate(args);
+                newargs.method = "Trigger";
+                await entity.trigger.call(entity, newargs);
 
                 //remove this trigger as it's done
                 MonksActiveTiles.triggered.pop();
@@ -2762,15 +2756,12 @@ export class MonksActiveTiles {
         MonksActiveTiles.triggerActions = Object.assign(otherTriggers, MonksActiveTiles.triggerActions);
 
         if (game.modules.get("lib-wrapper")?.active)
-            libWrapper.ignore_conflicts("monks-active-tiles", "monks-enhanced-journal", "JournalDirectory.prototype._onClickEntityName");
+            libWrapper.ignore_conflicts("monks-active-tiles", "monks-enhanced-journal", "JournalDirectory.prototype._onClickDocumentName");
 
         MonksActiveTiles.SOCKET = "module.monks-active-tiles";
 
         //MonksActiveTiles._oldObjectClass = CONFIG.Tile.objectClass;
         //CONFIG.Tile.objectClass = WithActiveTile(CONFIG.Tile.objectClass);
-
-        MonksActiveTiles._oldSheetClass = CONFIG.Tile.sheetClass;
-        CONFIG.Tile.sheetClass = WithActiveTileConfig(CONFIG.Tile.sheetClass);
 
         MonksActiveTiles.setupTile();
 
@@ -2897,7 +2888,7 @@ export class MonksActiveTiles {
             }
         }
 
-        let clickEntityName = async function (wrapped, ...args) {
+        let clickDocumentName = async function (wrapped, ...args) {
             let event = args[0];
             let waitingType = MonksActiveTiles.waitingInput?.waitingfield?.data('type');
             if (waitingType == 'entity') { //+++ need to make sure this is allowed, only create should be able to select templates
@@ -2910,29 +2901,29 @@ export class MonksActiveTiles {
         }
 
         if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "ActorDirectory.prototype._onClickEntityName", clickEntityName, "MIXED");
+            libWrapper.register("monks-active-tiles", "ActorDirectory.prototype._onClickDocumentName", clickDocumentName, "MIXED");
         } else {
-            const oldClickActorName = ActorDirectory.prototype._onClickEntityName;
-            ActorDirectory.prototype._onClickEntityName = function (event) {
-                return clickEntityName.call(this, oldClickActorName.bind(this), ...arguments);
+            const oldClickActorName = ActorDirectory.prototype._onClickDocumentName;
+            ActorDirectory.prototype._onClickDocumentName = function (event) {
+                return clickDocumentName.call(this, oldClickActorName.bind(this), ...arguments);
             }
         }
 
         if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "ItemDirectory.prototype._onClickEntityName", clickEntityName, "MIXED");
+            libWrapper.register("monks-active-tiles", "ItemDirectory.prototype._onClickDocumentName", clickDocumentName, "MIXED");
         } else {
-            const oldClickItemName = ItemDirectory.prototype._onClickEntityName;
-            ItemDirectory.prototype._onClickEntityName = function (event) {
-                return clickEntityName.call(this, oldClickItemName.bind(this), ...arguments);
+            const oldClickItemName = ItemDirectory.prototype._onClickDocumentName;
+            ItemDirectory.prototype._onClickDocumentName = function (event) {
+                return clickDocumentName.call(this, oldClickItemName.bind(this), ...arguments);
             }
         }
 
         if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "JournalDirectory.prototype._onClickEntityName", clickEntityName, "MIXED");
+            libWrapper.register("monks-active-tiles", "JournalDirectory.prototype._onClickDocumentName", clickDocumentName, "MIXED");
         } else {
-            const oldClickJournalName = JournalDirectory.prototype._onClickEntityName;
-            JournalDirectory.prototype._onClickEntityName = function (event) {
-                return clickEntityName.call(this, oldClickJournalName.bind(this), ...arguments);
+            const oldClickJournalName = JournalDirectory.prototype._onClickDocumentName;
+            JournalDirectory.prototype._onClickDocumentName = function (event) {
+                return clickDocumentName.call(this, oldClickJournalName.bind(this), ...arguments);
             }
         }
 
@@ -3372,7 +3363,7 @@ export class MonksActiveTiles {
             if (triggerData) {
                 let when = this.getFlag('monks-active-tiles', 'trigger');
 
-                if (when == 'manual' || when == 'click')
+                if (!["enter", "exit", "both", "movement", "stop"].includes(when))
                     return;
 
                 //check to see if this trigger is per token, and already triggered
@@ -3475,8 +3466,11 @@ export class MonksActiveTiles {
                 let triggerData = this.data.flags["monks-active-tiles"];
                 //if (this.data.flags["monks-active-tiles"]?.pertoken)
                 if (game.user.isGM) {
-                    for (let tkn of token)
-                        await this.addHistory(tkn.id, method, userid);    //changing this to always register tokens that have triggered it.
+                    if (token.length > 0) {
+                        for (let tkn of token)
+                            await this.addHistory(tkn.id, method, userid);    //changing this to always register tokens that have triggered it.
+                    } else if(method != "Trigger")
+                        await this.addHistory("", method, userid);
                 }
 
                 //only complete a trigger once the minimum is reached
@@ -3689,7 +3683,7 @@ export class MonksActiveTiles {
                         });
 
                         let user = game.users.find(p => p.id == data.who);
-                        stats.list.push(mergeObject(data, { tokenid: k, name: token?.name || 'Unknown', username: user?.name || 'Unknown', whenfrmt: time }));
+                        stats.list.push(mergeObject(data, { tokenid: k, name: token?.name || (k == "" ? "" : 'Unknown'), username: user?.name || 'Unknown', whenfrmt: time }));
                     }
 
                     if (tknstat.first && (stats.first == undefined || tknstat.first.when < stats.first.when))
@@ -3774,13 +3768,10 @@ Hooks.on('init', async () => {
 
 Hooks.on('ready', () => {
     game.socket.on(MonksActiveTiles.SOCKET, MonksActiveTiles.onMessage);
-});
 
-/*
-Hooks.on('canvasInit', () => {
-    let activehud = WithActiveTileHUD(canvas.hud.tile.constructor);
-    canvas.hud.tile = new activehud();
-});*/
+    MonksActiveTiles._oldSheetClass = CONFIG.Tile.sheetClasses.base['core.TileConfig'].cls;
+    CONFIG.Tile.sheetClasses.base['core.TileConfig'].cls = WithActiveTileConfig(CONFIG.Tile.sheetClasses.base['core.TileConfig'].cls);
+});
 
 Hooks.on('preUpdateToken', async (document, update, options, userId) => { 
     //log('preupdate token', document, update, options, MonksActiveTiles._rejectRemaining);
@@ -4018,5 +4009,8 @@ Hooks.on("3DCanvasReady", () => {
         let pt = game.Levels3DPreview.interactionManager.cursorPositionTo2D();
         MonksActiveTiles.checkClick(pt);
     });
-})
-    
+});
+
+Hooks.once('libChangelogsReady', function () {
+    libChangelogs.register("monks-active-tiles", "The option to delay an action has been moved from being a property of the action itself to its own action under the Logic group.  It will still appear for old actions that used delay but won't appear for new ones.", "major")
+});

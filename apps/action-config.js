@@ -172,16 +172,6 @@ export class ActionConfig extends FormApplication {
             if (formData[`data.${check}`])
                 formData[`data.${check}`] = (formData[`data.${check}`].startsWith('{') ? JSON.parse(formData[`data.${check}`]) : formData[`data.${check}`]);
         }
-        /*
-        if (formData['data.location'])
-            formData['data.location'] = (formData['data.location'].startsWith('{') ? JSON.parse(formData['data.location']) : formData['data.location']);
-        if (formData['data.entity'])
-            formData['data.entity'] = (formData['data.entity'].startsWith('{') ? JSON.parse(formData['data.entity']) : formData['data.entity']);
-        if (formData['data.item'])
-            formData['data.item'] = (formData['data.item'].startsWith('{') ? JSON.parse(formData['data.item']) : formData['data.item']);
-        if (formData['data.actor'])
-            formData['data.actor'] = (formData['data.actor'].startsWith('{') ? JSON.parse(formData['data.actor']) : formData['data.actor']);
-            */
 
         if (formData['data.attack'])
             formData['data.attack'] = { id: formData['data.attack'], name: $('select[name="data.attack"] option:selected', this.element).text()};

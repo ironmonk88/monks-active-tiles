@@ -1,3 +1,13 @@
+## Version 1.0.39
+
+Updates to support v9
+
+Fixed an issue with the delay action if it's a proper number rather than a strings
+
+Fixed an issue with checking if a Tile can be triggered.  Some of the new triggers were firing even when they shouldn't have been.
+
+Fixed an issue with how the history was being saved
+
 ## Version 1.0.38
 
 Added context menu to action list so you can now clone an action.
@@ -11,8 +21,6 @@ Fixed an issue on hover if the Tile has no trigger data
 Added the point that triggered the Tile to the values being sent.  So Macros now know a bit more about where ont he Tile the click happened.
 
 Moved the click function to it's own code attached to the Tile.  This will let other modules send a click even directly to a Tile.
-
-
 
 ## Version 1.0.37
 
