@@ -2893,9 +2893,9 @@ export class MonksActiveTiles {
             let waitingType = MonksActiveTiles.waitingInput?.waitingfield?.data('type');
             if (waitingType == 'entity') { //+++ need to make sure this is allowed, only create should be able to select templates
                 event.preventDefault();
-                const entityId = event.currentTarget.closest(".entity").dataset.entityId;
-                const entity = this.constructor.collection.get(entityId);
-                MonksActiveTiles.waitingInput.updateSelection({ id: entity.uuid, name: entity.name });
+                const documentId = event.currentTarget.closest(".document").dataset.documentId;
+                const document = this.constructor.collection.get(documentId);
+                MonksActiveTiles.waitingInput.updateSelection({ id: document.uuid, name: document.name });
             } else
                 wrapped(...args);
         }

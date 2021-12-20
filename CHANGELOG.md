@@ -1,3 +1,9 @@
+## Version 1.0.40
+
+Fixing an error with creating a new Tile.
+
+Fixing issues missed with v9 changes.
+
 ## Version 1.0.39
 
 Updates to support v9

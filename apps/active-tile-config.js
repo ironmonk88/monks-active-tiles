@@ -39,7 +39,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             tiledata.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
             tiledata.triggerControlled = { 'all': i18n("MonksActiveTiles.control.all"), 'player': i18n("MonksActiveTiles.control.player"), 'gm': i18n("MonksActiveTiles.control.gm") };
 
-            tiledata.actions = this.object.data.flags['monks-active-tiles'].actions
+            tiledata.actions = (this.object.getFlag('monks-active-tiles', 'actions') || [])
                 .map(a => {
                     let trigger = MonksActiveTiles.triggerActions[a.action];
                     let content = (trigger == undefined ? 'Unknown' : (trigger.content ? trigger.content(trigger, a) : i18n(trigger.name)) + (a.delay > 0 ? ' after ' + a.delay + ' seconds' : ''));
