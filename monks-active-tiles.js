@@ -458,6 +458,7 @@ export class MonksActiveTiles {
         },
         'showhide': {
             name: "MonksActiveTiles.action.showhide",
+            requiresGM: true,
             options: { allowDelay: true },
             ctrls: [
                 {
@@ -605,6 +606,7 @@ export class MonksActiveTiles {
         },
         'activate': {
             name: "MonksActiveTiles.action.activate",
+            requiresGM: true,
             options: { allowDelay: true },
             ctrls: [
                 {
@@ -652,6 +654,7 @@ export class MonksActiveTiles {
         },
         'alter': {
             name: "MonksActiveTiles.action.alter",
+            requiresGM: true,
             options: { allowDelay: true },
             ctrls: [
                 {
@@ -1811,8 +1814,10 @@ export class MonksActiveTiles {
                     //open journal
                     if (entity && action.data.showto != 'gm')
                         MonksActiveTiles.emit('journal', { showto: action.data.showto, userid: userid, entityid: entity.uuid, permission: action.data.permission });
-                    if (game.user.isGM && (action.data.showto == 'everyone' || action.data.showto == 'gm' || action.data.showto == undefined || (action.data.showto == 'trigger' && userid == game.user.id)))
-                        entity.sheet.render(true);
+                    if (game.user.isGM && (action.data.showto == 'everyone' || action.data.showto == 'gm' || action.data.showto == undefined || (action.data.showto == 'trigger' && userid == game.user.id))) {
+                        if (!game.modules.get("monks-enhanced-journal")?.active || !game.MonksEnhancedJournal.openJournalEntry(entity))
+                            entity.sheet.render(true);
+                    }
                 }
 
                 return { entities: entities };
@@ -2048,7 +2053,9 @@ export class MonksActiveTiles {
                     let item = actor.items.get(action.data?.attack?.id);
 
                     if (item) {
-                        if (action.data?.rollattack && item.roll)
+                        if (action.data?.rollattack && item.useAttack)
+                            item.useAttack({ skipDialog: true });
+                        else if (action.data?.rollattack && item.roll)
                             item.roll({ rollMode: (action.data?.rollmode || 'roll') });
                         else if (item.displayCard)
                             item.displayCard({ rollMode: (action.data?.rollmode || 'roll'), createMessage: true }); //item.roll({configureDialog:false});
@@ -2468,7 +2475,7 @@ export class MonksActiveTiles {
     }
 
     static async _executeMacro(macro, mainargs = {}) {
-        const { tile, tokens, action, userid, values, value, method } = mainargs;
+        const { tile, tokens, action, userid, values, value, method, pt } = mainargs;
 
         for (let i = 0; i < tokens.length; i++) {
             tokens[i] = (typeof tokens[i] == 'string' ? await fromUuid(tokens[i]) : tokens[i]);
@@ -2487,6 +2494,7 @@ export class MonksActiveTiles {
             value: value,
             tokens: tokens,
             method: method,
+            pt: pt,
         };
         let args = action.data.args;
 
@@ -2534,6 +2542,7 @@ export class MonksActiveTiles {
                 values: values,
                 value: value,
                 method: method,
+                pt: pt,
                 args: args,
                 tokens: context.tokens.map(t => t.uuid),
                 _id: mainargs._id
@@ -3104,7 +3113,8 @@ export class MonksActiveTiles {
                         values: data.values,
                         value: data.value,
                         tokens: tokens,
-                        method: data.method
+                        method: data.method,
+                        pt: data.pt,
                     };
 
                     let results = (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active ?
@@ -3207,7 +3217,8 @@ export class MonksActiveTiles {
                     if (data.permission === true && !entity.testUserPermission(game.user, "LIMITED"))
                         return ui.notifications.warn(`You do not have permission to view ${entity.name}.`);
 
-                    entity.sheet.render(true);
+                    if (!game.modules["monks-enhanced-journal"]?.active || !game.MonksEnhancedJournal.openJournalEntry(entity))
+                        entity.sheet.render(true);
                 }
             } break;
             case 'notification': {
@@ -3215,6 +3226,11 @@ export class MonksActiveTiles {
                     ui.notifications.notify(data.content, data.type);
                 }
             } break;
+            case 'fql': {
+                if ((data.for == 'players' && !game.user.isGM) || (data.for == 'trigger' && game.user.id == data.userid) || data.for == 'everyone' || data.for == undefined) {
+                    Hooks.call('ForienQuestLog.Open.QuestLog');
+                }
+            }
         }
     }
 
@@ -3462,7 +3478,7 @@ export class MonksActiveTiles {
         }
 
         TileDocument.prototype.trigger = async function ({ token = [], userid = game.user.id, method, pt }) {
-            if (game.user.isGM || (game.users.find(u => u.isGM && u.active) == undefined && setting("allow-player"))) {
+            if (MonksActiveTiles.allowRun()) {
                 let triggerData = this.data.flags["monks-active-tiles"];
                 //if (this.data.flags["monks-active-tiles"]?.pertoken)
                 if (game.user.isGM) {
@@ -3497,9 +3513,18 @@ export class MonksActiveTiles {
             let pausing = false;
             for (let i = start; i < actions.length; i++) {
                 let action = actions[i];
+
+                let trigger = MonksActiveTiles.triggerActions[action.action];
+
+                if (!trigger)
+                    continue;
+
+                if (trigger.requiresGM === true && !game.user.isGM)
+                    continue;
+
                 context.index = i;
                 context.action = action;
-                let fn = MonksActiveTiles.triggerActions[action.action]?.fn;
+                let fn = trigger.fn;
                 if (fn) {
                     if (action.delay > 0) {
                         let tile = this;
@@ -3760,6 +3785,10 @@ export class MonksActiveTiles {
         }
         return new Handlebars.SafeString(html);
     }
+
+    static allowRun() {
+        return game.user.isGM || (game.users.find(u => u.isGM && u.active) == undefined && setting("allow-player"));
+    }
 }
 
 Hooks.on('init', async () => {
@@ -3969,46 +3998,45 @@ Hooks.on('hoverTile', (tile, hover) => {
 });*/
 
 Hooks.on("setupTileActions", (actions) => {
-    return Object.assign(actions, {
-        'openfql': {
-            name: 'Open FQL Quest Log',
-            ctrls: [
-                {
-                    id: "for",
-                    name: "For",
-                    list: "for",
-                    type: "list"
-                }
-            ],
-            values: {
-                'for': {
-                    "trigger": 'Triggering Player',
-                    "everyone": 'Everyone',
-                    "players": 'Players Only',
-                    "gm": 'GM Only'
-                }
-            },
-            fn: async (args = {}) => {
-                const { action } = args;
+    if (game.modules.get('forien-quest-log')?.active) {
+        return Object.assign(actions, {
+            'openfql': {
+                name: 'Open FQL Quest Log',
+                ctrls: [
+                    {
+                        id: "for",
+                        name: "For",
+                        list: "for",
+                        type: "list"
+                    }
+                ],
+                values: {
+                    'for': {
+                        "trigger": 'Triggering Player',
+                        "everyone": 'Everyone',
+                        "players": 'Players Only',
+                        "gm": 'GM Only'
+                    }
+                },
+                fn: async (args = {}) => {
+                    const { action, userid } = args;
 
-                Hooks.call('ForienQuestLog.Open.QuestLog');
-            },
-            content: (trigger, action) => {
-                return trigger.name + ' for ' + i18n(trigger.values.for[action.data?.for]);
+                    if (action.data.for != 'gm')
+                        MonksActiveTiles.emit('fql', { for: action.data.for, userid: userid });
+                    if (game.user.isGM && (action.data.for == 'everyone' || action.data.for == 'gm' || action.data.for == undefined || (action.data.for == 'trigger' && userid == game.user.id)))
+                        Hooks.call('ForienQuestLog.Open.QuestLog');
+
+                },
+                content: (trigger, action) => {
+                    return trigger.name + ' for ' + i18n(trigger.values.for[action.data?.for]);
+                }
             }
-        }
-    });
+        });
+    }
 });
 
 Hooks.on("renderPlaylistDirectory", (app, html, user) => {
     $('li.sound', html).click(MonksActiveTiles.selectPlaylistSound.bind(this));
-});
-
-Hooks.on("3DCanvasReady", () => {
-    game.Levels3DPreview.renderer.domElement.addEventListener("mousedown", function () {
-        let pt = game.Levels3DPreview.interactionManager.cursorPositionTo2D();
-        MonksActiveTiles.checkClick(pt);
-    });
 });
 
 Hooks.once('libChangelogsReady', function () {

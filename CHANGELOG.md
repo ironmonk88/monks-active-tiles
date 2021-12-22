@@ -1,3 +1,13 @@
+## Version 1.0.42
+
+Fixed issue with not being able to create new actions
+
+Started to add fixes for actions that can't be run without a GM.
+
+Integrated with Enhanced Journal a little better.
+
+Hopefully fixed an issue with PF1 and attacks
+
 ## Version 1.0.40
 
 Fixing an error with creating a new Tile.

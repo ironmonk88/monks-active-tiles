@@ -16,6 +16,10 @@ export const WithActiveTileConfig = (TileConfig) => {
             });
         }
 
+        get actions() {
+            return this.object.getFlag("monks-active-tiles", "actions") || [];
+        }
+
         async _renderInner(data) {
             let html = await super._renderInner(data);
             $('.sheet-tabs', html).append($('<a>').addClass('item').attr('data-tab', "triggers").html(`<i class="fas fa-running"></i> ${i18n("MonksActiveTiles.Triggers")}`));
@@ -85,7 +89,7 @@ export const WithActiveTileConfig = (TileConfig) => {
 
             // Call the drop handler
             if (target && target.dataset.id) {
-                let actions = duplicate(this.object.data.flags["monks-active-tiles"].actions || []);
+                let actions = duplicate(this.actions);
 
                 if (data.id === target.dataset.id) return; // Don't drop on yourself
 
@@ -104,7 +108,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             if (!canvas.ready) return;
             const li = event.currentTarget;
 
-            let action = (this.object.data.flags["monks-active-tiles"].actions || []).find(a => a.id == li.dataset.id);
+            let action = this.actions.find(a => a.id == li.dataset.id);
             if (action && action.data.entity && !['tile', 'token', 'players', 'within', 'controlled', 'previous'].includes(action.data.entity.id)) {
                 let entity = await fromUuid(action.data.entity.id);
                 if (entity && entity._object) {
@@ -146,14 +150,14 @@ export const WithActiveTileConfig = (TileConfig) => {
 
         _createAction(event) {
             let action = { delay: 0 };
-            if (this.object.data.flags["monks-active-tiles"].actions == undefined)
-                this.object.data.flags["monks-active-tiles"].actions = [];
+            if (this.object.getFlag("monks-active-tiles", "actions") == undefined)
+                this.object.setFlag("monks-active-tiles", "actions", []);
             new ActionConfig(action, {parent: this}).render(true);
         }
 
         _editAction(event) {
             let item = event.currentTarget.closest('.item');
-            let action = this.object.data.flags["monks-active-tiles"].actions.find(obj => obj.id == item.dataset.id);
+            let action = this.actions.find(obj => obj.id == item.dataset.id);
             if (action != undefined)
                 new ActionConfig(action, { parent: this }).render(true);
         }
@@ -164,14 +168,14 @@ export const WithActiveTileConfig = (TileConfig) => {
         }
 
         deleteAction(id) {
-            let actions = duplicate(this.object.data.flags["monks-active-tiles"].actions || []);
+            let actions = duplicate(this.actions);
             actions.findSplice(i => i.id == id);
             this.object.setFlag("monks-active-tiles", "actions", actions);
             //$(`li[data-id="${id}"]`, this.element).remove();
         }
 
         cloneAction(id) {
-            let actions = duplicate(this.object.data.flags["monks-active-tiles"].actions || []);
+            let actions = duplicate(this.actions);
             let idx = actions.findIndex(obj => obj.id == id);
             if (idx == -1)
                 return;
