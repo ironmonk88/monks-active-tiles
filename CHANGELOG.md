@@ -1,3 +1,7 @@
+## Version 1.0.43
+
+Fixed an issue with attacks not rolling correctly.  v9 changed rolls to being async and I forgot that I did use that function.
+
 ## Version 1.0.42
 
 Fixed issue with not being able to create new actions

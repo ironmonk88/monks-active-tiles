@@ -2726,9 +2726,9 @@ export class MonksActiveTiles {
     }
 
     static async inlineRoll(value, rgx, chatMessage, rollMode, token) {
-        let doRoll = function (match, command, formula, closing, label, ...args) {
+        let doRoll = async function (match, command, formula, closing, label, ...args) {
             if (closing.length === 3) formula += "]";
-            let roll = Roll.create(formula).roll();
+            let roll = await Roll.create(formula).roll();
 
             if (chatMessage) {
                 const cls = ChatMessage.implementation;
@@ -2744,7 +2744,7 @@ export class MonksActiveTiles {
         const matches = value.matchAll(rgx);
         for (let match of Array.from(matches).reverse()) {
             //+++ need to replace this value in value
-            let result = doRoll(...match);
+            let result = await doRoll(...match);
             retVal = retVal.replace(match[0], result);
         }
 
