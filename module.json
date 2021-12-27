@@ -49,7 +49,7 @@
     "css/monks-active-tiles.css"
   ],
   "url": "https://github.com/Streyder/monks-active-tiles",
-  "download": "https://github.com/ironmonk88/monks-active-tiles/archive/1.0.43.zip",
+  "download": "https://github.com/Streyder/monks-active-tiles/archive/refs/tags/1.0.44.zip",
   "manifest": "https://raw.githubusercontent.com/Streyder/monks-active-tiles/main/module.json",
   "bugs": "https://github.com/ironmonk88/monks-active-tiles/issues",
   "allowBugReporter": true
