@@ -1,8 +1,8 @@
 {
   "name": "monks-active-tiles",
-  "title": "Monk's Active Tile Triggers",
+  "title": "Monk's Active Tile Triggers - StreyVersion",
   "description": "Want to teleport, or open doors, or hide characters, or display a message, or play a sound, or change a token's elevation when a token walks over a tile... now you can",
-	"version": "1.0.43",
+	"version": "1.0.44",
 	"minimumCoreVersion": "9",
 	"compatibleCoreVersion": "9.238",
 	"author": "IronMonk",
