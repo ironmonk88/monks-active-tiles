@@ -1,5 +1,5 @@
 {
-  "name": "monks-active-tiles",
+  "name": "monks-active-tiles-strey",
   "title": "Monk's Active Tile Triggers - StreyVersion",
   "description": "Want to teleport, or open doors, or hide characters, or display a message, or play a sound, or change a token's elevation when a token walks over a tile... now you can",
 	"version": "1.0.44",
@@ -48,9 +48,9 @@
   "styles": [
     "css/monks-active-tiles.css"
   ],
-  "url": "https://github.com/ironmonk88/monks-active-tiles",
+  "url": "https://github.com/Streyder/monks-active-tiles",
   "download": "https://github.com/ironmonk88/monks-active-tiles/archive/1.0.43.zip",
-  "manifest": "https://github.com/ironmonk88/monks-active-tiles/releases/latest/download/module.json",
+  "manifest": "https://raw.githubusercontent.com/Streyder/monks-active-tiles/main/module.json",
   "bugs": "https://github.com/ironmonk88/monks-active-tiles/issues",
   "allowBugReporter": true
 }
