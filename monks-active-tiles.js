@@ -309,13 +309,14 @@ export class MonksActiveTiles {
                         }
 
                         if (newtoken) {
-                            await newtoken.update({ x: newPos.x, y: newPos.y, hidden: tokendoc.data.hidden }, { bypass: true, animate: false });
+                            await newtoken.delete();
                         }
-                        else {
-                            const td = await tokendoc.actor.getTokenData({ x: newPos.x, y: newPos.y });
-                            const cls = getDocumentClass("Token");
-                            newtoken = await cls.create(td, { parent: scene });
-                        }
+                        
+                        const td = tokendoc.toObject();
+                        const cls = getDocumentClass("Token");
+                        newtoken = await cls.create(td, { parent: scene });
+                        await newtoken.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false });
+                        
                         let oldhidden = tokendoc.data.hidden;
                         if (action.data.deletesource)
                             tokendoc.delete();
