@@ -782,7 +782,7 @@ export class MonksActiveTiles {
                                         debug(err);
                                     }
                                 }
-                                if (val.startsWith('=')) {
+                                if (typeof val == "string" && val.startsWith('=')) {
                                     try {
                                         val = eval(val.substring(1));
                                     } catch (err) {

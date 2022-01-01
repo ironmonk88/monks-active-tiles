@@ -1,3 +1,7 @@
+## Version 1.0.45
+
+Fixing an issue with the `=` in alter action
+
 ## Version 1.0.44
 
 Added the feature of changing the sidebar tab or canvas tool to match the default entity type needed for the select entity field.  And changing it back once done selecting.
