@@ -31,8 +31,12 @@
 }
 
 .monks-active-tiles.sheet .items-list .item-controls {
-    flex: 0 0 60px;
+    flex: 0 0 50px;
     justify-content: space-between;
+}
+
+.monks-active-tiles.sheet .items-list .items-header .item-controls {
+    flex: 0 0 80px;
 }
 
 .monks-active-tiles.sheet .items-list .item-controls a {
@@ -91,26 +95,42 @@
     font-size: 16px;
 }
 
+.action-sheet form .form-group label {
+    flex: 1;
+    align-self: flex-start;
+}
+
 .action-sheet .display-value {
     display: block;
-    height: 24px;
+    height: 28px;
     color: #191813;
     font-family: inherit;
     font-size: inherit;
     text-align: inherit;
-    line-height: 22px;
+    line-height: 24px;
     border: 1px solid #7a7971;
     border-radius: 3px;
     background: rgba(0, 0, 0, 0.05);
     padding: 1px 5px;
     overflow: hidden;
-    white-space:nowrap;
+    white-space: nowrap;
     text-overflow: ellipsis;
+}
+
+.action-sheet .placeholder-style {
+    color: #808080;
+}
+
+.action-sheet form .form-group .form-fields button {
+    flex: 0 0 28px;
+    height: 28px;
+    width: 28px;
 }
 
 .action-sheet button[data-target="data.entity"] i,
 .action-sheet button[data-target="data.location"] i,
-.action-sheet button[data-target="data.either"] i {
+.action-sheet button[data-target="data.either"] i,
+.action-sheet button[data-target="data.position"] i {
     margin-right: 0px;
 }
 
@@ -182,4 +202,93 @@
 
 #trigger-action .tt-suggestion p {
     margin: 0;
+}
+
+.monks-active-tiles div[data-tab="triggers"] .action-items .action-style {
+    font-weight: bold;
+    color: #000000;
+}
+
+.monks-active-tiles div[data-tab="triggers"] .action-items .filter-style {
+    font-weight: bold;
+    color: #220208;
+}
+
+.monks-active-tiles div[data-tab="triggers"] .action-items .logic-style {
+    font-weight: bold;
+    color: #020522
+}
+
+.monks-active-tiles div[data-tab="triggers"] .action-items .entity-style {
+    font-style: italic;
+    color: #242424;
+}
+
+.monks-active-tiles div[data-tab="triggers"] .action-items .details-style {
+    color: #1b012d;
+}
+
+.monks-active-tiles div[data-tab="triggers"] .action-items .value-style {
+    color: #515151;
+}
+
+.monks-active-tiles div[data-tab="triggers"] .action-items .tag-style {
+    color: #063d68;
+    font-style: italic;
+}
+
+#trigger-action .files-list {
+    padding-left: 0px;
+    margin: 0px;
+}
+
+#trigger-action .files-list .items-header .item-controls {
+    justify-content: flex-end;
+    color: #7a7971;
+    font-size: 12px;
+}
+
+#trigger-action .file-list {
+    padding-left: 0px;
+    margin-top: 0px;
+    color: #191813;
+    max-height:100px;
+    overflow-y:auto;
+}
+
+#trigger-action .file-list li {
+    border-bottom: 1px solid #c9c7b8;
+    line-height: 25px;
+    padding-left: 4px;
+}
+
+#trigger-action .file-list li a {
+    color: #7a7971;
+    flex: 0 0 28px;
+    height: 28px;
+    width: 28px;
+}
+
+#trigger-action .items-list .items-header {
+    height: 28px;
+    margin: 2px 0;
+    padding: 0;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.05);
+    border: 2px groove #eeede0;
+    font-weight: bold;
+}
+
+#trigger-action .items-list .items-header > * {
+    font-size: 12px;
+    text-align: center;
+}
+
+#trigger-action .items-list .items-header h3 {
+    padding-left: 5px;
+    font-family: "Modesto Condensed", "Palatino Linotype", serif;
+    font-size: 20px;
+    font-weight: 700;
+    text-align: left;
+    font-size: 16px;
 }

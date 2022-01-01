@@ -1,3 +1,57 @@
+## Version 1.0.44
+
+Added the feature of changing the sidebar tab or canvas tool to match the default entity type needed for the select entity field.  And changing it back once done selecting.
+
+Updated the function that grabs the entity name so that it's dynamic rather than relying on the last value collected whent he entity was selected.
+
+Added the feature of selecting the current canvas position
+
+Added Tagger support so you can now refer to entities by their tag.
+
+Added Cycle image list action, you can select individual files or use wildcards
+
+Added checking for required fields
+
+Added conditional fields that will show/hide depending on what's been selected in other fields.
+
+Fixed an issue with action re-ordering
+
+Fixed an issue with action deleting
+
+Added the feature of default values when creating brand new actions
+
+Tidied up some styling, gave the actions more room and standardised the button sizes.
+
+Added syntax highlighting and reviewed all the action names to make sure what was happening was a bit clearer.
+
+Added a new macro so people can do multiple actions depending on the value of a request roll rather than just pass and fail.
+
+Standardized how the location is retrieved.
+
+Added scaling for panning the canvas
+
+Added option to preserve setting when teleporting a token to a new scene.  Just in case you have tokens already set up on that scene and want to use the properties already set up.
+
+Added the option to use the alter action value with an `=` so Active Tiles will try and evaluate whatever is in that field.
+
+Updated the play sound action to have a dropdown for either percent of value, and changed the number to a slider.
+
+Updated the stop sound action to work on multiple Tiles.
+
+Updated the change door state to work with multiple Walls.
+
+Fixed issue with languages drop down not showing
+
+Added option to open a Journal Entry using Enhanced Journals if it's installed
+
+Fixed an issue with changing the permissions of an object erasing all the flag data
+
+Updated the distance check to respect a Tiles rotation, and give you more flexibility it what you want in terms of distance.  So you can have within the Tile, within a certain distance formt he Tile, and greater than a certain distance from the Tile.  It will now also respect the edge of the Tile rather than working off the center, so if you have an odd shaped Tile it will check from the closest edge.  Also added a dropdow so you can select distinct pixels or use the scenes grid size.
+
+Added the option to have anchors stop the current flow of actions.  This should trim down the need for a whole bunch of Stop actions.
+
+Fixed up issue with rotated Tiles
+
 ## Version 1.0.43
 
 Fixed an issue with attacks not rolling correctly.  v9 changed rolls to being async and I forgot that I did use that function.

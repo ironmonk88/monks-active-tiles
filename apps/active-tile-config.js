@@ -43,15 +43,15 @@ export const WithActiveTileConfig = (TileConfig) => {
             tiledata.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
             tiledata.triggerControlled = { 'all': i18n("MonksActiveTiles.control.all"), 'player': i18n("MonksActiveTiles.control.player"), 'gm': i18n("MonksActiveTiles.control.gm") };
 
-            tiledata.actions = (this.object.getFlag('monks-active-tiles', 'actions') || [])
-                .map(a => {
+            tiledata.actions = await Promise.all((this.object.getFlag('monks-active-tiles', 'actions') || [])
+                .map(async (a) => {
                     let trigger = MonksActiveTiles.triggerActions[a.action];
-                    let content = (trigger == undefined ? 'Unknown' : (trigger.content ? trigger.content(trigger, a) : i18n(trigger.name)) + (a.delay > 0 ? ' after ' + a.delay + ' seconds' : ''));
+                    let content = (trigger == undefined ? 'Unknown' : (trigger.content ? await trigger.content(trigger, a) : i18n(trigger.name)) + (a.delay > 0 ? ' after ' + a.delay + ' seconds' : ''));
                     return {
                         id: a.id,
                         content: content
                     };
-                });
+                }));
 
             let renderhtml = await renderTemplate(template, tiledata);
             tab.append(renderhtml);
@@ -99,7 +99,10 @@ export const WithActiveTileConfig = (TileConfig) => {
                 actions.splice(to, 0, actions.splice(from, 1)[0]);
 
                 this.object.data.flags["monks-active-tiles"].actions = actions;
-                $('.action-items .item[data-id="' + data.id + '"]', this.element).insertBefore(target);
+                if (from < to)
+                    $('.action-items .item[data-id="' + data.id + '"]', this.element).insertAfter(target);
+                else
+                    $('.action-items .item[data-id="' + data.id + '"]', this.element).insertBefore(target);
             }
         }
 
@@ -127,7 +130,31 @@ export const WithActiveTileConfig = (TileConfig) => {
         _getSubmitData(updateData = {}) {
             let data = super._getSubmitData(updateData);
             data["flags.monks-active-tiles.actions"] = (this.object.getFlag("monks-active-tiles", "actions") || []);
+
             return data;
+        }
+
+        async _updateObject(event, formData) {
+            await super._updateObject(event, formData);
+
+            //if any of the actions are to cycle the image, then make sure the image lines up with the img at
+            for (let action of (this.object.getFlag('monks-active-tiles', 'actions') || [])) {
+                if (action.action == 'imagecycle') {
+                    let actfiles = (action.data?.files || []);
+
+                    this.object._cycleimages = this.object._cycleimages || {};
+                    let files = this.object._cycleimages[action.id] = await MonksActiveTiles.getTileFiles(actfiles);
+
+                    let imgat = Math.clamped((action.data?.imgat || 1) - 1, 0, files.length - 1);
+                    
+                    if (this.object._cycleimages[action.id].length > 0) {
+                        let entities = await MonksActiveTiles.getEntities({ tile: this.object, action: action }, null, 'tiles');
+                        for (let entity of entities) {
+                            await entity.update({ img: files[imgat] });
+                        }
+                    }
+                }
+            }
         }
 
         activateListeners(html) {
@@ -149,9 +176,9 @@ export const WithActiveTileConfig = (TileConfig) => {
         }
 
         _createAction(event) {
-            let action = { delay: 0 };
-            if (this.object.getFlag("monks-active-tiles", "actions") == undefined)
-                this.object.setFlag("monks-active-tiles", "actions", []);
+            let action = { };
+            //if (this.object.getFlag("monks-active-tiles", "actions") == undefined)
+            //    this.object.setFlag("monks-active-tiles", "actions", []);
             new ActionConfig(action, {parent: this}).render(true);
         }
 
@@ -170,8 +197,12 @@ export const WithActiveTileConfig = (TileConfig) => {
         deleteAction(id) {
             let actions = duplicate(this.actions);
             actions.findSplice(i => i.id == id);
-            this.object.setFlag("monks-active-tiles", "actions", actions);
-            //$(`li[data-id="${id}"]`, this.element).remove();
+            mergeObject(this.object.data.flags, {
+                "monks-active-tiles": { actions: actions }
+            });
+            //this.object.setFlag("monks-active-tiles", "actions", actions);
+            $(`li[data-id="${id}"]`, this.element).remove();
+            this.setPosition({ height: 'auto' });
         }
 
         cloneAction(id) {

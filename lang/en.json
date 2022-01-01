@@ -30,6 +30,8 @@
   "MonksActiveTiles.Actions": "Actions",
   "MonksActiveTiles.ManualTrigger": "Manually Trigger Actions",
   "MonksActiveTiles.MinRequired": "Min. Required to Trigger",
+  "MonksActiveTiles.TagName": "Enter Tag Name",
+  "MonksActiveTiles.Save": "Save",
 
   "MonksActiveTiles.group.actions": "Actions",
   "MonksActiveTiles.group.filters": "Filters",
@@ -66,12 +68,13 @@
   "MonksActiveTiles.action.hurtheal": "Hurt/Heal",
   "MonksActiveTiles.action.resethistory": "Reset Tile Trigger History",
   "MonksActiveTiles.action.delay": "Delay actions",
+  "MonksActiveTiles.action.imagecycle": "Cycle Images",
 
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
   "MonksActiveTiles.filter.exists": "Check if tokens exist",
 
   "MonksActiveTiles.logic.anchor": "Anchor",
-  "MonksActiveTiles.logic.goto": "Jump to Anchor",
+  "MonksActiveTiles.logic.goto": "Go to Anchor",
   "MonksActiveTiles.logic.stop": "Stop remaining actions",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
@@ -117,7 +120,7 @@
   "MonksActiveTiles.ctrl.audiotype": "Audio Type",
   "MonksActiveTiles.ctrl.activate": "Activate",
   "MonksActiveTiles.ctrl.usepermission": "Check Permission",
-  "MonksActiveTiles.ctrl.distance": "Distance (px)",
+  "MonksActiveTiles.ctrl.distance": "Distance",
   "MonksActiveTiles.ctrl.name": "Name",
   "MonksActiveTiles.ctrl.chatbubble": "Chat Bubble",
   "MonksActiveTiles.ctrl.runasgm": "Run as",
@@ -125,6 +128,11 @@
   "MonksActiveTiles.ctrl.delay": "Delay by (seconds)",
   "MonksActiveTiles.ctrl.limit": "Limit to (loops)",
   "MonksActiveTiles.ctrl.resume": "Resume after limit",
+  "MonksActiveTiles.ctrl.preservesettings": "Preserve settings if token already exists",
+  "MonksActiveTiles.ctrl.images": "Images",
+  "MonksActiveTiles.ctrl.imgat": "Showing Image #",
+  "MonksActiveTiles.ctrl.enhanced": "Use Monk's Enhanced Journal",
+  "MonksActiveTiles.ctrl.stopwhenreached": "Stop when reached in code",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -217,6 +225,8 @@
   "MonksActiveTiles.msg.useprevious": "Use current Tokens",
   "MonksActiveTiles.msg.usecontrolled": "Use Tokens currently controlled",
   "MonksActiveTiles.msg.noteleporttoken": "No token to teleport",
+  "MonksActiveTiles.msg.setposition": "Use current view",
+  "MonksActiveTiles.msg.usetagger": "Use Tagger",
 
   "MonksActiveTiles.allow-player.name": "Allow players",
   "MonksActiveTiles.allow-player.hint": "Allow players to activate Tiles if there is no GM present.",
