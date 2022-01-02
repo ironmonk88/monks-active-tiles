@@ -1988,11 +1988,12 @@ export class MonksActiveTiles {
                     }
                 }
 
-                return { tokens: entities, entities: entities };
+                return { tokens: entities, entities: entities, items: items };
             },
             content: async (trigger, action) => {
                 let entityName = await MonksActiveTiles.entityName(action.data?.entity);
-                return `<span class="action-style">${i18n(trigger.name)}</span>, <span class="details-style">"${action.data?.item.name}"</span> to <span class="entity-style">${entityName}</span>`;
+                let item = await fromUuid(action.data?.item.id);
+                return `<span class="action-style">${i18n(trigger.name)}</span>, <span class="details-style">"${item?.name || 'Unknown Item'}"</span> to <span class="entity-style">${entityName}</span>`;
             }
         },
         'permissions': {
@@ -2198,8 +2199,8 @@ export class MonksActiveTiles {
                     return i18n(trigger.name);
                 let entityName = await MonksActiveTiles.entityName(action.data?.entity);
                 let actor = await fromUuid(action.data?.actor.id);
-                let item = actor?.items.get(action.data?.attack?.id);
-                return `<span class="action-style">${i18n(trigger.name)}</span> <span class="entity-style">${entityName}</span> using <span class="details-style">"${actor?.name || 'Unknown Actor'}, ${item.name}"</span>`;
+                let item = actor?.items?.get(action.data?.attack?.id);
+                return `<span class="action-style">${i18n(trigger.name)}</span> <span class="entity-style">${entityName}</span> using <span class="details-style">"${actor?.name || 'Unknown Actor'}, ${item?.name || 'Unknown Item'}"</span>`;
             }
         },
         'trigger': {
@@ -2479,6 +2480,44 @@ export class MonksActiveTiles {
                 return `<span class="action-style">${i18n(trigger.name)}</span> for <span class="entity-style">${entityName}</span>`;
             }
         },
+        'delete': {
+            name: "MonksActiveTiles.action.delete",
+            options: { allowDelay: true },
+            ctrls: [
+                {
+                    id: "entity",
+                    name: "MonksActiveTiles.ctrl.select-entity",
+                    type: "select",
+                    subtype: "entity",
+                    options: { showTile: true, showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                    restrict: (entity) => { return (entity instanceof Token || entity instanceof Tile || entity instanceof Drawing || entity instanceof Note); },
+                    defaultType: 'tiles'
+                }
+            ],
+            fn: async (args = {}) => {
+                let entities = await MonksActiveTiles.getEntities(args, null, 'tiles');
+
+                let deleteIds = {};
+                for (let entity of entities) {
+                    if (!entity.data.locked) {
+                        if (!deleteIds[entity.constructor.documentName])
+                            deleteIds[entity.constructor.documentName] = [entity.id];
+                        else
+                            deleteIds[entity.constructor.documentName].push(entity.id);
+                    }
+                }
+
+                for (let [k, v] of Object.entries(deleteIds)) {
+                    if (v.length) {
+                        await canvas.scene.deleteEmbeddedDocuments(k, v);
+                    }
+                }
+            },
+            content: async (trigger, action) => {
+                let entityName = await MonksActiveTiles.entityName(action.data?.entity, 'tiles');
+                return `<span class="action-style">${i18n(trigger.name)}</span> <span class="entity-style">${entityName}</span>`;
+            }
+        },
         'distance': {
             name: "MonksActiveTiles.filter.distance",
             ctrls: [
@@ -2624,6 +2663,20 @@ export class MonksActiveTiles {
             content: async (trigger, action) => {
                 let entityName = await MonksActiveTiles.entityName(action.data?.entity);
                 return `<span class="filter-style">Stop</span> if <span class="entity-style">${entityName}</span> doesn't exist`;
+            }
+        },
+        'first': {
+            name: "MonksActiveTiles.filter.first",
+            ctrls: [
+            ],
+            group: "filters",
+            fn: async (args = {}) => {
+                let { value } = args;
+                if (value?.tokens?.length)
+                    return { tokens: [value.tokens[0]] };
+            },
+            content: async (trigger, action) => {
+                return `<span class="filter-style">Limit to </span> <span class="value-style">"First"</span> in the list`;
             }
         },
         'anchor': {
@@ -3210,9 +3263,8 @@ export class MonksActiveTiles {
 
         Handlebars.registerHelper({ selectGroups: MonksActiveTiles.selectGroups });
 
-        let oldTileRefresh = Tile.prototype.refresh;
-        Tile.prototype.refresh = function (...args) {
-            let result = oldTileRefresh.call(this, ...args);
+        let tileRefresh = function (wrapped, ...args) {
+            let result = wrapped(...args);
 
             if (this.bg) {
                 const aw = Math.abs(this.data.width);
@@ -3225,6 +3277,15 @@ export class MonksActiveTiles {
             }
 
             return result;
+        }
+
+        if (game.modules.get("lib-wrapper")?.active) {
+            libWrapper.register("monks-active-tiles", "Tile.prototype.refresh", tileRefresh, "WRAPPER");
+        } else {
+            const oldTileRefresh = Tile.prototype.refresh;
+            Tile.prototype.refresh = function (event) {
+                return tileRefresh.call(this, oldTileRefresh.bind(this), ...arguments);
+            }
         }
 
         let oldCycleTokens = TokenLayer.prototype.cycleTokens;
@@ -3721,16 +3782,7 @@ export class MonksActiveTiles {
 
     static setupTile() {
         TileDocument.prototype._normalize = function () {
-            if (this.data.flags["monks-active-tiles"] == undefined)
-                this.data.flags["monks-active-tiles"] = {};
-            if (this.data.flags["monks-active-tiles"].chance == undefined)
-                this.data.flags["monks-active-tiles"].chance = 100;
-            if (this.data.flags["monks-active-tiles"].restriction == undefined)
-                this.data.flags["monks-active-tiles"].restriction = 'all';
-            if (this.data.flags["monks-active-tiles"].controlled == undefined)
-                this.data.flags["monks-active-tiles"].controlled = 'all';
-            if (this.data.flags["monks-active-tiles"].actions == undefined)
-                this.data.flags["monks-active-tiles"].actions = [];
+            this.data.flags = mergeObject({ 'monks-active-tiles': { chance: 100, restriction: 'all', controlled: 'all', actions: []}}, this.data.flags);
         }
 
         TileDocument.prototype.pointWithin = function (point) {
@@ -4334,6 +4386,8 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                                     return;
 
                                 let triggerPt = tpts[idx];
+                                let pt = { x: triggerPt.x + (document.object.w / 2), y: triggerPt.y + (document.object.h / 2) };
+
                                 //if it does and the token needs to stop, then modify the end position in update
                                 let ray = new Ray({ x: token.data.x, y: token.data.y }, { x: triggerPt.x, y: triggerPt.y });
 
@@ -4383,7 +4437,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
 
                                 window.setTimeout(function () {
                                     log('Tile is triggering', document);
-                                    tile.document.trigger({ token: [document], method: triggerPt.method, pt: { x: triggerPt.x, y: triggerPt.y } });
+                                    tile.document.trigger({ token: [document], method: triggerPt.method, pt: pt });
                                     if(!stop)   //If this fires on Enter, and a stop is request then we don't need to run the On Exit code.
                                         doTrigger(idx + 1);
                                 }, duration);
@@ -4465,26 +4519,6 @@ Hooks.on('controlTerrain', (terrain, control) => {
         MonksActiveTiles.controlEntity(terrain);
 });
 
-/*
-Hooks.on('hoverTile', (tile, hover) => {
-    let triggerData = tile.data.flags["monks-active-tiles"];
-    if (triggerData && triggerData.active && ((triggerData.trigger == 'hoverin' && hover) || (triggerData.trigger == 'hoverout' && !hover))) {
-        //check to see if this trigger is restricted by control type
-        if ((triggerData.controlled == 'gm' && !game.user.isGM) || (triggerData.controlled == 'player' && game.user.isGM))
-            return;
-
-        let tokens = canvas.tokens.controlled.map(t => t.document);
-        //check to see if this trigger is per token, and already triggered
-        if (triggerData.pertoken) {
-            tokens = tokens.filter(t => !tile.hasTriggered(t.id)); //.uuid
-            if (tokens.length == 0)
-                return;
-        }
-
-        tile.document.trigger({ token: tokens, method: 'Hover' + (hover ? 'In' : 'Out') });
-    }
-});*/
-
 Hooks.on("setupTileActions", (actions) => {
     if (game.modules.get('forien-quest-log')?.active) {
         return Object.assign(actions, {
@@ -4529,4 +4563,28 @@ Hooks.on("renderPlaylistDirectory", (app, html, user) => {
 
 Hooks.once('libChangelogsReady', function () {
     libChangelogs.register("monks-active-tiles", "The option to delay an action has been moved from being a property of the action itself to its own action under the Logic group.  It will still appear for old actions that used delay but won't appear for new ones.", "major")
+});
+
+Hooks.on("dropCanvasData", async (canvas, data, options, test) => {
+    if (data.type == 'Item') {
+        //Get the Item
+        let item = game.items.get(data.id);
+
+        //Create Tile
+        //change the Tile Image to the Item image
+        //Add the actions to Hide the Tile, Disabled the Tile, and Add the Item to Inventory
+        let dest = canvas.grid.getSnappedPosition(data.x - (canvas.scene.data.size / 2), data.y - (canvas.scene.data.size / 2), canvas.background.gridPrecision);
+
+        let td = mergeObject(dest, {
+            img: item.img,
+            width: canvas.scene.data.size,
+            height: canvas.scene.data.size,
+            flags: {
+                'monks-active-tiles': { "active": true, "restriction": "all", "controlled": "all", "trigger": "click", "pertoken": false, "minrequired": 0, "chance": 100, "actions": [{ "action": "distance", "data": { "measure": "eq", "distance": { "value": 1, "var": "sq" }, "continue": "within" }, "id": "UugwKEORHARYwcS2" }, { "action": "exists", "data": { "entity": "" }, "id": "Tal2G8WXfo3xmL5U" }, { "action": "first", "id": "dU81VsGaWmAgLAYX" }, { "action": "showhide", "data": { "entity": { "id": "tile", "name": "This Tile" }, "hidden": "hide" }, "id": "UnujCziObnW2Axkx" }, { "action": "additem", "data": { "entity": "", "item": { "id": item.uuid, "name": "" } }, "id": "IwxJOA8Pi287jBbx" }, { "action": "notification", "data": { "text": "{{value.items.0.name}} has been added to {{value.tokens.0.name}}'s inventory", "type": "info", "showto": "token" }, "id": "oNx3QqEi0WpxfkhV" }, { "action": "activate", "data": { "entity": "", "activate": "deactivate" }, "id": "6K7aEZH8SnGv3Gyq" }] }
+            }
+        });
+
+        const cls = getDocumentClass("Tile");
+        await cls.create(td, { parent: canvas.scene });
+    }
 });

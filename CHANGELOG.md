@@ -1,3 +1,23 @@
+## Version 1.0.47
+
+Fixed an issue with normalizing a Tile when it's created.
+
+Fixed issue with assigning an Item, then name wasn't dynamic.
+
+Fixed an issue where an item deleted from an actor was causing errors with the Attack action.
+
+Added the Delete action.
+
+Added the First filter, so you can select the first item in the list.
+
+Wrapped the tile refresh function properly.
+
+Fixed an issue with the reported point that caused the Tile to trigger
+
+Added the option to drop an item on the Canvas an have it create a Tile with the same image, and actions setup so that a player can click the item and put it in inventory.
+
+Added a macro to setup a Tile so that it can be moved around by a token. And a macro to do the work.
+
 ## Version 1.0.46
 
 Fixing an issue finding a location name

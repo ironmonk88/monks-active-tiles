@@ -6,6 +6,8 @@ export const WithActiveTileConfig = (TileConfig) => {
     class ActiveTileConfig extends TileConfig {
         constructor(...args) {
             super(...args);
+
+            this.object._normalize();
         }
 
         static get defaultOptions() {
