@@ -2840,20 +2840,26 @@ export class MonksActiveTiles {
         if (location.id) {
             //this is directing to an entity
             let document = await fromUuid(location.id);
-            if (document)
+            if (document) {
                 sceneId = document.parent.id;
 
-            if (document.name)
-                name = document.name
-            else {
-                if (game.modules.get('tagger')?.active) {
-                    let tags = window.Tagger.getTags(document);
-                    if (tags.length)
-                        name = tags[0];
-                }
+                if (document.name)
+                    name = document.name
+                else {
+                    if (game.modules.get('tagger')?.active) {
+                        let tags = window.Tagger.getTags(document);
+                        if (tags.length)
+                            name = tags[0];
+                    }
 
-                if (!name)
-                    name = document.documentName + ": " + document.id;
+                    if (!name)
+                        name = document.documentName + ": " + document.id;
+                }
+            } else {
+                if (location.x || location.y)
+                    name = `[${location.x},${location.y}${(location.scale ? `, scale:${location.scale}` : '')}]`;
+                else
+                    name = "Unknown Location";
             }
         } else {
             name = `[${location.x},${location.y}${(location.scale ? `, scale:${location.scale}` : '')}]`;

@@ -1,3 +1,7 @@
+## Version 1.0.46
+
+Fixing an issue finding a location name
+
 ## Version 1.0.45
 
 Fixing an issue with the `=` in alter action
