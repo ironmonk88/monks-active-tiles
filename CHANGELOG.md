@@ -1,3 +1,29 @@
+## Version 1.0.48
+
+When using teleport, if the GM teleports a token it will now change scenes for the player if that's the player's character.
+
+Added the option to trigger other Tiles while performing a Move Token action.
+
+Fixed issues with Alter action not being able to find if the property exists.
+
+Allow players to open a journal if the GM isn't logging in.
+
+Added a Filter to get tokens with specific attributes.  You can use operators like `=, >, <, <=, >=, !=` in front of the value to check for.
+
+Fixed an issue where a blank entity id was causing an error
+
+Added Character to the properties sent to a Macro.
+
+Fixed an issue with goto logic and how it gets a copy of the context information.
+
+Also fixed an issue with going to an anchor.  It was failing if a stop was requested.
+
+Added setting for dropping an item on the canvas.
+
+Removed the Within Reach macro from the compendium since there's a filter that covers it.
+
+Japanese translations, thank you tonishi
+
 ## Version 1.0.47
 
 Fixed an issue with normalizing a Tile when it's created.

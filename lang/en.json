@@ -74,6 +74,7 @@
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
   "MonksActiveTiles.filter.exists": "Check if tokens exist",
   "MonksActiveTiles.filter.first": "First in the list",
+  "MonksActiveTiles.filter.attribute": "Filter by attributes",
 
   "MonksActiveTiles.logic.anchor": "Anchor",
   "MonksActiveTiles.logic.goto": "Go to Anchor",
@@ -135,6 +136,7 @@
   "MonksActiveTiles.ctrl.imgat": "Showing Image #",
   "MonksActiveTiles.ctrl.enhanced": "Use Monk's Enhanced Journal",
   "MonksActiveTiles.ctrl.stopwhenreached": "Stop when reached in code",
+  "MonksActiveTiles.ctrl.triggertiles": "Trigger tiles while moving",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -233,5 +235,7 @@
   "MonksActiveTiles.allow-player.name": "Allow players",
   "MonksActiveTiles.allow-player.hint": "Allow players to activate Tiles if there is no GM present.",
   "MonksActiveTiles.use-core-macro.name": "Use Core Macro Execute",
-  "MonksActiveTiles.use-core-macro.hint": "Core macro execution doesn't pass all the information available so Active Tiles handles executing macros.  Turn this back on if it's causing issues.'"
+  "MonksActiveTiles.use-core-macro.hint": "Core macro execution doesn't pass all the information available so Active Tiles handles executing macros.  Turn this back on if it's causing issues.'",
+  "MonksActiveTiles.drop-item.name": "Drop Item on Canvas",
+  "MonksActiveTiles.drop-item.hint":  "Allow items dropped on the canvas to be created as Active Tiles"
 }

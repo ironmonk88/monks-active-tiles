@@ -22,6 +22,15 @@ export const registerSettings = function () {
 		type: Boolean,
 	});
 
+	game.settings.register(modulename, "drop-item", {
+		name: i18n("MonksActiveTiles.drop-item.name"),
+		hint: i18n("MonksActiveTiles.drop-item.hint"),
+		scope: "world",
+		config: true,
+		default: true,
+		type: Boolean,
+	});
+
 	game.settings.register(modulename, "prevent-cycle", {
 		scope: "world",
 		config: false,
