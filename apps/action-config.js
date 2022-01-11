@@ -1,4 +1,4 @@
-import { MonksActiveTiles, log, setting, i18n, makeid } from '../monks-active-tiles.js';
+import { MonksActiveTiles, log, error, setting, i18n, makeid } from '../monks-active-tiles.js';
 
 export class ActionConfig extends FormApplication {
     constructor(object, options = {}) {
@@ -43,22 +43,26 @@ export class ActionConfig extends FormApplication {
 
     getData(options) {
         let groups = {};
+        for (let group of Object.keys(MonksActiveTiles.triggerGroups))
+            groups[group] = [];
         for (let [k, v] of Object.entries(MonksActiveTiles.triggerActions)) {
             let group = v.group || 'actions';
-            if (groups[group] == undefined)
-                groups[group] = [];
+            if (groups[group] == undefined) {
+                error(`${group} is not a registered Tile Group`);
+                continue;
+            }
             groups[group].push({ id: k, name: i18n(v.name)});
         }
 
         let availableActions = Object.entries(groups).map(([k, v]) => {
-            return {
-                text: i18n(`MonksActiveTiles.group.${k}`),
+            return (v.length > 0 ? {
+                text: i18n(MonksActiveTiles.triggerGroups[k].name),
                 groups: v.sort((a, b) => { return (a.name > b.name ? 1 : (a.name < b.name ? -1 : 0)) }).reduce(function (result, item) {
                     result[item.id] = item.name;
                     return result;
                 }, {})
-            };
-        });
+            } : null);
+        }).filter(g => g);
 
         /*
         let availableActions = temp.sort((a, b) => { return (a.name > b.name ? 1 : (a.name < b.name ? -1 : 0)) }).reduce(function (result, item) {
@@ -124,7 +128,7 @@ export class ActionConfig extends FormApplication {
         else if (btn.attr('data-type') == 'controlled')
             field.val('{"id":"controlled","name":"' + i18n("MonksActiveTiles.Controlled") + '"}').next().html(i18n("MonksActiveTiles.Controlled"));
         else if (btn.attr('data-type') == 'previous')
-            field.val('{"id":"previous","name":"' + i18n("MonksActiveTiles.PreviousData") + '"}').next().html(i18n("MonksActiveTiles.PreviousData"));
+            field.val('{"id":"previous","name":"' + i18n("MonksActiveTiles.PreviousData") + '"}').next().html(field.data('type') == 'entity' ? i18n("MonksActiveTiles.PreviousData") : i18n("MonksActiveTiles.CurrentLocation"));
         else {
             if (!this._minimized)
                 await this.minimize();
@@ -236,7 +240,7 @@ export class ActionConfig extends FormApplication {
                 .addClass('flexrow')
                 .append($('<input>').attr({ 'type': 'hidden', 'name': 'files.id' }).val(id))
                 .append($('<input>').attr({ 'type': 'hidden', 'name': 'files.name' }).val(filename))
-                .append($('<span>').html(filename))
+                .append($('<span>').addClass('image-name').html(filename))
                 .append($('<a>').css({'flex':'0 0 28px', height: '28px', width: '28px'}).html('<i class="fas fa-trash fa-sm"></i>').click(this.removeFile.bind(this, id))));
             $(event.currentTarget).val('');
             this.setPosition({height: 'auto'});
@@ -391,7 +395,7 @@ export class ActionConfig extends FormApplication {
                                     .addClass('flexrow file-row')
                                     .append($('<input>').attr({ 'type': 'hidden', 'name': 'files.id' }).val(file.id))
                                     .append($('<input>').attr({ 'type': 'hidden', 'name': 'files.name' }).val(file.name))
-                                    .append($('<span>').html(file.name))
+                                    .append($('<span>').addClass('image-name').html(file.name))
                                     .append($('<a>').html('<i class="fas fa-trash fa-sm"></i>').click(this.removeFile.bind(this, file.id)))
                                 );
                         }
@@ -421,7 +425,10 @@ export class ActionConfig extends FormApplication {
                             .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'hidden', name: id }).val(JSON.stringify(data[ctrl.id])).data({ 'type': ctrl.subtype, deftype: ctrl.defaultType }))
                             .append($('<span>').addClass('display-value').html(await MonksActiveTiles.locationName(data[ctrl.id]) || `<span class="placeholder-style">${ctrl.placeholder || 'Please select a location'}</style>`)) //(data[ctrl.id] ? (data[ctrl.id].name ? data[ctrl.id].name : 'x:' + data[ctrl.id].x + ', y:' + data[ctrl.id].y) + (scene ? ', scene:' + scene.name : '') : '')
                             .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectlocation") }).addClass('location-picker').html('<i class="fas fa-crosshairs fa-sm"></i>').click(this.selectEntity.bind(this)))
-                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'position', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.setposition") }).toggle(ctrl.subtype == 'position').addClass('entity-picker').html('<i class="fas fa-crop-alt fa-sm"></i>').click(this.selectPosition.bind(this)));
+                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'position', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.setposition") }).toggle(ctrl.subtype == 'position').addClass('location-picker').html('<i class="fas fa-crop-alt fa-sm"></i>').click(this.selectPosition.bind(this)))
+                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'previous', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useprevious") }).toggle(options.showPrevious).addClass('location-picker').html('<i class="fas fa-history fa-sm"></i>').click(this.selectEntity.bind(this)))
+                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'tagger', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetagger") }).toggle(options.showTagger && game.modules.get('tagger')?.active).addClass('location-picker').html('<i class="fas fa-tag fa-sm"></i>').click(this.addTag.bind(this)));
+
                     } else if (ctrl.subtype == 'entity') {
                         field//.css({ 'flex-direction': 'row', 'align-items': 'flex-start' })
                             .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'hidden', name: id }).val(typeof data[ctrl.id] == 'object' ? JSON.stringify(data[ctrl.id]) : data[ctrl.id]).data({ 'restrict': ctrl.restrict, 'type': 'entity', deftype: ctrl.defaultType }))

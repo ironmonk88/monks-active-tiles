@@ -1,3 +1,27 @@
+## Version 1.0.49
+
+Fixed issues with long names not being properly clipped when using the Cycle Images action.
+
+Added the option to select previous or tagger for location destinations.
+
+Added a Hook for declaring a trigger group, so that modules can set themselves up as their own group.
+
+Added a new action to create a Journal Note on the canvas
+
+Fixed an issue with sound effects being restricted to a scene.
+
+Fixed an issue where selecting a Token instead of an Actor for the attack action was resulting in not being able to find the Item.
+
+Updated the filters so you can set what tokens to use if they're the first ones in the list.
+
+Fixed an issue where resetting the history was clearing out changes made due to a refresh of the Dialog.
+
+Fixed an issue where having Item Piles and Active Tile both active would cause multiple item lists to appear on the canvas.  It will now set the option to off if Item Piles is detected.
+
+Added support for Kandashi's Fluid Canvas.  So those commands can be called directly from Active Tiles.
+
+Fixed an issue where items dropped from a Compendium onto the map were causing errors.
+
 ## Version 1.0.48
 
 When using teleport, if the GM teleports a token it will now change scenes for the player if that's the player's character.

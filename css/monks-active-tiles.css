@@ -254,6 +254,7 @@
     color: #191813;
     max-height:100px;
     overflow-y:auto;
+    max-width:400px;
 }
 
 #trigger-action .file-list li {
@@ -291,4 +292,9 @@
     font-weight: 700;
     text-align: left;
     font-size: 16px;
+}
+
+#trigger-action .file-list .image-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }

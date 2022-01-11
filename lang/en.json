@@ -6,6 +6,7 @@
   "MonksActiveTiles.ThisTile": "This Tile",
   "MonksActiveTiles.TriggeringToken": "Triggering Token",
   "MonksActiveTiles.PlayerTokens": "Player Tokens",
+  "MonksActiveTiles.CurrentLocation": "Current Location",
   "MonksActiveTiles.WithinTile": "Tokens within Tile",
   "MonksActiveTiles.PreviousData": "Current Tokens",
   "MonksActiveTiles.Controlled": "Controlled Tokens",
@@ -70,6 +71,7 @@
   "MonksActiveTiles.action.delay": "Delay actions",
   "MonksActiveTiles.action.imagecycle": "Cycle Images",
   "MonksActiveTiles.action.delete": "Delete Entities",
+  "MonksActiveTiles.action.createjournal": "Create Journal Note",
 
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
   "MonksActiveTiles.filter.exists": "Check if tokens exist",
@@ -137,6 +139,7 @@
   "MonksActiveTiles.ctrl.enhanced": "Use Monk's Enhanced Journal",
   "MonksActiveTiles.ctrl.stopwhenreached": "Stop when reached in code",
   "MonksActiveTiles.ctrl.triggertiles": "Trigger tiles while moving",
+  "MonksActiveTiles.ctrl.icon": "Entry Icon",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -231,11 +234,12 @@
   "MonksActiveTiles.msg.noteleporttoken": "No token to teleport",
   "MonksActiveTiles.msg.setposition": "Use current view",
   "MonksActiveTiles.msg.usetagger": "Use Tagger",
+  "MonksActiveTiles.msg.itempiles": "The drop items feature of Active Tiles conflicts with Item Piles, the setting has been disabled.",
 
   "MonksActiveTiles.allow-player.name": "Allow players",
   "MonksActiveTiles.allow-player.hint": "Allow players to activate Tiles if there is no GM present.",
   "MonksActiveTiles.use-core-macro.name": "Use Core Macro Execute",
   "MonksActiveTiles.use-core-macro.hint": "Core macro execution doesn't pass all the information available so Active Tiles handles executing macros.  Turn this back on if it's causing issues.'",
   "MonksActiveTiles.drop-item.name": "Drop Item on Canvas",
-  "MonksActiveTiles.drop-item.hint":  "Allow items dropped on the canvas to be created as Active Tiles"
+  "MonksActiveTiles.drop-item.hint": "Allow items dropped on the canvas to be created as Active Tiles"
 }
