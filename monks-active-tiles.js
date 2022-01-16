@@ -3079,7 +3079,7 @@ export class MonksActiveTiles {
             let dest;
             if (location.id.startsWith('tagger')) {
                 if (game.modules.get('tagger')?.active) {
-                    let tag = location.id.substring(8);
+                    let tag = location.id.split(":")[1]
                     entities = window.Tagger.getByTag(tag);
                     if (entities.length) {
                         dest = entities[Math.floor(Math.random() * entities.length)];
