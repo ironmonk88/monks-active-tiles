@@ -1,3 +1,23 @@
+## Version 1.0.50
+
+Added the option when changing Door state to change from regular to secret door.
+
+Added two new When options, On Combat Round start, and On Combat Turn start
+
+Allow movement for Ambient Light and Ambient Sound.  Although it's a little weird and won't actually update until it reaches its destination.
+
+Added error checkign to make sure Hurt/Heal evaluates to a number.  Thsi should prevent the action from setting the actors HP to 0.
+
+Allow the Delete action to delete Ambient Light and Ambient Sound
+
+Added the option to select by tag when filtering by first entity and filtering by attribute.
+
+Added the option to go to an achor if the Check if tokens exist filter returns no actors.
+
+Fixed issues with running a chat macro instead of a script macro
+
+Added support for adding/deleting a Tagger tag to an object
+
 ## Version 1.0.49
 
 Fixed issues with long names not being properly clipped when using the Cycle Images action.

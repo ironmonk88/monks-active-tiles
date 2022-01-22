@@ -47,7 +47,7 @@
   "MonksActiveTiles.action.playsound": "Play sound file",
   "MonksActiveTiles.action.playlist": "Play Playlist sound",
   "MonksActiveTiles.action.stopsound": "Stop sound",
-  "MonksActiveTiles.action.changedoor": "Change door state",
+  "MonksActiveTiles.action.changedoor": "Change Door",
   "MonksActiveTiles.action.notification": "Send Notification",
   "MonksActiveTiles.action.chatmessage": "Chat Message",
   "MonksActiveTiles.action.runmacro": "Run Macro",
@@ -140,6 +140,7 @@
   "MonksActiveTiles.ctrl.stopwhenreached": "Stop when reached in code",
   "MonksActiveTiles.ctrl.triggertiles": "Trigger tiles while moving",
   "MonksActiveTiles.ctrl.icon": "Entry Icon",
+  "MonksActiveTiles.ctrl.tag": "Tag Name",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -151,6 +152,8 @@
   "MonksActiveTiles.mode.hoverout": "On Hover Out",
   "MonksActiveTiles.mode.manual": "Manually Activate",
   "MonksActiveTiles.mode.stop": "On Stop within Tile",
+  "MonksActiveTiles.mode.round": "On Combat Round",
+  "MonksActiveTiles.mode.turn": "On Combat Turn",
 
   "MonksActiveTiles.restrict.all": "Allow All Tokens",
   "MonksActiveTiles.restrict.player": "Only Player Tokens",
@@ -185,6 +188,12 @@
   "MonksActiveTiles.state.closed": "Closed",
   "MonksActiveTiles.state.locked": "Locked",
   "MonksActiveTiles.state.toggle": "Toggle",
+  "MonksActiveTiles.state.add": "Add",
+  "MonksActiveTiles.state.remove": "Remove",
+
+  "MonksActiveTiles.doortype.door": "Door",
+  "MonksActiveTiles.doortype.secret": "Secret",
+  "MonksActiveTiles.doortype.toggle": "Toggle",
 
   "MonksActiveTiles.animate.start": "Start",
   "MonksActiveTiles.animate.pause": "Pause",

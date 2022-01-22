@@ -40,6 +40,8 @@ export const WithActiveTileConfig = (TileConfig) => {
                 'dblclick': i18n("MonksActiveTiles.mode.dblclick"),
                 'hoverin': i18n("MonksActiveTiles.mode.hoverin"),
                 'hoverout': i18n("MonksActiveTiles.mode.hoverout"),
+                'round': i18n("MonksActiveTiles.mode.round"),
+                'turn': i18n("MonksActiveTiles.mode.turn"),
                 'manual': i18n("MonksActiveTiles.mode.manual")
             };
             tiledata.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
