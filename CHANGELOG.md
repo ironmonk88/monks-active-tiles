@@ -1,3 +1,25 @@
+## Version 1.0.51
+
+Added two new triggers, On Combat Start and On Combat End.
+
+Fixed an issue with alter that it wouldn't alter the Actor data even though it would find the actor information.
+
+Updated the audio settings so you can play the audio clip for the triggering player, or for the player that owns the Token.  So the GM can trigger sounds for the players now.
+
+And cleared up the text description so it makes mroe sense what the setting is refering to.
+
+Clamped the volume settings so that it can't exceed 1.
+
+Fixed an issue in PF2E where clicking on a Tile was broken.
+
+Fixed an issue with passing the action id properly.
+
+Fixed the Multiple Anchors based on DC macro.
+
+Added the option to cycle through images randomly.
+
+Fixed an issue with how other modules can add their actions to Monks Active Tiles.  To avoid duplication of action names.  This will require all Tiles within your world be adjusted... but it should be handled automatically by Active Tiles.
+
 ## Version 1.0.50
 
 Added the option when changing Door state to change from regular to secret door.
@@ -6,7 +28,7 @@ Added two new When options, On Combat Round start, and On Combat Turn start
 
 Allow movement for Ambient Light and Ambient Sound.  Although it's a little weird and won't actually update until it reaches its destination.
 
-Added error checkign to make sure Hurt/Heal evaluates to a number.  Thsi should prevent the action from setting the actors HP to 0.
+Added error checking to make sure Hurt/Heal evaluates to a number.  Thsi should prevent the action from setting the actors HP to 0.
 
 Allow the Delete action to delete Ambient Light and Ambient Sound
 

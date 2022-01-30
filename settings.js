@@ -37,4 +37,11 @@ export const registerSettings = function () {
 		default: false,
 		type: Boolean
 	});
+
+	game.settings.register(modulename, "fix-action-names", {
+		scope: "world",
+		config: false,
+		default: false,
+		type: Boolean
+	});
 }

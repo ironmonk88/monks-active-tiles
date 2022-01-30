@@ -141,6 +141,7 @@
   "MonksActiveTiles.ctrl.triggertiles": "Trigger tiles while moving",
   "MonksActiveTiles.ctrl.icon": "Entry Icon",
   "MonksActiveTiles.ctrl.tag": "Tag Name",
+  "MonksActiveTiles.ctrl.random": "Random",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -154,6 +155,8 @@
   "MonksActiveTiles.mode.stop": "On Stop within Tile",
   "MonksActiveTiles.mode.round": "On Combat Round",
   "MonksActiveTiles.mode.turn": "On Combat Turn",
+  "MonksActiveTiles.mode.combatstart": "On Combat Start",
+  "MonksActiveTiles.mode.combatend": "On Combat End",
 
   "MonksActiveTiles.restrict.all": "Allow All Tokens",
   "MonksActiveTiles.restrict.player": "Only Player Tokens",
@@ -180,6 +183,7 @@
   "MonksActiveTiles.for.all": "Everyone",
   "MonksActiveTiles.for.gm": "GM Only",
   "MonksActiveTiles.for.token": "Token Owner",
+  "MonksActiveTiles.for.player": "Triggering Player",
 
   "MonksActiveTiles.audiotype.all": "Ambient Sounds",
   "MonksActiveTiles.audiotype.tile": "Tile Sounds",
