@@ -3112,7 +3112,14 @@ export class MonksActiveTiles {
             //find all tokens with this Tile
             entities = canvas.tokens.placeables.filter(t => {
                 const midToken = { x: t.data.x + (t.data.width / 2), y: t.data.y + (t.data.height / 2) };
-                return tile.pointWithin(midToken);
+                if (game.modules.get("levels")?.active) {
+                    let tileht = tile.data.flags.levels.rangeTop ?? 0;
+                    let tilehb = tile.data.flags?.levels.rangeBottom ?? 0;
+                    console.log("LEVELS TRIGGER", t.data.elevation, tileht, tilehb);
+                    if (t.data.elevation >= tilehb && t.data.elevation <= tileht)
+                        return tile.pointWithin(midToken);
+                }else
+                    return tile.pointWithin(midToken);
             }).map(t => t.document);
         }
         else if (id == 'controlled') {
