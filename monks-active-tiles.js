@@ -3113,9 +3113,8 @@ export class MonksActiveTiles {
             entities = canvas.tokens.placeables.filter(t => {
                 const midToken = { x: t.data.x + (t.data.width / 2), y: t.data.y + (t.data.height / 2) };
                 if (game.modules.get("levels")?.active) {
-                    let tileht = tile.data.flags.levels.rangeTop ?? 0;
-                    let tilehb = tile.data.flags?.levels.rangeBottom ?? 0;
-                    console.log("LEVELS TRIGGER", t.data.elevation, tileht, tilehb);
+                    let tileht = tile.data.flags.levels.rangeTop ?? 1000;
+                    let tilehb = tile.data.flags.levels.rangeBottom ?? -1000;
                     if (t.data.elevation >= tilehb && t.data.elevation <= tileht)
                         return tile.pointWithin(midToken);
                 }else
