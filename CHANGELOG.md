@@ -1,3 +1,9 @@
+## Version 1.0.55
+
+Fixing an errors with sending selected tokens from the player to the GM.
+
+Added option to move a token to another tokens location.
+
 ## Version 1.0.54
 
 Fixed issue with allowing tags to be added to entities other than token.

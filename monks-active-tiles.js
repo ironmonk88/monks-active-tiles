@@ -388,7 +388,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-coordinates",
                     type: "select",
                     subtype: "either",
-                    options: { showTagger: true },
+                    options: { showTagger: true, showToken: true },
                     restrict: (entity) => { return (entity instanceof Tile && this.scene.id == entity.parent.id) || this.scene.id == entity.id; },
                     required: true
                 },
@@ -410,12 +410,12 @@ export class MonksActiveTiles {
                 }
             ],
             fn: async (args = {}) => {
-                const { action, value } = args;
+                const { action, value, pt } = args;
                 //wait for animate movement
                 let entities = await MonksActiveTiles.getEntities(args);
                     
                 if (entities && entities.length > 0) {
-                    let dest = await MonksActiveTiles.getLocation(action.data.location, value);
+                    let dest = await MonksActiveTiles.getLocation(action.data.location, value, pt);
                     //set or toggle visible
                     for (let entity of entities) {
                         let object = entity.object;
@@ -3385,10 +3385,12 @@ export class MonksActiveTiles {
         return name;
     }
 
-    static async getLocation(location, value) {
+    static async getLocation(location, value, pt) {
 
         if (location.id == 'previous')
             location = value["location"];
+        if (location.id == 'token')
+            location = pt;
 
         if (location.id) {
             let dest;
@@ -3431,6 +3433,8 @@ export class MonksActiveTiles {
         if (location.id) {
             if (location?.id == 'previous')
                 name = "Current Location";
+            else if (location?.id == 'token')
+                name = "Triggering Token";
             else if (location?.id.startsWith('tagger'))
                 name = `[Tagger] ${location.id.substring(7)}`;
             else {
@@ -4720,8 +4724,8 @@ export class MonksActiveTiles {
                 return await this.runActions(context);
             } else {
                 //post this to the GM
-                let tokens = token.map(t => (t?.document?.uuid || t?.uuid));
-                MonksActiveTiles.emit('trigger', { tileid: this.uuid, tokens: tokens, method: method, pt: pt, options: options } );
+                let tokenData = tokens.map(t => (t?.document?.uuid || t?.uuid));
+                MonksActiveTiles.emit('trigger', { tileid: this.uuid, tokens: tokenData, method: method, pt: pt, options: options } );
             }
         }
 
