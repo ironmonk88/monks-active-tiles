@@ -5437,17 +5437,18 @@ Hooks.once('libChangelogsReady', function () {
 
 Hooks.on("renderWallConfig", async (app, html, options) => {
     if (setting("allow-door")) {
-        let basictab = $('<div>').addClass("tab").attr('data-tab', 'basic');
-        $('form > *:not(button)', html).each(function () {
-            basictab.append(this);
-        });
-
         let entity = JSON.parse(app.object.data.flags['monks-active-tiles']?.entity || "{}");
         let tilename = "";
         if (entity.id)
             tilename = await MonksActiveTiles.entityName(entity);
         let triggerData = { tilename: tilename, entity: app.object.data.flags['monks-active-tiles']?.entity };
         let wallHtml = await renderTemplate("modules/monks-active-tiles/templates/wall-config.html", triggerData);
+
+        let basictab = $('<div>').addClass("tab").attr('data-tab', 'basic');
+        $('form > *:not(button)', html).each(function () {
+            basictab.append(this);
+        });
+
         $('form', html).prepend($('<div>').addClass("tab action-sheet").attr('data-tab', 'triggers').html(wallHtml)).prepend(basictab).prepend(
             $('<nav>')
                 .addClass("sheet-tabs tabs")

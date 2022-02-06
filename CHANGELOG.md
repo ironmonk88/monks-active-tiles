@@ -1,3 +1,7 @@
+## Version 1.0.53
+
+Fixing issue with missing Wall Height controls.
+
 ## Version 1.0.52
 
 Added the option to pan canvas just for the GM.
