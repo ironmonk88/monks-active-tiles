@@ -5439,7 +5439,7 @@ Hooks.on("renderPlaylistDirectory", (app, html, user) => {
 });
 
 Hooks.once('libChangelogsReady', function () {
-    libChangelogs.register("monks-active-tiles", "The option to delay an action has been moved from being a property of the action itself to its own action under the Logic group.  It will still appear for old actions that used delay but won't appear for new ones.", "major")
+    //libChangelogs.register("monks-active-tiles", "The option to delay an action has been moved from being a property of the action itself to its own action under the Logic group.  It will still appear for old actions that used delay but won't appear for new ones.", "major")
 });
 
 Hooks.on("renderWallConfig", async (app, html, options) => {
