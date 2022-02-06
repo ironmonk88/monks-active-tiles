@@ -47,7 +47,7 @@
   "MonksActiveTiles.action.playsound": "Play sound file",
   "MonksActiveTiles.action.playlist": "Play Playlist sound",
   "MonksActiveTiles.action.stopsound": "Stop sound",
-  "MonksActiveTiles.action.changedoor": "Change Door",
+  "MonksActiveTiles.action.changedoor": "Change Wall/Door",
   "MonksActiveTiles.action.notification": "Send Notification",
   "MonksActiveTiles.action.chatmessage": "Chat Message",
   "MonksActiveTiles.action.runmacro": "Run Macro",
@@ -74,7 +74,9 @@
   "MonksActiveTiles.action.createjournal": "Create Journal Note",
 
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
-  "MonksActiveTiles.filter.exists": "Check if tokens exist",
+  "MonksActiveTiles.filter.exists": "Check entity count",
+  "MonksActiveTiles.filter.triggercount": "Check tile trigger count",
+  "MonksActiveTiles.filter.tokencount": "Filter by token trigger count",
   "MonksActiveTiles.filter.first": "First in the list",
   "MonksActiveTiles.filter.attribute": "Filter by attributes",
 
@@ -142,6 +144,9 @@
   "MonksActiveTiles.ctrl.icon": "Entry Icon",
   "MonksActiveTiles.ctrl.tag": "Tag Name",
   "MonksActiveTiles.ctrl.random": "Random",
+  "MonksActiveTiles.ctrl.count": "Count",
+  "MonksActiveTiles.ctrl.triggercount": "Trigger Count",
+  "MonksActiveTiles.ctrl.tokencount": "Token Trigger Count",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -254,5 +259,7 @@
   "MonksActiveTiles.use-core-macro.name": "Use Core Macro Execute",
   "MonksActiveTiles.use-core-macro.hint": "Core macro execution doesn't pass all the information available so Active Tiles handles executing macros.  Turn this back on if it's causing issues.'",
   "MonksActiveTiles.drop-item.name": "Drop Item on Canvas",
-  "MonksActiveTiles.drop-item.hint": "Allow items dropped on the canvas to be created as Active Tiles"
+  "MonksActiveTiles.drop-item.hint": "Allow items dropped on the canvas to be created as Active Tiles",
+  "MonksActiveTiles.allow-door.name": "Door Triggers",
+  "MonksActiveTiles.allow-door.hint": "Allow Doors to trigger Tiles"
 }

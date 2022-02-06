@@ -36,19 +36,23 @@
     </div>
 </div>
 
+{{#if data.flags.monks-active-tiles.pertoken }}
 <div class="form-group">
     <label>{{ localize "MonksActiveTiles.PerToken" }}</label>
     <div class="form-fields">
         <input type="checkbox" name="flags.monks-active-tiles.pertoken" {{ checked data.flags.monks-active-tiles.pertoken }}>
     </div>
 </div>
+{{/if}}
 
+{{#if (gt data.flags.monks-active-tiles.minrequired 0)}}
 <div class="form-group">
     <label>{{ localize "MonksActiveTiles.MinRequired" }}</label>
     <div class="form-fields" style="flex:0 0 100px;">
         <input type="number" style="text-align:right;" name="flags.monks-active-tiles.minrequired" min="0" value="{{data.flags.monks-active-tiles.minrequired}}">
     </div>
 </div>
+{{/if}}
 
 <div class="form-group">
     <label>{{ localize "MonksActiveTiles.ChanceTrigger" }}</label>

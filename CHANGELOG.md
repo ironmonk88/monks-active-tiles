@@ -1,3 +1,35 @@
+## Version 1.0.52
+
+Added the option to pan canvas just for the GM.
+
+Added option to use tagger or current location to create tokens.
+
+Added scene data to context when altering an entity, or sending a notification, or sending a chat message, or changing elevation.
+
+Changed Hurt/Heal to be able to roll a dice without having to use square brackets.
+
+Allow roll tables use tables in compendiums.
+
+Fixed some really messed up code when rolling from the roll table.
+
+Fixed issues with sending token data to tiles triggered by other tiles.
+
+Changed the Stop if doesn't exist filter to now check for a count of entities.  Before it was set to > 0, now you can have it check to see if the are more than 3 tokens.  You can also now check other collections.  So you can check the count of tiles, or walls, or items that are currently being tracked, and not just tokens.
+
+Added a filter Tile triggered, that will now check the number of times the Tile has been triggered.  So you can stop remaining actions depending on how many times the tile has been triggered.  And with the addition of this filter, the Min. Required field has been removed.  Since this filter essentially takes its place, with greater flexibility.  As with other changes, if your Tile already uses this feature it will still function, and remain on the Tile sheet, but for any furture Tiles, or ones that never had that set, the field won't appear and you'll need to switch to using the filter.
+
+Added a filter Token triggered, that will check the number of times a token has triggered the Tile.  So you can now have the trap only trigger the thrird time a token enters the area.
+
+Updated the attribute filter to be able to check on attributes from other collections than just tokens.
+
+Added the option to add `and` and `or` when using the attribute filter.
+
+Fixed issues with getting entities from within the Tile if the GM is not on the same scene as the players.
+
+Fixed an issue when getting location from a tagger tag.
+
+Also added the option to have a door trigger a tile.
+
 ## Version 1.0.51
 
 Added two new triggers, On Combat Start and On Combat End.

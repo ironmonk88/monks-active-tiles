@@ -121,7 +121,7 @@
     color: #808080;
 }
 
-.action-sheet form .form-group .form-fields button {
+.action-sheet .form-group .form-fields button {
     flex: 0 0 28px;
     height: 28px;
     width: 28px;
