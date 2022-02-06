@@ -1,3 +1,7 @@
+## Version 1.0.54
+
+Fixed issue with allowing tags to be added to entities other than token.
+
 ## Version 1.0.53
 
 Fixing issue with missing Wall Height controls.

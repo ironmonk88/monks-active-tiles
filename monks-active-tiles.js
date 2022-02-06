@@ -5380,8 +5380,15 @@ Hooks.on("setupTileActions", (app) => {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
-                    restrict: (entity) => { return (entity instanceof Token); }
+                    options: { showTile: true, showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                    restrict: (entity) => {
+                        return (
+                            entity instanceof Token ||
+                            entity instanceof Tile ||
+                            entity instanceof Drawing ||
+                            entity instanceof AmbientLight ||
+                            entity instanceof AmbientSound ||
+                            entity instanceof Note); }
                 },
                 {
                     id: "tag",
