@@ -28,7 +28,9 @@ Fixed issues with getting entities from within the Tile if the GM is not on the 
 
 Fixed an issue when getting location from a tagger tag.
 
-Also added the option to have a door trigger a tile.
+Also added the option to have a door trigger a tile.  You know... no biggie.
+
+Added Levels support when determining if a token is within a Tile. thank you rinnocenti.
 
 ## Version 1.0.51
 
