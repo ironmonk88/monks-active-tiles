@@ -2,13 +2,12 @@ import { registerSettings } from "./settings.js";
 import { WithActiveTileConfig } from "./apps/active-tile-config.js"
 import { ActionConfig } from "./apps/action-config.js";
 
-let debugEnabled = 1;
 export let debug = (...args) => {
-    if (debugEnabled > 1) console.log("DEBUG: monks-active-tiles | ", ...args);
+    if (MonksActiveTiles.debugEnabled > 1) console.log("DEBUG: monks-active-tiles | ", ...args);
 };
 export let log = (...args) => console.log("monks-active-tiles | ", ...args);
 export let warn = (...args) => {
-    if (debugEnabled > 0) console.warn("monks-active-tiles | ", ...args);
+    if (MonksActiveTiles.debugEnabled > 0) console.warn("monks-active-tiles | ", ...args);
 };
 export let error = (...args) => console.error("monks-active-tiles | ", ...args);
 export let i18n = key => {
@@ -41,6 +40,7 @@ export class MonksActiveTiles {
     //static _oldObjectClass;
     //static _rejectRemaining = {};
     static savestate = {};
+    static debugEnabled = 1;
 
     static timeout(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -251,6 +251,7 @@ export class MonksActiveTiles {
                 let result = { continue: true, tokens: entities, entities: entities };
 
                 for (let tokendoc of entities) {
+                    await tokendoc.setFlag('monks-active-tiles', 'teleporting', true);
                     let tokenWidth = ((tokendoc.parent.dimensions.size * tokendoc.data.width) / 2);
                     let tokenHeight = ((tokendoc.parent.dimensions.size * tokendoc.data.height) / 2);
 
@@ -353,6 +354,7 @@ export class MonksActiveTiles {
 
                         result.tokens.push(newtoken);
                     }
+                    await tokendoc.unsetFlag('monks-active-tiles', 'teleporting');
                 }
 
                 return result;
@@ -1257,11 +1259,11 @@ export class MonksActiveTiles {
                             userid: (action.data.audiofor == 'token' ? [userid] : (action.data.audiofor == 'owner' ? owners : null)),
                         });
                     }
-                    log('Playing', audiofile);
+                    debug('Playing', audiofile);
                     AudioHelper.play({ src: audiofile, volume: volume, loop: action.data.loop }, false).then((sound) => {
                         tile.soundeffect = sound;
                         tile.soundeffect.on("end", () => {
-                            log('Finished playing', audiofile);
+                            debug('Finished playing', audiofile);
                             delete tile.soundeffect;
                         });
                     });
@@ -1873,7 +1875,7 @@ export class MonksActiveTiles {
                         results.items = results.items.filter(e => e);
                     }
 
-                    log("Rolltable", results);
+                    debug("Rolltable", results);
 
                     return results;
                 }
@@ -2874,7 +2876,7 @@ export class MonksActiveTiles {
                             return action.data.measure == 'lte';
                         } else {
                             const dist = Math.hypot(intersect[0].x - midToken.x, intersect[0].y - midToken.y) - ((t.data.width * canvas.grid.w) / 2);
-                            console.log('token within', dist);
+                            debug('token within', dist);
 
                             return (action.data.measure == 'gt' ? dist > distance : dist <= distance && dist > -(t.data.width * canvas.grid.w));
                         }
@@ -3950,14 +3952,14 @@ export class MonksActiveTiles {
 
                 if (!lastPositionContainsTile && currentPositionContainsTile && !hoveredTiles.has(tile)) {
                     hoveredTiles.add(tile)
-                    if (triggerData.trigger === "hoverin") {
+                    if (triggerData.trigger === "hover" || triggerData.trigger === "hoverin") {
                         tile.trigger({ tokens: tokens, method: 'HoverIn', pt: currentPosition });
                     }
                 }
 
                 if (lastPositionContainsTile && !currentPositionContainsTile && hoveredTiles.has(tile)) {
                     hoveredTiles.delete(tile)
-                    if (triggerData.trigger === "hoverout") {
+                    if (triggerData.trigger === "hover" || triggerData.trigger === "hoverout") {
                         tile.trigger({ tokens: tokens, method: 'HoverOut', pt: currentPosition });
                     }
                 }
@@ -4349,11 +4351,11 @@ export class MonksActiveTiles {
                             } catch {}
                         }
 
-                        log('Playing', data.src);
+                        debug('Playing', data.src);
                         AudioHelper.play({ src: data.src, volume: data.volume, loop: data.loop }, false).then((sound) => {
                             tile.soundeffect = sound;
                             tile.soundeffect.on("end", () => {
-                                log('Finished playing', data.src);
+                                debug('Finished playing', data.src);
                                 delete tile.soundeffect;
                             });
                         });
@@ -4651,9 +4653,9 @@ export class MonksActiveTiles {
                         newPos.push({ x: destination.x, y: destination.y, method: 'Stop' });
                 } else {
                     let checkPos = function (wh) {
-                        let idx = ((inTile ? 0 : 1) - (wh == 'enter' || wh == 'both' ? 1 : 0));
+                        let idx = ((inTile ? 0 : 1) - (wh == 'enter' ? 1 : 0));
 
-                        log(collision, sorted, filtered, inTile, wh, idx);
+                        debug("Can Trigger", collision, sorted, filtered, inTile, wh, idx);
 
                         if (idx < 0 || idx >= filtered.length)
                             return;
@@ -4661,11 +4663,11 @@ export class MonksActiveTiles {
                         let pos = duplicate(filtered[idx]);
                         pos.x -= (token.w / 2);
                         pos.y -= (token.h / 2);
-                        pos.method = wh;
+                        pos.method = (wh == 'enter' ? "Enter" : "Exit");
                         newPos.push(pos);
                     }
 
-                    checkPos(when);
+                    checkPos(when == 'both' ? 'enter' : when);
                     if (when == 'both')
                         checkPos('exit');
                 }
@@ -4691,9 +4693,15 @@ export class MonksActiveTiles {
         TileDocument.prototype.checkStop = function () {
             let when = this.getFlag('monks-active-tiles', 'trigger');
             if (when == 'movement')
-                return false;
-            let stoppage = this.data.flags['monks-active-tiles'].actions.filter(a => { return MonksActiveTiles.triggerActions[a.action].stop === true });
-            return (stoppage.length == 0 ? false : (stoppage.find(a => a.data?.snap) ? 'snap' : true));
+                return { stop: false };
+            let stopmovement = false;
+            let stoppage = this.data.flags['monks-active-tiles'].actions.filter(a => {
+                if (a.action == 'movement')
+                    stopmovement = true;
+                return MonksActiveTiles.triggerActions[a.action].stop === true;
+            });
+            return { stop: stoppage.length != 0, snap: stoppage.find(a => a.data?.snap), coolDown: stopmovement };
+            //return (stoppage.length == 0 ? { stop: false } : (stoppage.find(a => a.data?.snap) ? 'snap' : true));
         }
 
         TileDocument.prototype.trigger = async function ({ token = [], tokens = [], userid = game.user.id, method, pt, options = {} }) {
@@ -4706,7 +4714,7 @@ export class MonksActiveTiles {
                 //if (this.data.flags["monks-active-tiles"]?.pertoken)
                 if (game.user.isGM) {
                     if (tokens.length > 0) {
-                        for (let tkn of token)
+                        for (let tkn of tokens)
                             await this.addHistory(tkn.id, method, userid);    //changing this to always register tokens that have triggered it.
                     } else if(method != "Trigger")
                         await this.addHistory("", method, userid);
@@ -4745,6 +4753,7 @@ export class MonksActiveTiles {
                 if (trigger.requiresGM === true && !game.user.isGM)
                     continue;
 
+                debug("Running action", action);
                 context.index = i;
                 context.action = action;
                 let fn = trigger.fn;
@@ -4773,6 +4782,7 @@ export class MonksActiveTiles {
                                     context.values.push(mergeObject(result, { action: action }));
 
                                     if (result.pause) {
+                                        debug("Pausing actions");
                                         MonksActiveTiles.savestate[context._id] = context;
                                         result = { continue: false };
                                         pausing = true;
@@ -4782,6 +4792,7 @@ export class MonksActiveTiles {
                                         if (result.goto instanceof Array) {
                                             result.continue = false;
                                             for (let goto of result.goto) {
+                                                debug("Jumping to Anchor", goto.tag);
                                                 let idx = actions.findIndex(a => a.action == 'anchor' && a.data.tag == goto.tag);
                                                 if (idx != -1) {
                                                     let gotoContext = Object.assign({}, context);
@@ -4792,6 +4803,7 @@ export class MonksActiveTiles {
                                             }
                                         } else {
                                             //find the index of the tag
+                                            debug("Jumping to Anchor", result.goto);
                                             let idx = actions.findIndex(a => a.action == 'anchor' && a.data.tag == result.goto);
                                             if (idx != -1)
                                                 i = idx;
@@ -4801,8 +4813,10 @@ export class MonksActiveTiles {
                                     result = result.continue;
                                 }
                                 let cancontinue = await Hooks.call("triggerTile", this, this, context.tokens, context.action, context.userid, context.value);
-                                if (result === false || cancontinue === false || this.getFlag('monks-active-tiles', 'active') === false)
+                                if (result === false || cancontinue === false || this.getFlag('monks-active-tiles', 'active') === false) {
+                                    debug("Stopping actions", result, cancontinue, this.getFlag('monks-active-tiles', 'active'));
                                     break;
+                                }
                             } catch (err) {
                                 error(err);
                             }
@@ -5055,7 +5069,8 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
     if ((update.x != undefined || update.y != undefined) && options.bypass !== true && options.animate !== false) { //(!game.modules.get("drag-ruler")?.active || options.animate)) {
         let token = document.object;
 
-        if (document.caught) {
+        if (document.caught || document.getFlag('monks-active-tiles', 'teleporting')) {
+            //do not update x/y if the token is under a cool down period, or if it is teleporting.
             delete update.x;
             delete update.y;
             return;
@@ -5094,9 +5109,9 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
 
                                 //log('Triggering tile', update, stop);
 
-                                if (stop) {
+                                if (stop.stop) {
                                     //check for snapping to the closest grid spot
-                                    if (stop == 'snap')
+                                    if (stop.snap)
                                         triggerPt = mergeObject(triggerPt, canvas.grid.getSnappedPosition(triggerPt.x, triggerPt.y));
 
                                     //if this token needs to be stopped, then we need to adjust the path, and force close the movement animation
@@ -5105,8 +5120,11 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                                     delete update.y;
 
                                     //make sure spamming the arrow keys is prevented
-                                    document.caught = true;
-                                    window.setTimeout(function () { delete document.caught; }, 1500);
+                                    if (stop.coolDown) {
+                                        document.caught = true;
+                                        $('#board').addClass("cooldown")
+                                        window.setTimeout(function () { delete document.caught; $('#board').removeClass("cooldown"); }, 1500);
+                                    }
 
                                     //try to disrupt the remaining path if there is one, by setting an update
                                     //MonksActiveTiles._rejectRemaining[document.id] = { x: triggerPt.x, y: triggerPt.y };
@@ -5137,7 +5155,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                                 window.setTimeout(function () {
                                     log('Tile is triggering', document);
                                     tile.document.trigger({ tokens: [document], method: triggerPt.method, pt: pt });
-                                    if(!stop)   //If this fires on Enter, and a stop is request then we don't need to run the On Exit code.
+                                    if(!stop.stop)   //If this fires on Enter, and a stop is request then we don't need to run the On Exit code.
                                         doTrigger(idx + 1);
                                 }, duration);
 

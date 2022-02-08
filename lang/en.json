@@ -154,6 +154,7 @@
   "MonksActiveTiles.mode.movement": "On Movement",
   "MonksActiveTiles.mode.click": "On Click",
   "MonksActiveTiles.mode.dblclick": "On Double Click",
+  "MonksActiveTiles.mode.hover": "On Hover",
   "MonksActiveTiles.mode.hoverin": "On Hover In",
   "MonksActiveTiles.mode.hoverout": "On Hover Out",
   "MonksActiveTiles.mode.manual": "Manually Activate",

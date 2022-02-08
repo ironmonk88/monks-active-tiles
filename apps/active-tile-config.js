@@ -38,6 +38,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                 'stop': i18n("MonksActiveTiles.mode.stop"),
                 'click': i18n("MonksActiveTiles.mode.click"),
                 'dblclick': i18n("MonksActiveTiles.mode.dblclick"),
+                'hover': i18n("MonksActiveTiles.mode.hover"),
                 'hoverin': i18n("MonksActiveTiles.mode.hoverin"),
                 'hoverout': i18n("MonksActiveTiles.mode.hoverout"),
                 'combatstart': i18n("MonksActiveTiles.mode.combatstart"),

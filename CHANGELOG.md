@@ -1,3 +1,21 @@
+## Version 1.0.56
+
+Added a flag for teleporting so the token won't be moved mid-teleport.  I believe this was causing a sync issue between the GM and players.
+
+Added more verbose debug statements that can be truned on when debugging.
+
+Added a `Hover` trigger that will combine both Hover In and Hover Out.
+
+Fixed the `Enter/Exit` trigger so that it returns which of the two actually got triggered, so the history will show Enter or Exit properly.
+
+Made sure that the cool down period for key presses only affects the actual Stop Movement action.
+
+Added the wait spinner cursor tot he canvas when a cooldown period has been activated so that the player knows something is happening and Foundry isn't just eating key presses.
+
+Fixed an issue adding information tot he history.
+
+Added a macro to help with redirecting On Enter and On Exit triggers.  So with a Macro and soem Anchors you can have an On Enter action and an On Exit action happen for the same Tile.  No need to overlay two Tiles over top of each other for the same effect.
+
 ## Version 1.0.55
 
 Fixing an errors with sending selected tokens from the player to the GM.

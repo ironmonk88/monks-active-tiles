@@ -298,3 +298,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+#board.cooldown {
+    cursor: wait !important;
+}
