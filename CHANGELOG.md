@@ -16,6 +16,8 @@ Fixed an issue adding information tot he history.
 
 Added a macro to help with redirecting On Enter and On Exit triggers.  So with a Macro and soem Anchors you can have an On Enter action and an On Exit action happen for the same Tile.  No need to overlay two Tiles over top of each other for the same effect.
 
+Added option to change the colour used for the screen wash when teleporting a token, as well as the option to turn it off.
+
 ## Version 1.0.55
 
 Fixing an errors with sending selected tokens from the player to the GM.

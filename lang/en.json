@@ -262,5 +262,9 @@
   "MonksActiveTiles.drop-item.name": "Drop Item on Canvas",
   "MonksActiveTiles.drop-item.hint": "Allow items dropped on the canvas to be created as Active Tiles",
   "MonksActiveTiles.allow-door.name": "Door Triggers",
-  "MonksActiveTiles.allow-door.hint": "Allow Doors to trigger Tiles"
+  "MonksActiveTiles.allow-door.hint": "Allow Doors to trigger Tiles",
+  "MonksActiveTiles.teleport-wash.name": "Show Teleport Wash",
+  "MonksActiveTiles.teleport-wash.hint": "When a token teleports, add a screen wash to prevent disorientation while the Scene changes.",
+  "MonksActiveTiles.teleport-colour.name": "Teleport Wash Colour",
+  "MonksActiveTiles.teleport-colour.hint": "Colour to use for the backdrop wash when a token teleports"
 }

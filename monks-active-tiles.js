@@ -289,7 +289,7 @@ export class MonksActiveTiles {
                         }
 
                         //fade in backdrop
-                        if (userid != game.user.id) {
+                        if (userid != game.user.id && setting('teleport-wash')) {
                             MonksActiveTiles.emit('fade', { userid: userid });
                             await MonksActiveTiles.timeout(400);
                         }
@@ -303,7 +303,7 @@ export class MonksActiveTiles {
                         result.tokens = [];
                         //if the end spot is on a different scene then hide this token, check the new scene for a token for that actor and move it, otherwise create the token on the new scene
 
-                        if (userid != game.user.id) {
+                        if (userid != game.user.id && setting('teleport-wash')) {
                             MonksActiveTiles.emit('fade', { userid: userid, time: 1000 });
                             //await MonksActiveTiles.timeout(400);
                         }
@@ -4398,7 +4398,7 @@ export class MonksActiveTiles {
             } break;
             case 'fade': {
                 if (data.userid == game.user.id) {
-                    $('<div>').addClass('active-tile-backdrop').appendTo('body').animate({ opacity: 1 }, {
+                    $('<div>').addClass('active-tile-backdrop').css({'background': setting('teleport-colour')}).appendTo('body').animate({ opacity: 1 }, {
                         duration: (data.time || 400), easing: 'linear', complete: async function () {
                             $(this).animate({ opacity: 0 }, {
                                 duration: (data.time || 400), easing: 'linear', complete: function () { $(this).remove(); }
@@ -5530,4 +5530,9 @@ Hooks.on("dropCanvasData", async (canvas, data, options, test) => {
         const cls = getDocumentClass("Tile");
         await cls.create(td, { parent: canvas.scene });
     }
+});
+
+Hooks.on("renderSettingsConfig", (app, html, data) => {
+    let colour = setting("teleport-colour");
+    $('<input>').attr('type', 'color').attr('data-edit', 'monks-active-tiles.teleport-colour').val(colour).insertAfter($('input[name="monks-active-tiles.teleport-colour"]', html).addClass('color'));
 });

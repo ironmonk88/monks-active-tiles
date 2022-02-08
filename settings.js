@@ -40,6 +40,24 @@ export const registerSettings = function () {
 		type: Boolean,
 	});
 
+	game.settings.register(modulename, "teleport-wash", {
+		name: i18n("MonksActiveTiles.teleport-wash.name"),
+		hint: i18n("MonksActiveTiles.teleport-wash.hint"),
+		scope: "world",
+		config: true,
+		default: true,
+		type: Boolean,
+	});
+
+	game.settings.register(modulename, "teleport-colour", {
+		name: i18n("MonksActiveTiles.teleport-colour.name"),
+		hint: i18n("MonksActiveTiles.teleport-colour.hint"),
+		scope: "world",
+		config: true,
+		default: "#C0C0C0",
+		type: String,
+	});
+
 	game.settings.register(modulename, "prevent-cycle", {
 		scope: "world",
 		config: false,
