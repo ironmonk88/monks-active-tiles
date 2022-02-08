@@ -1,3 +1,7 @@
+## Version 1.0.58
+
+Still fixing the issue teleporting to other scenes.
+
 ## Version 1.0.57
 
 Fixing issue with teleporting to other scenes.

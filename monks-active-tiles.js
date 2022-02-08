@@ -251,7 +251,6 @@ export class MonksActiveTiles {
                 let result = { continue: true, tokens: entities, entities: entities };
 
                 for (let tokendoc of entities) {
-                    await tokendoc.setFlag('monks-active-tiles', 'teleporting', true);
                     let tokenWidth = ((tokendoc.parent.dimensions.size * tokendoc.data.width) / 2);
                     let tokenHeight = ((tokendoc.parent.dimensions.size * tokendoc.data.height) / 2);
 
@@ -271,6 +270,7 @@ export class MonksActiveTiles {
                     let samescene = (dest.scene == undefined || dest.scene == tokendoc.parent.id);
 
                     if (samescene) {
+                        await tokendoc.setFlag('monks-active-tiles', 'teleporting', true);
                         await tokendoc._object?.stopAnimation();   //+++ need to stop the animation for everyone, even if they're not on the same scene
                         if (!tokendoc.parent.dimensions.rect.contains(newPos.x, newPos.y)) {
                             //+++find the closest spot on the edge of the scene
@@ -301,6 +301,7 @@ export class MonksActiveTiles {
 
                         if (userid != game.user.id)
                             MonksActiveTiles.emit('offsetpan', { userid: userid, animatepan: action.data.animatepan, x: offset.dx - (tokendoc.data.width / 2), y: offset.dy - (tokendoc.data.height / 2) });
+                        await tokendoc.unsetFlag('monks-active-tiles', 'teleporting');
                     } else {
                         result.tokens = [];
                         //if the end spot is on a different scene then hide this token, check the new scene for a token for that actor and move it, otherwise create the token on the new scene
@@ -356,8 +357,6 @@ export class MonksActiveTiles {
 
                         result.tokens.push(newtoken);
                     }
-                    if (tokendoc && (samescene || !action.data.deletesource))
-                        await tokendoc.unsetFlag('monks-active-tiles', 'teleporting');
                 }
 
                 return result;
