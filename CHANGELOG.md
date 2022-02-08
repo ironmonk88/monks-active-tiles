@@ -1,3 +1,7 @@
+## Version 1.0.57
+
+Fixing issue with teleporting to other scenes.
+
 ## Version 1.0.56
 
 Added a flag for teleporting so the token won't be moved mid-teleport.  I believe this was causing a sync issue between the GM and players.

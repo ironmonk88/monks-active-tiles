@@ -268,7 +268,9 @@ export class MonksActiveTiles {
                         y: dest.y
                     };
 
-                    if (dest.scene == undefined || dest.scene == tokendoc.parent.id) {
+                    let samescene = (dest.scene == undefined || dest.scene == tokendoc.parent.id);
+
+                    if (samescene) {
                         await tokendoc._object?.stopAnimation();   //+++ need to stop the animation for everyone, even if they're not on the same scene
                         if (!tokendoc.parent.dimensions.rect.contains(newPos.x, newPos.y)) {
                             //+++find the closest spot on the edge of the scene
@@ -354,7 +356,8 @@ export class MonksActiveTiles {
 
                         result.tokens.push(newtoken);
                     }
-                    await tokendoc.unsetFlag('monks-active-tiles', 'teleporting');
+                    if (tokendoc && (samescene || !action.data.deletesource))
+                        await tokendoc.unsetFlag('monks-active-tiles', 'teleporting');
                 }
 
                 return result;
