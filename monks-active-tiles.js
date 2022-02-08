@@ -268,9 +268,9 @@ export class MonksActiveTiles {
                     };
 
                     let samescene = (dest.scene == undefined || dest.scene == tokendoc.parent.id);
+                    await tokendoc.setFlag('monks-active-tiles', 'teleporting', true);
 
                     if (samescene) {
-                        await tokendoc.setFlag('monks-active-tiles', 'teleporting', true);
                         await tokendoc._object?.stopAnimation();   //+++ need to stop the animation for everyone, even if they're not on the same scene
                         if (!tokendoc.parent.dimensions.rect.contains(newPos.x, newPos.y)) {
                             //+++find the closest spot on the edge of the scene
@@ -297,11 +297,10 @@ export class MonksActiveTiles {
                         }
 
                         let offset = { dx: oldPos.x - newPos.x, dy: oldPos.y - newPos.y };
-                        await tokendoc.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false });
+                        await tokendoc.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false, teleport: true });
 
                         if (userid != game.user.id)
                             MonksActiveTiles.emit('offsetpan', { userid: userid, animatepan: action.data.animatepan, x: offset.dx - (tokendoc.data.width / 2), y: offset.dy - (tokendoc.data.height / 2) });
-                        await tokendoc.unsetFlag('monks-active-tiles', 'teleporting');
                     } else {
                         result.tokens = [];
                         //if the end spot is on a different scene then hide this token, check the new scene for a token for that actor and move it, otherwise create the token on the new scene
@@ -328,12 +327,14 @@ export class MonksActiveTiles {
 
                         const td = mergeObject(await tokendoc.toObject(), { x: newPos.x, y: newPos.y });
                         if (newtoken) {
-                            await newtoken.update((action.data.preservesettings ? { x: newPos.x, y: newPos.y, hidden: tokendoc.data.hidden } : td), { bypass: true, animate: false });
+                            await newtoken.update((action.data.preservesettings ? { x: newPos.x, y: newPos.y, hidden: tokendoc.data.hidden } : td), { bypass: true, animate: false, teleport: true });
                         }
                         else {
                             const cls = getDocumentClass("Token");
                             newtoken = await cls.create(td, { parent: scene });
                         }
+
+                        await newtoken.unsetFlag('monks-active-tiles', 'teleporting');
 
                         let oldhidden = tokendoc.data.hidden;
                         if (action.data.deletesource)
@@ -357,6 +358,8 @@ export class MonksActiveTiles {
 
                         result.tokens.push(newtoken);
                     }
+                    if (tokendoc && (samescene || !action.data.deletesource))
+                        await tokendoc.unsetFlag('monks-active-tiles', 'teleporting');
                 }
 
                 return result;
@@ -5071,7 +5074,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
     if ((update.x != undefined || update.y != undefined) && options.bypass !== true && options.animate !== false) { //(!game.modules.get("drag-ruler")?.active || options.animate)) {
         let token = document.object;
 
-        if (document.caught || document.getFlag('monks-active-tiles', 'teleporting')) {
+        if ((document.caught || document.getFlag('monks-active-tiles', 'teleporting')) && !options.teleport) {
             //do not update x/y if the token is under a cool down period, or if it is teleporting.
             delete update.x;
             delete update.y;
