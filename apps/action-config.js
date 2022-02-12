@@ -129,6 +129,9 @@ export class ActionConfig extends FormApplication {
             field.val('{"id":"controlled","name":"' + i18n("MonksActiveTiles.Controlled") + '"}').next().html(i18n("MonksActiveTiles.Controlled"));
         else if (btn.attr('data-type') == 'previous')
             field.val('{"id":"previous","name":"' + i18n("MonksActiveTiles.PreviousData") + '"}').next().html(field.data('type') == 'entity' ? i18n("MonksActiveTiles.PreviousData") : i18n("MonksActiveTiles.CurrentLocation"));
+        else if (btn.attr('data-type') == 'origin')
+            field.val('{"id":"origin","name":"' + i18n("MonksActiveTiles.Origin") + '"}').next().html(i18n("MonksActiveTiles.Origin"));
+
         else {
             if (!this._minimized)
                 await this.minimize();
@@ -161,10 +164,6 @@ export class ActionConfig extends FormApplication {
     }
 
     static async updateSelection(selection) {
-        this.waitingfield.val((typeof selection == 'object' ? JSON.stringify(selection) : selection));
-        let scene = (selection?.sceneId ? game.scenes.get(selection.sceneId) : null);
-        this.waitingfield.next().html(typeof selection == 'object' ? (this.waitingfield.data('type') == 'entity' ? await MonksActiveTiles.entityName(selection) : await MonksActiveTiles.locationName(selection)) : selection); //(selection.x || selection.y ? 'x:' + selection.x + ', y:' + selection.y + (scene ? ', scene:' + scene.name : '') : selection.name)
-
         await this.maximize();
         if (this.options.parent)
             await this.options.parent.maximize();
@@ -192,11 +191,14 @@ export class ActionConfig extends FormApplication {
             }
         }
 
+        if (canvas.scene.id != this.options.parent.object.parent.id)
+            await game.scenes.get(this.options.parent.object.parent.id).view();
+
+        this.waitingfield.val((typeof selection == 'object' ? JSON.stringify(selection) : selection)).trigger('change');
+        this.waitingfield.next().html(typeof selection == 'object' ? (this.waitingfield.data('type') == 'entity' ? await MonksActiveTiles.entityName(selection) : await MonksActiveTiles.locationName(selection)) : selection);
+
         delete this.waitingfield;
         delete MonksActiveTiles.waitingInput;
-
-        if (canvas.scene.id != this.options.parent.object.parent.id)
-            game.scenes.get(this.options.parent.object.parent.id).view();
     }
 
     async selectPosition(event) {
@@ -433,6 +435,7 @@ export class ActionConfig extends FormApplication {
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'position', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.setposition") }).toggle(ctrl.subtype == 'position').addClass('location-picker').html('<i class="fas fa-crop-alt fa-sm"></i>').click(this.selectPosition.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'token', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetoken") }).toggle(options.showToken).addClass('entity-picker').html('<i class="fas fa-user-alt fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'previous', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useprevious") }).toggle(options.showPrevious).addClass('location-picker').html('<i class="fas fa-history fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
+                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'origin', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useorigin") }).toggle(options.showOrigin).addClass('location-picker').html('<i class="fas fa-person-walking fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'tagger', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetagger") }).toggle(options.showTagger && game.modules.get('tagger')?.active).addClass('location-picker').html('<i class="fas fa-tag fa-sm"></i>').click(this.addTag.bind(this)));
 
                     } else if (ctrl.subtype == 'entity') {

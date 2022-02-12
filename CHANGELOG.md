@@ -1,3 +1,29 @@
+## Version 1.0.60
+
+Allow the Token move action use the original destination of the token, in case an action tries to stop movement.
+
+Fixed an issue where getting the location name of a location on a different Scene wouldn't return the proper name until the Scene returned back to the original scene.
+
+Fixed issues with mergeObject and arrays when it comes to classes being added to the tile config dialog
+
+Added Canvas Ready trigger.
+
+Changed the delete source and preserve settings checkboxes to only show when the teleport location is on a different Scene.
+
+Added a timeout of 2 seconds in change teleporting locks the movement of a token.
+
+Added the option to remove a token from combat.
+
+Added change scene lighting action.
+
+Added the option to allow selecting an entity other than a Token for attribute filters.
+
+Added a filter that checks if the token has an item in inventory.
+
+Fixed an issue with 'Enter/Exit' not snapping to the correct location.
+
+Fixed an issue that Paralaxia was causing with styling the Tile Config window.
+
 ## Version 1.0.59
 
 Yep, still fixing the issue teleporting to other scenes.

@@ -11,8 +11,8 @@ export const WithActiveTileConfig = (TileConfig) => {
         }
 
         static get defaultOptions() {
-            return foundry.utils.mergeObject(super.defaultOptions, {
-                classes: ["monks-active-tiles", "sheet"],
+            return MonksActiveTiles.mergeArray(super.defaultOptions, {
+                classes: ["monks-active-tiles"],
                 scrollY: ["ol.item-list"],
                 dragDrop: [{ dragSelector: ".item", dropSelector: ".item-list" }]
             });
@@ -45,6 +45,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                 'round': i18n("MonksActiveTiles.mode.round"),
                 'turn': i18n("MonksActiveTiles.mode.turn"),
                 'combatend': i18n("MonksActiveTiles.mode.combatend"),
+                'ready': i18n("MonksActiveTiles.mode.canvasready"),
                 'manual': i18n("MonksActiveTiles.mode.manual")
             };
             tiledata.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
@@ -170,7 +171,8 @@ export const WithActiveTileConfig = (TileConfig) => {
 
             const contextOptions = this._getContextOptions();
             Hooks.call(`getActiveTileConfigContext`, html, contextOptions);
-            new ContextMenu($(html), ".action-items .item", contextOptions);
+            let context = new ContextMenu($(html), ".action-items .item", contextOptions);
+            //context.container = ".window-app";
 
             $('.action-create', html).click(this._createAction.bind(this));
             $('.action-edit', html).click(this._editAction.bind(this));

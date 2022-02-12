@@ -13,6 +13,14 @@ export let error = (...args) => console.error("monks-active-tiles | ", ...args);
 export let i18n = key => {
     return game.i18n.localize(key);
 };
+export let actiontext = (key, props) => {
+    let text = game.i18n.format(key, props)
+        .replace('<action>', '<span class="action-style">')
+        .replace('</action>', '</span>')
+        .replace('<detail>', '<span class="details-style">')
+        .replace('</detail>', '</span>');
+    return text;
+};
 export let setting = key => {
     return game.settings.get("monks-active-tiles", key);
 };
@@ -81,7 +89,7 @@ export class MonksActiveTiles {
                 game.togglePause((action?.data?.pause !== 'unpause'), true);
             },
             content: async (trigger, action) => {
-                return `<span class="action-style">${i18n(trigger.values.state[action?.data?.pause || 'pause'])} game</span>`;
+                return actiontext("MonksActiveTiles.actiontext.pause", { pause: i18n(trigger.values.state[action?.data?.pause || 'pause']) });
             }
         },
         'delay': {
@@ -93,7 +101,6 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.delay",
                     type: "text",
                     required: true
-                    //attr: { min: "0", step: "any" }
                 }
             ],
             fn: (args = {}) => {
@@ -117,7 +124,7 @@ export class MonksActiveTiles {
                 return { pause: true };
             },
             content: async (trigger, action) => {
-                return `<span class="action-style">Wait</span> for <span class="details-style">"${action.data.delay} seconds"</span>`;
+                return actiontext("MonksActiveTiles.actiontext.delay", action.data);
             }
         },
         'movement': {
@@ -131,7 +138,11 @@ export class MonksActiveTiles {
                 }
             ],
             content: async (trigger, action) => {
-                return `<span class="action-style">${i18n(trigger.name)}</span>${(action.data?.snap ? ' <i class="fas fa-compress" title="Snap to grid"></i>' : '')}`;
+                return actiontext("MonksActiveTiles.actiontext.movement",
+                    {
+                        action: i18n(trigger.name),
+                        snap: MonksActiveTiles.getActionFlag(action.data?.snap, 'snap')
+                    });
             }
         },
         'pancanvas': {
@@ -207,6 +218,10 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-coordinates",
                     type: "select",
                     subtype: "either",
+                    onChange: (app) => {
+                        app.checkConditional();
+                        app.setPosition({ height: 'auto' });
+                    },
                     options: { showTagger: true, showPrevious: true },
                     restrict: (entity) => { return (entity instanceof Tile); },
                     required: true,
@@ -225,12 +240,20 @@ export class MonksActiveTiles {
                 {
                     id: "deletesource",
                     name: "MonksActiveTiles.ctrl.deletesource",
-                    type: "checkbox"
+                    type: "checkbox",
+                    conditional: (app) => {
+                        let location = JSON.parse($('input[name="data.location"]', app.element).val() || "{}");
+                        return !!location.sceneId;
+                    }
                 },
                 {
                     id: "preservesettings",
                     name: "MonksActiveTiles.ctrl.preservesettings",
-                    type: "checkbox"
+                    type: "checkbox",
+                    conditional: (app) => {
+                        let location = JSON.parse($('input[name="data.location"]', app.element).val() || "{}");
+                        return !!location.sceneId;
+                    }
                 },
                 {
                     id: "avoidtokens",
@@ -244,7 +267,7 @@ export class MonksActiveTiles {
                 let entities = await MonksActiveTiles.getEntities(args);
 
                 if (!entities || entities.length == 0) {
-                    ui.notifications.info(i18n('MonksActiveTiles.msg.noteleporttoken'));
+                    log(i18n('MonksActiveTiles.msg.noteleporttoken'));
                     return;
                 }
 
@@ -362,6 +385,14 @@ export class MonksActiveTiles {
                         await tokendoc.unsetFlag('monks-active-tiles', 'teleporting');
                 }
 
+                window.setTimeout(async function () {
+                    for (let tokendoc of entities) {
+                        try {
+                            await tokendoc.unsetFlag('monks-active-tiles', 'teleporting');
+                        } catch {}
+                    }
+                }, 2000);
+
                 return result;
             },
             content: async (trigger, action) => {
@@ -395,7 +426,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-coordinates",
                     type: "select",
                     subtype: "either",
-                    options: { showTagger: true, showToken: true },
+                    options: { showTagger: true, showToken: true, showOrigin: true },
                     restrict: (entity) => { return (entity instanceof Tile && this.scene.id == entity.parent.id) || this.scene.id == entity.id; },
                     required: true
                 },
@@ -432,13 +463,13 @@ export class MonksActiveTiles {
                             await CanvasAnimation.terminateAnimation(`${entity.documentName}.${entity.id}.animateMovement`);
 
                         let newPos = {
-                            x: dest.x - ((object.w || object.width) / 2),
-                            y: dest.y - ((object.h || object.height) / 2)
+                            x: dest.x - (action.data?.location?.id == "origin" ? 0 : ((object.w || object.width) / 2)),
+                            y: dest.y - (action.data?.location?.id == "origin" ? 0 : ((object.h || object.height) / 2))
                         };
 
                         if (!canvas.grid.hitArea.contains(newPos.x, newPos.y)) {
                             //+++find the closest spot on the edge of the scene
-                            ui.notifications.error("MonksActiveTiles.msg.prevent-teleport");
+                            ui.notifications.error(i18n("MonksActiveTiles.msg.prevent-teleport"));
                             return;
                         }
                         if (action.data.snap)
@@ -2457,8 +2488,7 @@ export class MonksActiveTiles {
                     //Add this trigger if it's the original one
                     MonksActiveTiles.triggered.push(tile.id);
 
-                    let newargs = Object.assign({}, args);
-                    newargs.method = "Trigger";
+                    let newargs = Object.assign({}, args, {tile: entity, method: "Trigger"});
                     await entity.trigger.call(entity, newargs);
 
                     //remove this trigger as it's done
@@ -2517,11 +2547,28 @@ export class MonksActiveTiles {
                     restrict: (entity) => { return (entity instanceof Token); }
                 },
                 {
+                    id: "addto",
+                    name: "Add to Combat",
+                    type: "list",
+                    onChange: (app) => {
+                        app.checkConditional();
+                    },
+                    list: 'add',
+                    defvalue: 'add'
+                },
+                {
                     id: "start",
                     name: "MonksActiveTiles.ctrl.startcombat",
-                    type: "checkbox"
+                    type: "checkbox",
+                    conditional: () => { return $('select[name="data.addto"]', app.element).val() == "add"  }
                 }
             ],
+            values: {
+                'add': {
+                    "add": 'MonksActiveTiles.add.add',
+                    "remove": 'MonksActiveTiles.add.remove',
+                }
+            },
             fn: async (args = {}) => {
                 const { action } = args;
 
@@ -2531,15 +2578,22 @@ export class MonksActiveTiles {
 
                 let combat = game.combats.viewed;
                 if (!combat) {
+                    if (action.data.addto == "remove")
+                        return;
                     const cls = getDocumentClass("Combat")
                     combat = await cls.create({ scene: canvas.scene.id, active: true });
                 }
 
-                let tokens = entities.filter(t => !t.inCombat).map(t => { return { tokenId: t.id, actorId: t.data.actorId, hidden: t.data.hidden } });
-                await combat.createEmbeddedDocuments("Combatant", tokens);
+                if (action.data.addto == "remove") {
+                    let combatants = entities.filter(t => t.inCombat).map(t => { return combat.getCombatantByToken(t.id); });
+                    await combat.deleteEmbeddedDocuments("Combatant", combatants);
+                } else {
+                    let tokens = entities.filter(t => !t.inCombat).map(t => { return { tokenId: t.id, actorId: t.data.actorId, hidden: t.data.hidden } });
+                    await combat.createEmbeddedDocuments("Combatant", tokens);
 
-                if (combat && action.data.start && !combat.started)
-                    combat.startCombat();
+                    if (combat && action.data.start && !combat.started)
+                        combat.startCombat();
+                }
 
                 return { tokens: entities, entities: entities, combat: combat };
             },
@@ -2764,6 +2818,32 @@ export class MonksActiveTiles {
                 return `<span class="action-style">${i18n(trigger.name)}</span> <span class="entity-style">${entityName}</span>`;
             }
         },
+        'scenelighting': {
+            name: "MonksActiveTiles.action.scenelighting",
+            options: { allowDelay: true },
+            ctrls: [
+                {
+                    id: "darkness",
+                    name: "MonksActiveTiles.ctrl.darkness",
+                    type: "slider",
+                    defvalue: 1
+                },
+                {
+                    id: "speed",
+                    name: "MonksActiveTiles.ctrl.speed",
+                    type: "number",
+                    defvalue: 10
+                },
+            ],
+            fn: async (args = {}) => {
+                let { tile, action } = args;
+                tile.parent.update({ darkness: action.data.darkness }, { animateDarkness: (action.data.speed * 1000) });
+            },
+            content: async (trigger, action) => {
+                return `<span class="action-style">Change ${i18n(trigger.name)}</span> set darkness to <span class="details-style">"${action.data.darkness}"</span> after <span class="value-style">&lt;${action.data.speed} seconds&gt;</span>`;
+            }
+        },
+        
         'distance': {
             name: "MonksActiveTiles.filter.distance",
             ctrls: [
@@ -3110,7 +3190,13 @@ export class MonksActiveTiles {
                         app.setPosition({ height: 'auto' });
                     },
                     options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
-                    restrict: (entity) => { return (entity instanceof Token); }
+                    restrict: (entity) => {
+                        return (entity instanceof Token ||
+                            entity instanceof Tile ||
+                            entity instanceof Drawing ||
+                            entity instanceof Note ||
+                            entity instanceof AmbientLight ||
+                            entity instanceof AmbientSound); }
                 },
                 {
                     id: "collection",
@@ -3216,6 +3302,49 @@ export class MonksActiveTiles {
                 return `<span class="filter-style">Find</span> <span class="entity-style">${entityName}</span> with <span class="value-style">&lt;${action.data?.attribute}&gt;</span> <span class="details-style">"${action.data?.value}"</span>`;
             }
         },
+        'inventory': {
+            name: "MonksActiveTiles.filter.inventory",
+            ctrls: [
+                {
+                    id: "entity",
+                    name: "MonksActiveTiles.ctrl.select-entity",
+                    type: "select",
+                    subtype: "entity",
+                    onChange: (app) => {
+                        app.checkConditional();
+                        app.setPosition({ height: 'auto' });
+                    },
+                    options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                    restrict: (entity) => {
+                        return (entity instanceof Token);
+                    }
+                },
+                {
+                    id: "item",
+                    name: "MonksActiveTiles.ctrl.itemname",
+                    type: "text",
+                    required: true
+                },
+            ],
+            group: "filters",
+            fn: async (args = {}) => {
+                let { action, value, tokens, tile } = args;
+
+                let entities = await MonksActiveTiles.getEntities(args, null, action.data?.collection || "tokens");
+
+                let result = entities.filter(entity => {
+                    if (!entity.actor)
+                        return false;
+                    return entity.actor.items.find(i => i.name == action.data.item) != undefined;
+                });
+
+                return { tokens: result };
+            },
+            content: async (trigger, action) => {
+                let entityName = await MonksActiveTiles.entityName(action.data?.entity, action.data?.collection);
+                return `<span class="filter-style">Find</span> <span class="entity-style">${entityName}</span> with item <span class="value-style">&lt;${action.data?.item}&gt;</span>`;
+            }
+        },
         'anchor': {
             name: "MonksActiveTiles.logic.anchor",
             ctrls: [
@@ -3300,6 +3429,16 @@ export class MonksActiveTiles {
                 return `<span class="logic-style">${i18n(trigger.name)}</span>`;
             }
         }
+    }
+
+    static getActionFlag(val, flag) {
+        if (!val)
+            return "";
+        switch (flag) {
+            case "snap":
+                return ` <i class="fas fa-compress" title="${i18n("MonksActiveTiles.SnapToGrid")}"></i>`;
+        }
+        return "";
     }
 
     static async getEntities(args, id, defaultType) {
@@ -3396,7 +3535,9 @@ export class MonksActiveTiles {
 
         if (location.id == 'previous')
             location = value["location"];
-        if (location.id == 'token')
+        else if (location.id == 'origin')
+            location = value["original"];
+        else if (location.id == 'token')
             location = pt;
 
         if (location.id) {
@@ -3442,6 +3583,8 @@ export class MonksActiveTiles {
                 name = "Current Location";
             else if (location?.id == 'token')
                 name = "Triggering Token";
+            else if (location?.id == 'origin')
+                name = i18n("MonksActiveTiles.Origin");
             else if (location?.id.startsWith('tagger'))
                 name = `[Tagger] ${location.id.substring(7)}`;
             else {
@@ -3825,6 +3968,46 @@ export class MonksActiveTiles {
         MonksActiveTiles.setupTile();
 
         Handlebars.registerHelper({ selectGroups: MonksActiveTiles.selectGroups });
+
+        /*let setPosition = function (...args) {
+            let [html, target] = args;
+            let parent = target[0].parentElement;
+            let container;
+            if (this.container) {
+                container = target.closest(this.container);
+                if (container.length) parent = container[0];
+                else container = null;
+            }
+
+            // Append to target and get the context bounds
+            //container.css('position', 'relative');
+            html.css("visibility", "hidden");
+            (container || target).append(html);
+            const contextRect = html[0].getBoundingClientRect();
+            const parentRect = target[0].getBoundingClientRect();
+            const containerRect = parent.getBoundingClientRect();
+
+            // Determine whether to expand upwards
+            const contextTop = parentRect.top - contextRect.height;
+            const contextBottom = parentRect.bottom + contextRect.height;
+            const canOverflowUp = (contextTop > containerRect.top) || (getComputedStyle(parent).overflowY === "visible");
+
+            // If it overflows the container bottom, but not the container top
+            const containerUp = (contextBottom > containerRect.bottom) && (contextTop >= containerRect.top);
+            const windowUp = (contextBottom > window.innerHeight) && (contextTop > 0) && canOverflowUp;
+            this._expandUp = containerUp || windowUp;
+
+            // Display the menu
+            html.addClass(this._expandUp ? "expand-up" : "expand-down");
+            html.css("visibility", "");
+            target.addClass("context");
+        }
+
+        if (game.modules.get("lib-wrapper")?.active) {
+            libWrapper.register("monks-active-tiles", "ContextMenu.prototype._setPosition", setPosition, "OVERRIDE");
+        } else {
+            ContextMenu.prototype._setPosition = setPosition;
+        }*/
 
         let tileRefresh = function (wrapped, ...args) {
             let result = wrapped(...args);
@@ -4524,9 +4707,21 @@ export class MonksActiveTiles {
         }
 
         TileDocument.prototype.checkCollision = function (token, destination) {
-            // 1. Get all the tile's vertices. X and Y are position at top-left corner
-            // of tile.
-            let when = this.getFlag('monks-active-tiles', 'trigger');   //+++ need to do something different if movement is called for
+            let when = this.getFlag('monks-active-tiles', 'trigger');
+
+            const tokenOffsetW = token.object.w / 2;
+            const tokenOffsetH = token.object.h / 2;
+            const tokenX1 = token.data.x + tokenOffsetW;
+            const tokenY1 = token.data.y + tokenOffsetH;
+            const tokenX2 = destination.x + tokenOffsetW;
+            const tokenY2 = destination.y + tokenOffsetH;
+
+            const tokenRay = new Ray({ x: tokenX1, y: tokenY1 }, { x: tokenX2, y: tokenY2 });
+
+            if (when == 'both') {
+                when = this.pointWithin({ x: tokenRay.A.x, y: tokenRay.A.y }) ? 'exit' : 'enter';
+            }
+
             let buffer = (canvas.grid.size / 4) * (when == 'enter' ? 1 : (when == 'exit' ? -1 : 0));
             let tileX1 = this.data.x + buffer;
             let tileY1 = this.data.y + buffer;
@@ -4550,26 +4745,6 @@ export class MonksActiveTiles {
                 [tileX1, tileY1] = rotate(cX, cY, tileX1, tileY1, this.data.rotation);
                 [tileX2, tileY2] = rotate(cX, cY, tileX2, tileY2, this.data.rotation);
             }
-
-            const tokenOffsetW = token.object.w / 2;
-            const tokenOffsetH = token.object.h / 2;
-            const tokenX1 = token.data.x + tokenOffsetW;
-            const tokenY1 = token.data.y + tokenOffsetH;
-            const tokenX2 = destination.x + tokenOffsetW;
-            const tokenY2 = destination.y + tokenOffsetH;
-
-            // 2. Create a new Ray for the token, from its starting position to its
-            // destination.
-
-            const tokenRay = new Ray({ x: tokenX1, y: tokenY1 }, { x: tokenX2, y: tokenY2 });
-            // 3. Create four intersection checks, one for each line making up the
-            // tile rectangle. If any of these pass, that means it has intersected at
-            // some point.
-
-            //let i1 = tokenRay.intersectSegment([tileX1, tileY1, tileX2, tileY1]);
-            //let i2 = tokenRay.intersectSegment([tileX2, tileY1, tileX2, tileY2]);
-            //let i3 = tokenRay.intersectSegment([tileX1, tileY2, tileX2, tileY2]);
-            //let i4 = tokenRay.intersectSegment([tileX1, tileY1, tileX1, tileY2]);
 
             let intersect = [
                 tokenRay.intersectSegment([tileX1, tileY1, tileX2, tileY1]),
@@ -5036,6 +5211,27 @@ export class MonksActiveTiles {
     static get allowRun() {
         return game.user.isGM || (game.users.find(u => u.isGM && u.active) == undefined && setting("allow-player"));
     }
+
+    static mergeArray(original, other = {}) {
+        other = other || {};
+        if (!(original instanceof Object) || !(other instanceof Object)) {
+            throw new Error("One of original or other are not Objects!");
+        }
+
+        // Iterate over the other object
+        for (let k of Object.keys(other)) {
+            const v = other[k];
+            if (!(v instanceof Array))
+                throw new Error("One of the properties is not an array");
+            if (original.hasOwnProperty(k)) {
+                if (!(original[k] instanceof Array))
+                    throw new Error("One of the properties is not an array");
+                original[k] = original[k].concat(v);
+            }
+            else original[k] = v;
+        }
+        return original;
+    }
 }
 
 Hooks.on('init', async () => {
@@ -5113,14 +5309,14 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                                 let stop = tile.document.checkStop();
 
                                 //log('Triggering tile', update, stop);
-
+                                let original = { x: update.x || document.data.x, y: update.y || document.data.y };
                                 if (stop.stop) {
                                     //check for snapping to the closest grid spot
-                                    if (stop.snap)
+                                    if (stop.snap) {
                                         triggerPt = mergeObject(triggerPt, canvas.grid.getSnappedPosition(triggerPt.x, triggerPt.y));
+                                    }
 
                                     //if this token needs to be stopped, then we need to adjust the path, and force close the movement animation
-                                    let oldPos = { x: update.x, y: update.y };
                                     delete update.x;
                                     delete update.y;
 
@@ -5159,7 +5355,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
 
                                 window.setTimeout(function () {
                                     log('Tile is triggering', document);
-                                    tile.document.trigger({ tokens: [document], method: triggerPt.method, pt: pt });
+                                    tile.document.trigger({ tokens: [document], method: triggerPt.method, pt: pt, options: { original } });
                                     if(!stop.stop)   //If this fires on Enter, and a stop is request then we don't need to run the On Exit code.
                                         doTrigger(idx + 1);
                                 }, duration);
@@ -5540,4 +5736,22 @@ Hooks.on("dropCanvasData", async (canvas, data, options, test) => {
 Hooks.on("renderSettingsConfig", (app, html, data) => {
     let colour = setting("teleport-colour");
     $('<input>').attr('type', 'color').attr('data-edit', 'monks-active-tiles.teleport-colour').val(colour).insertAfter($('input[name="monks-active-tiles.teleport-colour"]', html).addClass('color'));
+});
+
+Hooks.on("renderTileConfig", (app, html, data) => {
+    //Make sure that another module hasn't erased the monks-active-tiles class
+    $(app.element).addClass("monks-active-tiles");
+});
+
+Hooks.on("canvasReady", () => {
+    for (let tile of canvas.scene.tiles) {
+        let triggerData = tile.data.flags["monks-active-tiles"];
+        if (triggerData && triggerData.active && triggerData.trigger == "ready") {
+            //check to see if this trigger is restricted by control type
+            if ((triggerData.controlled == 'gm' && !game.user.isGM) || (triggerData.controlled == 'player' && game.user.isGM))
+                return;
+
+            return tile.trigger({ method: "Ready" });
+        }
+    }
 });

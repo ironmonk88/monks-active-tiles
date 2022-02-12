@@ -9,6 +9,7 @@
   "MonksActiveTiles.CurrentLocation": "Current Location",
   "MonksActiveTiles.WithinTile": "Tokens within Tile",
   "MonksActiveTiles.PreviousData": "Current Tokens",
+  "MonksActiveTiles.Origin": "Original Destination",
   "MonksActiveTiles.Controlled": "Controlled Tokens",
   "MonksActiveTiles.TileHistory": "Tile History",
   "MonksActiveTiles.ResetHistory": "Reset History",
@@ -33,6 +34,11 @@
   "MonksActiveTiles.MinRequired": "Min. Required to Trigger",
   "MonksActiveTiles.TagName": "Enter Tag Name",
   "MonksActiveTiles.Save": "Save",
+  "MonksActiveTiles.SnapToGrid": "Snap to grid",
+
+  "MonksActiveTiles.actiontext.pause": "<action>{pause} game</action>",
+  "MonksActiveTiles.actiontext.delay": "<action>Wait</action> for <detail>\"{delay} seconds\"</detail>",
+  "MonksActiveTiles.actiontext.movement": "<action>{action}</action>{snap}",
 
   "MonksActiveTiles.group.actions": "Actions",
   "MonksActiveTiles.group.filters": "Filters",
@@ -72,6 +78,7 @@
   "MonksActiveTiles.action.imagecycle": "Cycle Images",
   "MonksActiveTiles.action.delete": "Delete Entities",
   "MonksActiveTiles.action.createjournal": "Create Journal Note",
+  "MonksActiveTiles.action.scenelighting": "Scene Lighting",
 
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
   "MonksActiveTiles.filter.exists": "Check entity count",
@@ -79,6 +86,7 @@
   "MonksActiveTiles.filter.tokencount": "Filter by token trigger count",
   "MonksActiveTiles.filter.first": "First in the list",
   "MonksActiveTiles.filter.attribute": "Filter by attributes",
+  "MonksActiveTiles.filter.inventory": "Filter by items in inventory",
 
   "MonksActiveTiles.logic.anchor": "Anchor",
   "MonksActiveTiles.logic.goto": "Go to Anchor",
@@ -147,6 +155,9 @@
   "MonksActiveTiles.ctrl.count": "Count",
   "MonksActiveTiles.ctrl.triggercount": "Trigger Count",
   "MonksActiveTiles.ctrl.tokencount": "Token Trigger Count",
+  "MonksActiveTiles.ctrl.itemname": "Item Name",
+  "MonksActiveTiles.ctrl.darkness": "Darkness Level",
+  "MonksActiveTiles.ctrl.speed": "Speed (seconds)",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -163,6 +174,7 @@
   "MonksActiveTiles.mode.turn": "On Combat Turn",
   "MonksActiveTiles.mode.combatstart": "On Combat Start",
   "MonksActiveTiles.mode.combatend": "On Combat End",
+  "MonksActiveTiles.mode.canvasready": "On Canvas Ready",
 
   "MonksActiveTiles.restrict.all": "Allow All Tokens",
   "MonksActiveTiles.restrict.player": "Only Player Tokens",
@@ -237,6 +249,7 @@
   "MonksActiveTiles.runas.player": "Triggering Player",
 
   "MonksActiveTiles.msg.prevent-teleport": "Teleporting off the map has been prevented",
+  "MonksActiveTiles.msg.prevent-movement": "Moving off the map has been prevented",
   "MonksActiveTiles.msg.invalid-entity": "Invalid Entity Type",
   "MonksActiveTiles.msg.invalid-location": "Invalid Location, Please select on the same Scene",
   "MonksActiveTiles.msg.select-location": "Please select a location on this scene",
@@ -250,6 +263,7 @@
   "MonksActiveTiles.msg.usewithin": "Use Tokens within triggering Tile",
   "MonksActiveTiles.msg.useprevious": "Use current Tokens",
   "MonksActiveTiles.msg.usecontrolled": "Use Tokens currently controlled",
+  "MonksActiveTiles.msg.useorigin": "Use original destination",
   "MonksActiveTiles.msg.noteleporttoken": "No token to teleport",
   "MonksActiveTiles.msg.setposition": "Use current view",
   "MonksActiveTiles.msg.usetagger": "Use Tagger",
