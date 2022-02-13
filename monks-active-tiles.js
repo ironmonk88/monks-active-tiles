@@ -1740,7 +1740,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.args",
                     type: "text",
                     conditional: () => {
-                        return (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active);
+                        return (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active || !setting('use-core-macro'));
                     }
                 },
                 {
@@ -2133,7 +2133,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    restrict: (entity) => { return (entity instanceof JournalEntry || entity instanceof Actor); },
+                    restrict: (entity) => { return (entity instanceof JournalEntry || entity instanceof Actor || entity instanceof Token); },
                     required: true,
                     defaultType: 'journal',
                     placeholder: 'Please select a Journal or Actor'
@@ -2172,6 +2172,8 @@ export class MonksActiveTiles {
                     return;
 
                 for (let entity of entities) {
+                    if (entity instanceof TokenDocument)
+                        entity = entity.actor;
                     //open journal
                     if (entity && action.data.showto != 'gm')
                         MonksActiveTiles.emit('journal', { showto: action.data.showto, userid: userid, entityid: entity.uuid, permission: action.data.permission, enhanced: action.data.enhanced });
@@ -3282,7 +3284,7 @@ export class MonksActiveTiles {
                         if (val.startsWith('= '))
                             val = '=' + val;
 
-                        let stmt = prop + ' ' + val;
+                        let stmt = (typeof prop == 'string' ? `"${prop}"` : prop) + ' ' + val;
                         stmt = stmt.replace("and", "&& " + prop).replace("or", "|| " + prop);
 
                         try {
@@ -5679,12 +5681,17 @@ Hooks.on("renderWallConfig", async (app, html, options) => {
             basictab.append(this);
         });
 
-        $('form', html).prepend($('<div>').addClass("tab action-sheet").attr('data-tab', 'triggers').html(wallHtml)).prepend(basictab).prepend(
-            $('<nav>')
-                .addClass("sheet-tabs tabs")
-                .append($('<a>').addClass("item active").attr("data-tab", "basic").html('<i class="fas fa-university"></i> Basic'))
-                .append($('<a>').addClass("item").attr("data-tab", "triggers").html('<i class="fas fa-running"></i> Triggers'))
-        );
+        if ($('.sheet-tabs', html).length) {
+            $('.sheet-tabs', html).append($('<a>').addClass("item").attr("data-tab", "triggers").html('<i class="fas fa-running"></i> Triggers'));
+            $('<div>').addClass("tab action-sheet").attr('data-tab', 'triggers').html(wallHtml).insertBefore($('button[name="submit"]', html));
+        } else {
+            $('form', html).prepend($('<div>').addClass("tab action-sheet").attr('data-tab', 'triggers').html(wallHtml)).prepend(basictab).prepend(
+                $('<nav>')
+                    .addClass("sheet-tabs tabs")
+                    .append($('<a>').addClass("item active").attr("data-tab", "basic").html('<i class="fas fa-university"></i> Basic'))
+                    .append($('<a>').addClass("item").attr("data-tab", "triggers").html('<i class="fas fa-running"></i> Triggers'))
+            );
+        }
 
         $('button[data-type="entity"]', html).on("click", ActionConfig.selectEntity.bind(app));
 

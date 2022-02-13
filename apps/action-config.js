@@ -191,8 +191,10 @@ export class ActionConfig extends FormApplication {
             }
         }
 
-        if (canvas.scene.id != this.options.parent.object.parent.id)
-            await game.scenes.get(this.options.parent.object.parent.id).view();
+        if (this.options.parent) {
+            if (canvas.scene.id != this.options.parent.object.parent.id)
+                await game.scenes.get(this.options.parent.object.parent.id).view();
+        }
 
         this.waitingfield.val((typeof selection == 'object' ? JSON.stringify(selection) : selection)).trigger('change');
         this.waitingfield.next().html(typeof selection == 'object' ? (this.waitingfield.data('type') == 'entity' ? await MonksActiveTiles.entityName(selection) : await MonksActiveTiles.locationName(selection)) : selection);

@@ -1,3 +1,15 @@
+## Version 1.0.61
+
+Fixed issue with selecting a Wall as a target.
+
+Allow macros to use arguments if not using the core macros and Advanced Macros isn't installed.
+
+Allow the show Journal/Actor entry to use a token.
+
+Allow the filter by attribute to use strings
+
+Fixed issue with Levels, where it was overwriting the tabs being added to Wall Config.
+
 ## Version 1.0.60
 
 Allow the Token move action use the original destination of the token, in case an action tries to stop movement.
