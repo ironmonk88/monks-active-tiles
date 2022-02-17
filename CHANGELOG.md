@@ -1,3 +1,9 @@
+## Version 1.0.62
+
+Fixed issue with Levels 3D and the wall config.
+
+Added the option to select Journal Entries based on Tagger, Current journals, tokens within the triggering tile, and players.  Players is a unique one though.  What it will do, is show the first Journal Entry that the player owns.  So you can have one trigger open up the current player's own journal entry.
+
 ## Version 1.0.61
 
 Fixed issue with selecting a Wall as a target.

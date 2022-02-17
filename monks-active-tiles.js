@@ -2133,6 +2133,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
+                    options: { showPrevious: true, showTagger: true, showWithin: true, showPlayers: true },
                     restrict: (entity) => { return (entity instanceof JournalEntry || entity instanceof Actor || entity instanceof Token); },
                     required: true,
                     defaultType: 'journal',
@@ -2167,7 +2168,17 @@ export class MonksActiveTiles {
             },
             fn: async (args = {}) => {
                 const { action, userid } = args;
-                let entities = await MonksActiveTiles.getEntities(args, null, 'journal');
+                let entities;
+                if (action.data.entity.id == 'players') {
+                    let user = game.users.get(userid);
+                    if (user.isGM)
+                        return;
+                    entities = [game.journal.find(j => {
+                        return j.testUserPermission(user, "OWNER");
+                    })];
+                } else
+                    entities = await MonksActiveTiles.getEntities(args, null, 'journal');
+
                 if (entities.length == 0)
                     return;
 
@@ -2377,7 +2388,7 @@ export class MonksActiveTiles {
                             return;
 
                         let result = [];
-                        let types = ['weapon', 'spell', 'melee', 'ranged', 'action', 'attack'];
+                        let types = ['weapon', 'spell', 'melee', 'ranged', 'action', 'attack', 'object'];
 
                         for (let item of actor.items) {
                             if (types.includes(item.type)) {
@@ -5676,15 +5687,15 @@ Hooks.on("renderWallConfig", async (app, html, options) => {
         let triggerData = { tilename: tilename, entity: app.object.data.flags['monks-active-tiles']?.entity };
         let wallHtml = await renderTemplate("modules/monks-active-tiles/templates/wall-config.html", triggerData);
 
-        let basictab = $('<div>').addClass("tab").attr('data-tab', 'basic');
-        $('form > *:not(button)', html).each(function () {
-            basictab.append(this);
-        });
-
         if ($('.sheet-tabs', html).length) {
             $('.sheet-tabs', html).append($('<a>').addClass("item").attr("data-tab", "triggers").html('<i class="fas fa-running"></i> Triggers'));
-            $('<div>').addClass("tab action-sheet").attr('data-tab', 'triggers').html(wallHtml).insertBefore($('button[name="submit"]', html));
+            $('<div>').addClass("tab action-sheet").attr('data-tab', 'triggers').html(wallHtml).insertAfter($('.tab:last', html));
         } else {
+            let basictab = $('<div>').addClass("tab").attr('data-tab', 'basic');
+            $('form > *:not(button)', html).each(function () {
+                basictab.append(this);
+            });
+
             $('form', html).prepend($('<div>').addClass("tab action-sheet").attr('data-tab', 'triggers').html(wallHtml)).prepend(basictab).prepend(
                 $('<nav>')
                     .addClass("sheet-tabs tabs")
