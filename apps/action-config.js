@@ -37,7 +37,11 @@ export class ActionConfig extends FormApplication {
             title: "MonksActiveTiles.TriggerAction",
             template: "modules/monks-active-tiles/templates/action-config.html",
             width: 550,
-            height: 'auto'
+            height: 'auto',
+            dragDrop: [
+                { dragSelector: ".document.actor", dropSelector: ".action-container" },
+                { dragSelector: ".document.item", dropSelector: ".action-container" }
+            ]
         });
     }
 
@@ -99,6 +103,85 @@ export class ActionConfig extends FormApplication {
         const fp = new FilePicker(options);
         this.filepickers.push(fp);
         return fp.browse();
+    }
+
+    async _onDrop(event) {
+        let data;
+        try {
+            data = JSON.parse(event.dataTransfer.getData('text/plain'));
+        }
+        catch (err) {
+            return false;
+        }
+
+        let action = $('[name="action"]', this.element).val();
+
+        if (data.type == "Macro" && action == "runmacro") {
+            $('select[name="data.macroid"]').val(data.id);
+        } else if (data.type == "Scene" && action == "scene") {
+            $('select[name="data.sceneid"]').val(data.id);
+        } else if (data.type == "RollTable" && action == "rolltable") {
+            let id = (data.pack ? `Compendium.${data.pack}.${data.id}` : `RollTable.${data.id}`);
+            $('select[name="data.rolltableid"]').val(id);
+        } else if (data.type == "Item" && action == "additem") {
+            let field = $('input[name="data.item"]', this.element);
+
+            if (field.length == 0)
+                return;
+
+            let item;
+            if (data.pack) {
+                const pack = game.packs.get(data.pack);
+                if (!pack) return;
+                item = await pack.getDocument(data.id);
+            } else
+                item = game.items.get(data.id);
+
+            if (!item) return;
+
+            this.waitingfield = field;
+            ActionConfig.updateSelection.call(this, { id: item.uuid, name: (item?.parent?.name ? item.parent.name + ": " : "") + item.name });
+        } else {
+            //check to see if there's an entity field on the form, or an item field if it's adding an item.
+            let field = $(`input[name="data.${action == "attack" ? "actor" : "entity"}"]`, this.element);
+            if (field.length == 0)
+                return;
+
+            let entity;
+            if (data.pack) {
+                const pack = game.packs.get(data.pack);
+                if (!pack) return;
+                entity = await pack.getDocument(data.id);
+            } else {
+                if (data.type == "PlaylistSound") {
+                    let playlist = game.playlists.get(data.playlistId);
+                    entity = playlist.sounds.get(data.soundId);
+                } else {
+                    let collection = game.collections.get(data.type);
+                    if (!collection)
+                        return;
+
+                    entity = collection.get(data.id);
+                }
+            }
+
+            if (!entity) return;
+
+            let restrict = field.data('restrict');
+
+            if (restrict && !restrict(entity)) {
+                ui.notifications.error(i18n("MonksActiveTiles.msg.invalid-entity"));
+                return;
+            }
+
+            this.waitingfield = field;
+            if (entity.document)
+                ActionConfig.updateSelection.call(this, { id: entity.document.uuid, name: entity.document.name || (entity.document.documentName + ": " + entity.document.id) });
+            else
+                ActionConfig.updateSelection.call(this, { id: entity.uuid, name: (entity?.parent?.name ? entity.parent.name + ": " : "") + entity.name });
+        }
+
+        log('drop data', event, data);
     }
 
     fillList(list, id) {
@@ -241,6 +324,31 @@ export class ActionConfig extends FormApplication {
         });
     }
 
+    async editEntityId(event) {
+        const html = await renderTemplate(`modules/monks-active-tiles/templates/entity-dialog.html`, {
+            data: this.object?.data
+        });
+
+        // Render the confirmation dialog window
+        return Dialog.prompt({
+            title: "Enter entity id",
+            content: html,
+            label: i18n("MonksActiveTiles.Save"),
+            callback: async (html) => {
+                let entityId = $('input[name="entity-id"]').val();
+                let field = $(event.currentTarget).prev();
+                let entity = { id: entityId };
+                entity.name = await MonksActiveTiles.entityName(entity);
+                field.val(JSON.stringify(entity)).next().html(entity.name);
+                field.trigger('change');
+            },
+            rejectClose: false,
+            options: {
+                width: 400
+            }
+        });
+    }
+
     addToFileList(event) {
         let filename = $(event.currentTarget).val();
         if (filename != '') {
@@ -358,9 +466,10 @@ export class ActionConfig extends FormApplication {
     checkConditional() {
         let that = this;
         $('.form-group', this.element).each(function () {
-            if ($(this).data('conditional'))
+            if ($(this).data('conditional')) 
                 $(this).toggle($(this).data('conditional').call(that, that));
         })
+        this.setPosition({ height: 'auto' });
     }
 
     async changeAction() {
@@ -443,7 +552,7 @@ export class ActionConfig extends FormApplication {
                     } else if (ctrl.subtype == 'entity') {
                         field//.css({ 'flex-direction': 'row', 'align-items': 'flex-start' })
                             .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'hidden', name: id }).val(typeof data[ctrl.id] == 'object' ? JSON.stringify(data[ctrl.id]) : data[ctrl.id]).data({ 'restrict': ctrl.restrict, 'type': 'entity', deftype: ctrl.defaultType }))
-                            .append($('<span>').addClass('display-value').html(await MonksActiveTiles.entityName(data[ctrl.id], (ctrl.defaultType || data?.collection)) || `<span class="placeholder-style">${ctrl.placeholder || 'Please select an Entity'}</style>`))
+                            .append($('<span>').dblclick(this.editEntityId.bind(this)).addClass('display-value').html(await MonksActiveTiles.entityName(data[ctrl.id], (ctrl.defaultType || data?.collection)) || `<span class="placeholder-style">${ctrl.placeholder || 'Please select an Entity'}</style>`))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectentity") }).addClass('entity-picker').html('<i class="fas fa-crosshairs fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'tile', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetile") }).toggle(options.showTile).addClass('entity-picker').html('<i class="fas fa-cubes fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'token', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetoken") }).toggle(options.showToken).addClass('entity-picker').html('<i class="fas fa-user-alt fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
@@ -461,7 +570,7 @@ export class ActionConfig extends FormApplication {
                 case 'text':
                 case 'number':
                     {
-                        let input = $('<input>').toggleClass('required', !!ctrl.required).attr({ type: ctrl.type, name: id }).val(val);
+                        let input = $(`<${ctrl.subtype == "multiline" ? "textarea" : "input"}>`).toggleClass('required', !!ctrl.required).attr({ type: ctrl.type, name: id }).val(val);
                         if (ctrl.placeholder)
                             input.attr('placeholder', ctrl.placeholder);
                         if (ctrl.attr)

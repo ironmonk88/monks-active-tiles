@@ -1,3 +1,53 @@
+## Version 1.0.63
+
+Added the option to drag and drop entities onto the action config dialog.  So if you want to add an Item to an Actor, you can now drag the item onto the action config instead of having to select it with the selection tool.
+
+Added the option to double click the entity field to allow copy and pasting of the entity id.
+
+Fixed an issue that multiline text areas weren't being registered correctly and it was defaulting back to a text box
+
+Added a macro example to the Compendium, Teleport to a random location
+
+Added the option to set the default trigger.  So if you use a lock of Click Tiles, you can have it default to that instead of Enter.
+
+Defaulting to allow player to use the action while a GM isn't available.
+
+Defaulting the Tiles to be active when created.
+
+Added the option to not record the Tiles history.  It can get pretty large at times and if it's not cleaned out regularily could cause performance issues.  Especially for menu type displays.  If it's not needed then you can remove it.
+
+Added the option to allow turn on the pointer cursor whenever you hover over the Tile.  So if you're using the Tile like a button, this will give feedback to the user that it's clickable.
+
+Fixed an issue where trying to unpause a game was just toggling the pause state.  Technically this is a Foundry bug, but I'm compensating for it.
+
+Removed the conditional fields for teleport that had a bad habit of always disappearing.
+
+Fixed an issue where applying damage in PF2E was causing issues
+
+Changed the playlist action so that it will control playing and stopping a playlist or a play list sound.
+
+Moved the flavor field of a chatmessage to above the text, since that's where it will exist on the chat card.
+
+Display a fragment of the text being displayed by a chat message.
+
+Added the option to add a quantity of items instead of just 1
+
+Added Scene and Actor as valid entity types to change permissions for.
+
+Fixed some issues with adding tokens to combat.
+
+Fixed an error with finding the location name if the Scene was blank.
+
+Fixed an issue when trying to control a door.
+
+Added the Target action, the triggering player will target the selected entities.
+
+Added the Global Volume action, so you can set the global volume level.
+
+Added the Dialog action, so you can prompt the triggering user for either a Yes/No response, or just display a message then need to click to confirm.
+
+
+
 ## Version 1.0.62
 
 Fixed issue with Levels 3D and the wall config.

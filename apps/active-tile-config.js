@@ -30,24 +30,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             let template = "modules/monks-active-tiles/templates/tile-config.html";
             const tiledata = mergeObject({ 'data.flags.monks-active-tiles.minrequired': 0 }, data);
 
-            tiledata.triggerModes = {
-                'enter': i18n("MonksActiveTiles.mode.enter"),
-                'exit': i18n("MonksActiveTiles.mode.exit"),
-                'both': i18n("MonksActiveTiles.mode.both"),
-                'movement': i18n("MonksActiveTiles.mode.movement"),
-                'stop': i18n("MonksActiveTiles.mode.stop"),
-                'click': i18n("MonksActiveTiles.mode.click"),
-                'dblclick': i18n("MonksActiveTiles.mode.dblclick"),
-                'hover': i18n("MonksActiveTiles.mode.hover"),
-                'hoverin': i18n("MonksActiveTiles.mode.hoverin"),
-                'hoverout': i18n("MonksActiveTiles.mode.hoverout"),
-                'combatstart': i18n("MonksActiveTiles.mode.combatstart"),
-                'round': i18n("MonksActiveTiles.mode.round"),
-                'turn': i18n("MonksActiveTiles.mode.turn"),
-                'combatend': i18n("MonksActiveTiles.mode.combatend"),
-                'ready': i18n("MonksActiveTiles.mode.canvasready"),
-                'manual': i18n("MonksActiveTiles.mode.manual")
-            };
+            tiledata.triggerModes = MonksActiveTiles.triggerModes;
             tiledata.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
             tiledata.triggerControlled = { 'all': i18n("MonksActiveTiles.control.all"), 'player': i18n("MonksActiveTiles.control.player"), 'gm': i18n("MonksActiveTiles.control.gm") };
 

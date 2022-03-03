@@ -35,6 +35,8 @@
   "MonksActiveTiles.TagName": "Enter Tag Name",
   "MonksActiveTiles.Save": "Save",
   "MonksActiveTiles.SnapToGrid": "Snap to grid",
+  "MonksActiveTiles.History": "History",
+  "MonksActiveTiles.HoverPointer": "Hoverover Pointer",
 
   "MonksActiveTiles.actiontext.pause": "<action>{pause} game</action>",
   "MonksActiveTiles.actiontext.delay": "<action>Wait</action> for <detail>\"{delay} seconds\"</detail>",
@@ -51,7 +53,7 @@
   "MonksActiveTiles.action.activate": "Activate/Deactivate",
   "MonksActiveTiles.action.alter": "Alter",
   "MonksActiveTiles.action.playsound": "Play sound file",
-  "MonksActiveTiles.action.playlist": "Play Playlist sound",
+  "MonksActiveTiles.action.playlist": "Playlist",
   "MonksActiveTiles.action.stopsound": "Stop sound",
   "MonksActiveTiles.action.changedoor": "Change Wall/Door",
   "MonksActiveTiles.action.notification": "Send Notification",
@@ -79,6 +81,9 @@
   "MonksActiveTiles.action.delete": "Delete Entities",
   "MonksActiveTiles.action.createjournal": "Create Journal Note",
   "MonksActiveTiles.action.scenelighting": "Scene Lighting",
+  "MonksActiveTiles.action.target": "Target",
+  "MonksActiveTiles.action.globalvolume": "Global Volume",
+  "MonksActiveTiles.action.dialog": "Show Dialog",
 
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
   "MonksActiveTiles.filter.exists": "Check entity count",
@@ -158,6 +163,15 @@
   "MonksActiveTiles.ctrl.itemname": "Item Name",
   "MonksActiveTiles.ctrl.darkness": "Darkness Level",
   "MonksActiveTiles.ctrl.speed": "Speed (seconds)",
+  "MonksActiveTiles.ctrl.play": "Play",
+  "MonksActiveTiles.ctrl.quantity": "Quantity",
+  "MonksActiveTiles.ctrl.volumetype": "Volume Type",
+  "MonksActiveTiles.ctrl.onyes": "On Yes Goto",
+  "MonksActiveTiles.ctrl.onno": "On No Goto",
+  "MonksActiveTiles.ctrl.title": "Title",
+  "MonksActiveTiles.ctrl.content": "Content",
+  "MonksActiveTiles.ctrl.options": "Options",
+  "MonksActiveTiles.ctrl.dialogtype": "Dialog Type",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -248,6 +262,13 @@
   "MonksActiveTiles.runas.gm": "GM",
   "MonksActiveTiles.runas.player": "Triggering Player",
 
+  "MonksActiveTiles.volumetype.playlists": "Playlists",
+  "MonksActiveTiles.volumetype.ambient": "Ambient",
+  "MonksActiveTiles.volumetype.interface": "Interface",
+
+  "MonksActiveTiles.dialogtype.confirm": "Confirm",
+  "MonksActiveTiles.dialogtype.alert": "Alert",
+
   "MonksActiveTiles.msg.prevent-teleport": "Teleporting off the map has been prevented",
   "MonksActiveTiles.msg.prevent-movement": "Moving off the map has been prevented",
   "MonksActiveTiles.msg.invalid-entity": "Invalid Entity Type",
@@ -280,5 +301,7 @@
   "MonksActiveTiles.teleport-wash.name": "Show Teleport Wash",
   "MonksActiveTiles.teleport-wash.hint": "When a token teleports, add a screen wash to prevent disorientation while the Scene changes.",
   "MonksActiveTiles.teleport-colour.name": "Teleport Wash Colour",
-  "MonksActiveTiles.teleport-colour.hint": "Colour to use for the backdrop wash when a token teleports"
+  "MonksActiveTiles.teleport-colour.hint": "Colour to use for the backdrop wash when a token teleports",
+  "MonksActiveTiles.default-trigger.name": "Default Trigger",
+  "MonksActiveTiles.default-trigger.hint": "Default trigger to use when creating a Tile"
 }

@@ -1,8 +1,18 @@
-import { i18n } from "./monks-active-tiles.js"
+import { i18n, MonksActiveTiles } from "./monks-active-tiles.js"
 
 export const registerSettings = function () {
 	// Register any custom module settings here
 	let modulename = "monks-active-tiles";
+
+	game.settings.register(modulename, "default-trigger", {
+		name: i18n("MonksActiveTiles.default-trigger.name"),
+		hint: i18n("MonksActiveTiles.default-trigger.hint"),
+		scope: "world",
+		config: true,
+		default: "enter",
+		choices: MonksActiveTiles.triggerModes,
+		type: String,
+	});
 
 	game.settings.register(modulename, "use-core-macro", {
 		name: i18n("MonksActiveTiles.use-core-macro.name"),
@@ -18,7 +28,7 @@ export const registerSettings = function () {
 		hint: i18n("MonksActiveTiles.allow-player.hint"),
 		scope: "world",
 		config: true,
-		default: false,
+		default: true,
 		type: Boolean,
 	});
 
