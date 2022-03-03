@@ -3013,6 +3013,11 @@ export class MonksActiveTiles {
                     type: "text",
                     subtype: "multiline"
                 },
+                /*{
+                    id: "options",
+                    name: "MonksActiveTiles.ctrl.options",
+                    type: "text",
+                },*/
                 {
                     id: "yes",
                     name: "MonksActiveTiles.ctrl.onyes",
@@ -3043,9 +3048,20 @@ export class MonksActiveTiles {
                 let content = action.data.content;
 
                 if (userid == game.user.id)
-                    MonksActiveTiles._showDialog(tile, tokens[0], value, action.data.dialogtype, title, content, action.data.yes, action.data.no).then((results) => { tile.resumeActions(_id, results); });
+                    MonksActiveTiles._showDialog(tile, tokens[0], value, action.data.dialogtype, title, content, action.data?.options, action.data.yes, action.data.no).then((results) => { tile.resumeActions(_id, results); });
                 else {
-                    MonksActiveTiles.emit("showdialog", { _id, userid: userid, tileid: tile.uuid, tokenid: tokens[0]?.uuid, value, type: action.data.dialogtype, title, content, yes: action.data.yes, no: action.data.no });
+                    MonksActiveTiles.emit("showdialog", {
+                        _id, userid: userid,
+                        tileid: tile.uuid,
+                        tokenid: tokens[0]?.uuid,
+                        value,
+                        type: action.data.dialogtype,
+                        title,
+                        content,
+                        options: action.data?.options,
+                        yes: action.data.yes,
+                        no: action.data.no
+                    });
                 }
 
                 return { pause: true };
@@ -3992,12 +4008,17 @@ export class MonksActiveTiles {
         }
     }
 
-    static async _showDialog(tile, token, value, type, title, content, yes, no) {
+    static async _showDialog(tile, token, value, type, title, content, options, yes, no) {
         let context = { actor: token?.actor?.data, token: token?.data, tile: tile.data, user: game.user, value: value, scene: canvas.scene };
         let compiled = Handlebars.compile(title);
         title = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
         compiled = Handlebars.compile(content);
         content = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
+
+        let opts = {};
+        try {
+            opts = JSON.parse(options);
+        } catch {}
 
         if (type == 'confirm') {
             return Dialog.confirm({
@@ -4009,6 +4030,7 @@ export class MonksActiveTiles {
                 no: () => {
                     return { goto: no };
                 },
+                options: opts,
                 rejectClose: true
             }).catch(() => { return { goto: no }; });
         } else if (type == 'alert') {
@@ -4018,8 +4040,9 @@ export class MonksActiveTiles {
                 callback: () => {
                     return {};
                 },
+                options: opts,
                 rejectClose: true
-            });
+            }).catch(() => { return {}; });
         }
     }
 
@@ -4815,7 +4838,7 @@ export class MonksActiveTiles {
                     let tile = (data?.tileid ? await fromUuid(data.tileid) : null);
                     let token = (data?.tokenid ? await fromUuid(data.tokenid) : null);
 
-                    MonksActiveTiles._showDialog(tile, token, data.value, data.type, data.title, data.content, data.yes, data.no).then((results) => {
+                    MonksActiveTiles._showDialog(tile, token, data.value, data.type, data.title, data.content, data.options, data.yes, data.no).then((results) => {
                         MonksActiveTiles.emit("returndialog", { _id: data._id, tileid: data?.tileid, results: results });
                     });
                 }

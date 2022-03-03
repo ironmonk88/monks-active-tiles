@@ -46,8 +46,6 @@ Added the Global Volume action, so you can set the global volume level.
 
 Added the Dialog action, so you can prompt the triggering user for either a Yes/No response, or just display a message then need to click to confirm.
 
-
-
 ## Version 1.0.62
 
 Fixed issue with Levels 3D and the wall config.
