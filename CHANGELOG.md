@@ -1,3 +1,25 @@
+## Version 1.0.64
+
+Fixed the icon for using the original location for a token.
+
+Added the option to use Current Tokens when running the move token action.
+
+Fixed an issue with Hurt/Heal that was introduced when fixing the issue with PF2E.
+
+Added the option to alter a Wall segment
+
+Added the option to clear targets instead of just selecting targets.
+
+Fixed an issue where players weren't selecting any targets.
+
+Fixed an issue when trying to select entities from a Compendium
+
+Fixed an issue where hovering wasn't workign any more.
+
+Fixed an issue where changing scenes with a pointer cursor showing wasn't clearing the pointer cursor.
+
+Fixed an issue where an array of gotos weren't stopping if the tile was no longer active.
+
 ## Version 1.0.63
 
 Added the option to drag and drop entities onto the action config dialog.  So if you want to add an Item to an Actor, you can now drag the item onto the action config instead of having to select it with the selection tool.

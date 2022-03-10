@@ -449,7 +449,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-coordinates",
                     type: "select",
                     subtype: "either",
-                    options: { showTagger: true, showToken: true, showOrigin: true },
+                    options: { showTagger: true, showToken: true, showOrigin: true, showPrevious: true },
                     restrict: (entity) => { return (entity instanceof Tile && this.scene.id == entity.parent.id) || this.scene.id == entity.id; },
                     required: true
                 },
@@ -1176,7 +1176,7 @@ export class MonksActiveTiles {
                                 continue;
                             }
                             if (a.applyDamage) {
-                                await a.applyDamage(val, (game.system.id == "pf2e" ? entity : null));
+                                await a.applyDamage(val, (game.system.id == "pf2e" ? entity : 1));
                             } else {
                                 applyDamage(a, val);
                             }
@@ -2868,6 +2868,7 @@ export class MonksActiveTiles {
                         return (
                             entity instanceof Token ||
                             entity instanceof Tile ||
+                            entity instanceof Wall ||
                             entity instanceof Drawing ||
                             entity instanceof Note || 
                             entity instanceof AmbientLight || 
@@ -2905,6 +2906,16 @@ export class MonksActiveTiles {
             options: { allowDelay: true },
             ctrls: [
                 {
+                    id: "target",
+                    name: "Select Targets",
+                    type: "list",
+                    onChange: (app) => {
+                        app.checkConditional();
+                    },
+                    list: 'target',
+                    defvalue: 'target'
+                },
+                {
                     id: "entity",
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
@@ -2913,19 +2924,37 @@ export class MonksActiveTiles {
                     restrict: (entity) => {
                         return entity instanceof Token;
                     },
+                    conditional: (app) => { return $('select[name="data.target"]', app.element).val() == "target" },
                     defaultType: 'tokens'
                 }
             ],
+            values: {
+                'target': {
+                    "target": 'MonksActiveTiles.target.target',
+                    "clear": 'MonksActiveTiles.target.clear',
+                }
+            },
             fn: async (args = {}) => {
-                const { userid } = args
+                const { action, userid } = args
                 let entities = await MonksActiveTiles.getEntities(args, null, 'tokens');
 
                 let user = game.users.get(userid);
-                user.updateTokenTargets(entities.map(t => t.id));
+                if (action.data.target == "clear") {
+                    user.targets.forEach(t => t.setTarget(false, { user: user, releaseOthers: true, groupSelection: false }));
+                } else {
+                    if (userid == game.user.id)
+                        user.updateTokenTargets(entities.map(t => t.id));
+                    else
+                        MonksActiveTiles.emit("target", { userid: userid, tokens: entities.map(t => t.id) });
+                }
             },
             content: async (trigger, action) => {
-                let entityName = await MonksActiveTiles.entityName(action.data?.entity, 'tokens');
-                return `<span class="action-style">${i18n(trigger.name)}</span> <span class="entity-style">${entityName}</span>`;
+                if (action.data.target == "clear")
+                    return `<span class="action-style">${i18n("MonksActiveTiles.target.clear")} targets</span>`;
+                else {
+                    let entityName = await MonksActiveTiles.entityName(action.data?.entity, 'tokens');
+                    return `<span class="action-style">${i18n(trigger.name)}</span> <span class="entity-style">${entityName}</span>`;
+                }
             }
         },
         'scenelighting': {
@@ -4222,6 +4251,7 @@ export class MonksActiveTiles {
 
         if (game.modules.get("lib-wrapper")?.active) {
             libWrapper.ignore_conflicts("monks-active-tiles", "monks-enhanced-journal", "JournalDirectory.prototype._onClickDocumentName");
+            libWrapper.ignore_conflicts("monks-active-tiles", "monks-enhanced-journal", "Compendium.prototype._onClickEntry");
             libWrapper.ignore_conflicts("monks-active-tiles", "monks-scene-navigation", "SceneDirectory.prototype._onClickDocumentName");
         }
 
@@ -4426,13 +4456,14 @@ export class MonksActiveTiles {
                 let triggerData = tile.data.flags["monks-active-tiles"];
 
                 if (!triggerData || !triggerData.active || !(triggerData.trigger?.includes("hover") || triggerData.pointer)) continue;
-                
+
+                let tokens = [];
                 if (triggerData.trigger?.includes("hover")) {
                     //check to see if this trigger is restricted by control type
                     if ((triggerData.controlled === 'gm' && !game.user.isGM) || (triggerData.controlled === 'player' && game.user.isGM))
                         continue;
 
-                    let tokens = canvas.tokens.controlled.map(t => t.document);
+                    tokens = canvas.tokens.controlled.map(t => t.document);
                     //check to see if this trigger is per token, and already triggered
                     if (triggerData.pertoken) {
                         tokens = tokens.filter(t => !tile.hasTriggered(t.id)); //.uuid
@@ -4570,10 +4601,11 @@ export class MonksActiveTiles {
             if (MonksActiveTiles.waitingInput && MonksActiveTiles.waitingInput.waitingfield.data('type') == 'entity') { //+++ need to make sure this is allowed, only create should be able to select templates
                 let li = event.currentTarget.parentElement;
                 const document = await this.collection.getDocument(li.dataset.documentId);
-                if (document instanceof Actor || document instanceof Item) 
-                    ActionConfig.updateSelection.call(MonksActiveTiles.waitingInput, { id: document.uuid, name: document.name });
-                else
-                    wrapped(...args);
+                let restrict = MonksActiveTiles.waitingInput.waitingfield.data('restrict');
+                if (restrict && !restrict(document))
+                    return wrapped(...args);
+
+                ActionConfig.updateSelection.call(MonksActiveTiles.waitingInput, { id: document.uuid, name: document.name });
             } else
                 wrapped(...args);
         }
@@ -4954,6 +4986,11 @@ export class MonksActiveTiles {
                     Hooks.call('ForienQuestLog.Open.QuestLog');
                 }
             } break;
+            case 'target': {
+                if (data.userid == game.user.id) {
+                    game.user.updateTokenTargets(data.tokens);
+                }
+            }
         }
     }
 
@@ -5317,13 +5354,17 @@ export class MonksActiveTiles {
                                         if (result.goto instanceof Array) {
                                             result.continue = false;
                                             for (let goto of result.goto) {
-                                                debug("Jumping to Anchor", goto.tag);
-                                                let idx = actions.findIndex(a => a.action == 'anchor' && a.data.tag == goto.tag);
-                                                if (idx != -1) {
-                                                    let gotoContext = Object.assign({}, context);
-                                                    gotoContext = mergeObject(gotoContext, { value: goto });
-                                                    gotoContext._id = makeid();
-                                                    await this.runActions(gotoContext, idx + 1);
+                                                if (this.getFlag('monks-active-tiles', 'active') !== false) {
+                                                    debug("Jumping to Anchor", goto.tag);
+                                                    let idx = actions.findIndex(a => a.action == 'anchor' && a.data.tag == goto.tag);
+                                                    if (idx != -1) {
+                                                        let gotoContext = Object.assign({}, context);
+                                                        gotoContext = mergeObject(gotoContext, { value: goto });
+                                                        gotoContext._id = makeid();
+                                                        await this.runActions(gotoContext, idx + 1);
+                                                    }
+                                                } else {
+                                                    debug("Skipping anchor due to Tile being inactive", goto.tag);
                                                 }
                                             }
                                         } else {
@@ -6094,6 +6135,7 @@ Hooks.on("renderTileConfig", (app, html, data) => {
 });
 
 Hooks.on("canvasReady", () => {
+    $('#board').css({ 'cursor': '' });
     for (let tile of canvas.scene.tiles) {
         let triggerData = tile.data.flags["monks-active-tiles"];
         if (triggerData && triggerData.active && triggerData.trigger == "ready") {
@@ -6105,3 +6147,12 @@ Hooks.on("canvasReady", () => {
         }
     }
 });
+
+Hooks.on("openJournalEntry", (document, options, userid) => {
+    if (MonksActiveTiles.waitingInput && MonksActiveTiles.waitingInput.waitingfield.data('type') == 'entity') {
+        let restrict = MonksActiveTiles.waitingInput.waitingfield.data('restrict');
+        if (!restrict || restrict(document)) {
+            return false;
+        }
+    }
+})

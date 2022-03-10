@@ -269,6 +269,9 @@
   "MonksActiveTiles.dialogtype.confirm": "Confirm",
   "MonksActiveTiles.dialogtype.alert": "Alert",
 
+  "MonksActiveTiles.target.target": "Target",
+  "MonksActiveTiles.target.clear": "Clear",
+
   "MonksActiveTiles.msg.prevent-teleport": "Teleporting off the map has been prevented",
   "MonksActiveTiles.msg.prevent-movement": "Moving off the map has been prevented",
   "MonksActiveTiles.msg.invalid-entity": "Invalid Entity Type",
