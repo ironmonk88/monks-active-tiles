@@ -10,20 +10,20 @@ export class ActionConfig extends FormApplication {
         //let's just grab the first player character we can find
         let token = canvas.scene.tokens?.contents[0]?.data;
         if (token) {
-            let attributes = TokenDocument.getTrackedAttributes(token ?? {});
+            let attributes = getDocumentClass("Token").getTrackedAttributes(token ?? {});
             if (attributes)
                 this.tokenAttr = (this.tokenAttr || []).concat(attributes.value.concat(attributes.bar).map(a => a.join('.')));
         }
         let player = game.actors.find(a => a.type == 'character');
         if (player) {
-            let attributes = TokenDocument.getTrackedAttributes(player.data.data ?? {});
+            let attributes = getDocumentClass("Token").getTrackedAttributes(player.data.data ?? {});
             if (attributes)
                 this.tokenAttr = (this.tokenAttr || []).concat(attributes.value.concat(attributes.bar).map(a => a.join('.')));
         }
 
         let tile = canvas.scene.data.tiles?.contents[0]?.data;
         if (tile) {
-            let attributes = TokenDocument.getTrackedAttributes(tile ?? {});
+            let attributes = getDocumentClass("Token").getTrackedAttributes(tile ?? {});
             if (attributes)
                 this.tileAttr = attributes.value.concat(attributes.bar).map(a => a.join('.'));
         }
