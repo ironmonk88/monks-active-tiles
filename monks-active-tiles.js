@@ -5719,7 +5719,7 @@ export class MonksActiveTiles {
         Tile.prototype.draw = async function () {
             return oldTileDraw.call(this).then(() => {
                 let triggerData = this.document.data.flags["monks-active-tiles"];
-                if (triggerData.usealpha && !this._alphaMap)
+                if (triggerData?.usealpha && !this._alphaMap)
                     this._createAlphaMap({ keepPixels: true });
             });
         }
@@ -6349,7 +6349,7 @@ Hooks.on("openJournalEntry", (document, options, userid) => {
 Hooks.on('updateTile', async (document, update, options, userId) => {
     if (update.img != undefined) {
         let triggerData = document.data.flags["monks-active-tiles"];
-        if (triggerData.usealpha) {
+        if (triggerData?.usealpha) {
             window.setTimeout(function () {
                 document.object._createAlphaMap({ keepPixels: true });
             }, 500);
