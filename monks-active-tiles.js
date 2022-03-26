@@ -4469,6 +4469,24 @@ export class MonksActiveTiles {
             }
         }
 
+        let tileDraw = function (wrapped, ...args) {
+            return wrapped(...args).then((result) => {
+                let triggerData = this.document.data.flags["monks-active-tiles"];
+                if (triggerData?.usealpha && !this._alphaMap)
+                    this._createAlphaMap({ keepPixels: true });
+                return result;
+            });
+        }
+
+        if (game.modules.get("lib-wrapper")?.active) {
+            libWrapper.register("monks-active-tiles", "Tile.prototype.draw", tileDraw, "WRAPPER");
+        } else {
+            const oldTileDraw = Tile.prototype.draw;
+            Tile.prototype.draw = function (event) {
+                return tileDraw.call(this, oldTileDraw.bind(this), ...arguments);
+            }
+        }
+
         let oldCycleTokens = TokenLayer.prototype.cycleTokens;
         TokenLayer.prototype.cycleTokens = function (...args) {
             //if (MonksActiveTiles.preventCycle) {
@@ -5713,15 +5731,6 @@ export class MonksActiveTiles {
             });
 
             return stats;
-        }
-
-        let oldTileDraw = Tile.prototype.draw;
-        Tile.prototype.draw = async function () {
-            return oldTileDraw.call(this).then(() => {
-                let triggerData = this.document.data.flags["monks-active-tiles"];
-                if (triggerData?.usealpha && !this._alphaMap)
-                    this._createAlphaMap({ keepPixels: true });
-            });
         }
     }
 
