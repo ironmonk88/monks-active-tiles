@@ -8,24 +8,26 @@ export class ActionConfig extends FormApplication {
         this.tileAttr = [];
 
         //let's just grab the first player character we can find
+        log("Checking token");
         let token = canvas.scene.tokens?.contents[0]?.data;
         if (token) {
             let attributes = getDocumentClass("Token").getTrackedAttributes(token ?? {});
             if (attributes)
                 this.tokenAttr = (this.tokenAttr || []).concat(attributes.value.concat(attributes.bar).map(a => a.join('.')));
         }
+        log("Checking player");
         let player = game.actors.find(a => a.type == 'character');
         if (player) {
+            //try {
             let attributes = getDocumentClass("Token").getTrackedAttributes(player.data.data ?? {});
-            if (attributes)
-                this.tokenAttr = (this.tokenAttr || []).concat(attributes.value.concat(attributes.bar).map(a => a.join('.')));
+                if (attributes)
+                    this.tokenAttr = (this.tokenAttr || []).concat(attributes.value.concat(attributes.bar).map(a => a.join('.')));
+            //} catch {}
         }
 
         let tile = canvas.scene.data.tiles?.contents[0]?.data;
         if (tile) {
-            let attributes = getDocumentClass("Token").getTrackedAttributes(tile ?? {});
-            if (attributes)
-                this.tileAttr = attributes.value.concat(attributes.bar).map(a => a.join('.'));
+            this.tileAttr = (ActionConfig.getTileTrackedAttributes(tile ?? {}) || []).map(a => a.join('.'));
         }
     }
 
@@ -103,6 +105,31 @@ export class ActionConfig extends FormApplication {
         const fp = new FilePicker(options);
         this.filepickers.push(fp);
         return fp.browse();
+    }
+
+    static getTileTrackedAttributes(data, _path = []) {
+        if (!data)
+            return {};
+
+        // Track the path and record found attributes
+        const attributes = [];
+
+        // Recursively explore the object
+        for (let [k, v] of Object.entries(data)) {
+            let p = _path.concat([k]);
+
+            // Check objects for both a "value" and a "max"
+            if (v instanceof Object) {
+                const inner = this.getTileTrackedAttributes(data[k], p);
+                attributes.push(...inner);
+            }
+
+            // Otherwise identify values which are numeric or null
+            else if (Number.isNumeric(v) || (v === null)) {
+                attributes.push(p);
+            }
+        }
+        return attributes;
     }
 
     async _onDrop(event) {
@@ -375,7 +402,7 @@ export class ActionConfig extends FormApplication {
         //confirm that all required fields have a value
         let allGood = true;
         $('.required[name]', this.element).each(function () {
-            if ($(this).is(':visible') && $(this).val() == '' && $(this).children().length == 0)
+            if (($(this).is(':visible') || ($(this).attr("type") == "hidden" && $(this).next().is(':visible'))) && !$(this).val() && $(this).children().length == 0)
                 allGood = false;
         })
 
@@ -480,6 +507,8 @@ export class ActionConfig extends FormApplication {
 
         let data = this.object.data || {};
 
+        //$('.gmonly', this.element).toggle(action.requiresGM);
+
         for (let ctrl of (action.ctrls || [])) {
             let options = mergeObject({ showTile: false, showToken: false, showWithin: false, showPlayers: false, showPrevious: false, showControlled: false }, ctrl.options);
             let field = $('<div>').addClass('form-fields').data('ctrl', ctrl);
@@ -490,7 +519,7 @@ export class ActionConfig extends FormApplication {
                 case 'filepicker':
                     field
                         .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': game.i18n.localize("FILES.BrowseTooltip") }).addClass('file-picker').html('<i class="fas fa-file-import fa-sm"></i>').click(this._activateFilePicker.bind(this)))
-                        .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'text', name: id, placeholder: (ctrl.subtype == 'audio' ? 'path/audio.mp3' : '') }).val(data[ctrl.id]));
+                        .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'text', name: id, placeholder: (ctrl.subtype == 'audio' ? 'path/audio.mp3' : 'File Path') }).val(data[ctrl.id]));
                     break;
                 case 'filelist':
                     {
@@ -545,14 +574,15 @@ export class ActionConfig extends FormApplication {
                             .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectlocation") }).addClass('location-picker').html('<i class="fas fa-crosshairs fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'position', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.setposition") }).toggle(ctrl.subtype == 'position').addClass('location-picker').html('<i class="fas fa-crop-alt fa-sm"></i>').click(this.selectPosition.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'token', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetoken") }).toggle(options.showToken).addClass('entity-picker').html('<i class="fas fa-user-alt fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
-                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'previous', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useprevious") }).toggle(options.showPrevious).addClass('location-picker').html('<i class="fas fa-history fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
+                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'previous', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usepreviouslocation") }).toggle(options.showPrevious).addClass('location-picker').html('<i class="fas fa-history fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'origin', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useorigin") }).toggle(options.showOrigin).addClass('location-picker').html('<i class="fas fa-walking fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'tagger', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetagger") }).toggle(options.showTagger && game.modules.get('tagger')?.active).addClass('location-picker').html('<i class="fas fa-tag fa-sm"></i>').click(this.addTag.bind(this)));
 
                     } else if (ctrl.subtype == 'entity') {
+                        let displayValue = (ctrl.placeholder && !data[ctrl.id] && !!ctrl.required ? `<span class="placeholder-style">${ctrl.placeholder}</style>` : await MonksActiveTiles.entityName(data[ctrl.id], (ctrl.defaultType || data?.collection)) || `<span class="placeholder-style">'Please select an Entity'</style>`);
                         field//.css({ 'flex-direction': 'row', 'align-items': 'flex-start' })
                             .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'hidden', name: id }).val(typeof data[ctrl.id] == 'object' ? JSON.stringify(data[ctrl.id]) : data[ctrl.id]).data({ 'restrict': ctrl.restrict, 'type': 'entity', deftype: ctrl.defaultType }))
-                            .append($('<span>').dblclick(this.editEntityId.bind(this)).addClass('display-value').html(await MonksActiveTiles.entityName(data[ctrl.id], (ctrl.defaultType || data?.collection)) || `<span class="placeholder-style">${ctrl.placeholder || 'Please select an Entity'}</style>`))
+                            .append($('<span>').dblclick(this.editEntityId.bind(this)).addClass('display-value').html(displayValue))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectentity") }).addClass('entity-picker').html('<i class="fas fa-crosshairs fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'tile', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetile") }).toggle(options.showTile).addClass('entity-picker').html('<i class="fas fa-cubes fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'token', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetoken") }).toggle(options.showToken).addClass('entity-picker').html('<i class="fas fa-user-alt fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
@@ -616,6 +646,9 @@ export class ActionConfig extends FormApplication {
             }
 
             div.appendTo($('.action-controls', this.element));
+
+            if (ctrl.help && setting("show-help"))
+                $('.action-controls', this.element).append($('<p>').addClass("notes").html(ctrl.help));
 
             if (ctrl.id == 'attribute') {
                 let that = this;

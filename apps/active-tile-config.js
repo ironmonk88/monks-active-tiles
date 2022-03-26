@@ -18,6 +18,12 @@ export const WithActiveTileConfig = (TileConfig) => {
             });
         }
 
+        getData(options) {
+            let data = super.getData(options);
+            data.usingAlpha = ["click", "dblclick", "rightclick"].includes(data.data.flags["monks-active-tiles"]?.trigger);
+            return data;
+        }
+
         get actions() {
             return this.object.getFlag("monks-active-tiles", "actions") || [];
         }
@@ -162,6 +168,11 @@ export const WithActiveTileConfig = (TileConfig) => {
             $('.action-delete', html).click(this._deleteAction.bind(this));
             $('.view-history', html).click(function () {
                 new TileHistory(that.object).render(true);
+            });
+
+            $('select[name="flags.monks-active-tiles.trigger"]', html).change(function () {
+                $('.usealpha', html).toggle(["click", "dblclick", "rightclick"].includes($(this).val()));
+                that.setPosition();
             });
 
             //$('div[data-tab="triggers"] .item-list li.item', html).hover(this._onActionHoverIn.bind(this), this._onActionHoverOut.bind(this));

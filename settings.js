@@ -68,6 +68,15 @@ export const registerSettings = function () {
 		type: String,
 	});
 
+	game.settings.register(modulename, "show-help", {
+		name: i18n("MonksActiveTiles.show-help.name"),
+		hint: i18n("MonksActiveTiles.show-help.hint"),
+		scope: "world",
+		config: true,
+		default: true,
+		type: Boolean,
+	});
+
 	game.settings.register(modulename, "prevent-cycle", {
 		scope: "world",
 		config: false,

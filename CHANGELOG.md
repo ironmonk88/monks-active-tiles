@@ -1,3 +1,25 @@
+## Version 1.0.65
+
+Fixed issues with getting token attributes and tile attributes.
+
+Added help strings for various actions properties.
+
+Added right click and elevation as triggers.
+
+Added the option to alter multiple attributes at the same time by separating them by semi-colons.
+
+Added the option to control chat messages when rolling from the roll table.
+
+Fixed permissions with Scenes so that it will only add Observer roll.
+
+Added the action to change the Scene background.
+
+Added the action to set an image cycle's image at.
+
+Removed the option to select a Tile when selecting an attack Target
+
+Added the option to only respond to clicks within the actual image instead of the entire Tile.  So clicks will ignore the Tiles transparency.
+
 ## Version 1.0.64
 
 Fixed the icon for using the original location for a token.
