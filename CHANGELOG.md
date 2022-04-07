@@ -1,3 +1,9 @@
+## Version 1.0.69
+
+Fixed issues with finding tokens within Tile.
+
+Added option to use filter by attribute with walls and terrain
+
 ## Version 1.0.68
 
 Fixed issues with required fields not eing required.

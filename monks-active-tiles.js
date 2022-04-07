@@ -3679,7 +3679,10 @@ export class MonksActiveTiles {
                             entity instanceof Drawing ||
                             entity instanceof Note ||
                             entity instanceof AmbientLight ||
-                            entity instanceof AmbientSound); }
+                            entity instanceof AmbientSound ||
+                            entity instanceof Wall ||
+                            entity.terrain != undefined);
+                    }
                 },
                 {
                     id: "collection",
@@ -5388,9 +5391,9 @@ export class MonksActiveTiles {
                     let tileht = tile.data.flags.levels.rangeTop ?? 1000;
                     let tilehb = tile.data.flags.levels.rangeBottom ?? -1000;
                     if (t.data.elevation >= tilehb && t.data.elevation <= tileht)
-                        return tile.pointWithin(midToken);
+                        return this.pointWithin(midToken);
                 } else
-                    return tile.pointWithin(midToken);
+                    return this.pointWithin(midToken);
             });
         }
 
