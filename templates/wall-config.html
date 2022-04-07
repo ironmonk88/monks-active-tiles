@@ -1,8 +1,36 @@
 <div class="form-group">
-    <label>Select Tile</label>
+    <label>{{ localize "MonksActiveTiles.SelectTile" }}</label>
     <div class="form-fields">
         <input type="hidden" data-deftype="tiles" data-type="entity" name="flags.monks-active-tiles.entity" value="{{entity}}">
         <span class="display-value">{{tilename}}</span>
         <button type="button" data-type="entity" data-target="flags.monks-active-tiles.entity" title="Select an entity" class="entity-picker"><i class="fas fa-crosshairs fa-sm"></i></button>
+    </div>
+</div>
+
+<div class="form-group">
+    <label>On Open Door</label>
+    <div class="form-fields">
+        <input type="checkbox" name="flags.monks-active-tiles.open" {{checked open}} />
+    </div>
+</div>
+
+<div class="form-group">
+    <label>On Close Door</label>
+    <div class="form-fields">
+        <input type="checkbox" name="flags.monks-active-tiles.close" {{checked close}} />
+    </div>
+</div>
+
+<div class="form-group">
+    <label>On Lock Door</label>
+    <div class="form-fields">
+        <input type="checkbox" name="flags.monks-active-tiles.lock" {{checked lock}} />
+    </div>
+</div>
+
+<div class="form-group">
+    <label>On Secret Door</label>
+    <div class="form-fields">
+        <input type="checkbox" name="flags.monks-active-tiles.secret" {{checked secret}} />
     </div>
 </div>

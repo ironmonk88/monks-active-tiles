@@ -13,6 +13,7 @@
   "MonksActiveTiles.Controlled": "Controlled Tokens",
   "MonksActiveTiles.TileHistory": "Tile History",
   "MonksActiveTiles.ResetHistory": "Reset History",
+  "MonksActiveTiles.SelectTile": "Select Tile",
 
   "MonksActiveTiles.After": "After",
   "MonksActiveTiles.Action": "Action",
@@ -67,7 +68,8 @@
   "MonksActiveTiles.action.movement": "Move",
   "MonksActiveTiles.action.createtoken": "Create Token",
   "MonksActiveTiles.action.playanimation": "Play Animation",
-  "MonksActiveTiles.action.openjournal": "Open a Journal or Actor Sheet",
+  "MonksActiveTiles.action.openjournal": "Open a Journal",
+  "MonksActiveTiles.action.openactor": "Open an Actor Sheet",
   "MonksActiveTiles.action.additem": "Add Item",
   "MonksActiveTiles.action.permission": "Change Permissions",
   "MonksActiveTiles.action.attack": "Attack",
@@ -178,6 +180,7 @@
   "MonksActiveTiles.ctrl.image": "Image",
   "MonksActiveTiles.ctrl.easing": "Volume Easing",
   "MonksActiveTiles.ctrl.radius": "Effect Radius <small>(Grid Units)</small>",
+  "MonksActiveTiles.ctrl.reset": "Reset when all used",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -292,6 +295,7 @@
   "MonksActiveTiles.msg.usetile": "Use this tile",
   "MonksActiveTiles.msg.usetoken": "Use the triggering token",
   "MonksActiveTiles.msg.useplayers": "Use player tokens",
+  "MonksActiveTiles.msg.useplayersjournal": "Use player journal",
   "MonksActiveTiles.msg.usewithin": "Use tokens within triggering tile",
   "MonksActiveTiles.msg.useprevious": "Use this actions current collection",
   "MonksActiveTiles.msg.usepreviouslocation": "Use this actions current location",

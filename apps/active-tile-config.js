@@ -43,7 +43,13 @@ export const WithActiveTileConfig = (TileConfig) => {
             tiledata.actions = await Promise.all((this.object.getFlag('monks-active-tiles', 'actions') || [])
                 .map(async (a) => {
                     let trigger = MonksActiveTiles.triggerActions[a.action];
-                    let content = (trigger == undefined ? 'Unknown' : (trigger.content ? await trigger.content(trigger, a) : i18n(trigger.name)) + (a.delay > 0 ? ' after ' + a.delay + ' seconds' : ''));
+                    let content = (trigger == undefined ? 'Unknown' : i18n(trigger.name));
+                    if (trigger.content) {
+                        try {
+                            content = await trigger.content(trigger, a);
+                        } catch { }
+                    }
+                    content += (a.delay > 0 ? ' after ' + a.delay + ' seconds' : '');
                     return {
                         id: a.id,
                         content: content

@@ -1,3 +1,33 @@
+## Version 1.0.68
+
+Fixed issues with required fields not eing required.
+
+Added error checking for action names.  This should make sure that any errors won't prevent the Tile config from opening.
+
+Fixed issue with getting location not knowing what the reference Tile is.
+
+Added error checking for alter action to make sure the attributes match the values properly.
+
+Fixed issue with RollTables resetting every time a roll is made.  Also added the option to reset the rolls when all have been rolled.
+
+Split Open Journal and Open Actor sheet as there was enough additions that they needed their own space.
+
+Added the option to delete a Terrain entity.
+
+Added the option to Stop Remaining Actions on a selected Tile.  So if you have a Tile running through actions, you can now stop it from looping.
+
+Fixed issue with random destination targeting itself.
+
+Added the option to specify what kind of door action will trigger the Tile.
+
+Fixed issues with hovering on a Tile and switching scenes.
+
+Fixed issue with clicking on the canvas when the type is not the type requested.
+
+Fixed issue with Kandashi's Fluid Canvas heartbeat not working
+
+Added macro to generate a macro to setup a Tile from a Tile.
+
 ## Version 1.0.65
 
 Fixed issues with getting token attributes and tile attributes.
