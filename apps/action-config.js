@@ -93,6 +93,7 @@ export class ActionConfig extends FormApplication {
                 that.object.data.entity = {};
                 that.object.data.item = {};
                 that.object.data.actor = {};
+                that.object.data.token = {};
             }
             that.changeAction.call(that);
         });
@@ -456,7 +457,7 @@ export class ActionConfig extends FormApplication {
     async _updateObject(event, formData) {
         log('updating action', event, formData, this.object);
 
-        for (let check of ['location', 'entity', 'item', 'actor']) {
+        for (let check of ['location', 'entity', 'item', 'actor', 'token']) {
             if (formData[`data.${check}`])
                 formData[`data.${check}`] = (formData[`data.${check}`].startsWith('{') ? JSON.parse(formData[`data.${check}`]) : formData[`data.${check}`]);
         }

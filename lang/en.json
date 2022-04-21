@@ -89,6 +89,7 @@
   "MonksActiveTiles.action.globalvolume": "Global Volume",
   "MonksActiveTiles.action.dialog": "Show Dialog",
   "MonksActiveTiles.action.scenebackground": "Scene Background",
+  "MonksActiveTiles.action.scrollingtext": "Scrolling Text",
 
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
   "MonksActiveTiles.filter.exists": "Check entity count",
@@ -106,6 +107,7 @@
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
   "MonksActiveTiles.ctrl.select-entity": "Select Entity",
   "MonksActiveTiles.ctrl.select-actor": "Select Actor",
+  "MonksActiveTiles.ctrl.select-tile": "Select Tile",
   "MonksActiveTiles.ctrl.state": "State",
   "MonksActiveTiles.ctrl.attribute": "Attribute",
   "MonksActiveTiles.ctrl.value": "Value",
@@ -181,6 +183,9 @@
   "MonksActiveTiles.ctrl.easing": "Volume Easing",
   "MonksActiveTiles.ctrl.radius": "Effect Radius <small>(Grid Units)</small>",
   "MonksActiveTiles.ctrl.reset": "Reset when all used",
+  "MonksActiveTiles.ctrl.slotmachine": "Slot Machine",
+  "MonksActiveTiles.ctrl.spins": "Spins",
+  "MonksActiveTiles.ctrl.rate": "Spin Rate",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",

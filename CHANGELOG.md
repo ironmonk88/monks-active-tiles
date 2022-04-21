@@ -1,3 +1,27 @@
+## Version 1.0.70
+
+Added the method that gets passed to the actions.  This will allow you to hide and show things based on hover over.  So if you want to use a "tooltip" with a Tile, you can create a Text Drawing and alter the hidden property based on the method.
+
+Updated the chat action to only show ellipses if the text overflows.
+
+Updated the add item action to set the quantity to add.
+
+Added the option to set what tokens get sent to the trigger action.
+
+Added the option to display cycle images like a slot machine.
+
+Updated the dialog action to require the content property to be filled.
+
+Added a scrolling text action.
+
+Fixed issue with dialog, if a button is pressed and there is no related anchor to go to, then actions should stop.
+
+Fixed issue related to Levels and tokens within the Tile.
+
+Added Confetti Module support.
+
+Added the option to cycle images like a slot machine.
+
 ## Version 1.0.69
 
 Fixed issues with finding tokens within Tile.
