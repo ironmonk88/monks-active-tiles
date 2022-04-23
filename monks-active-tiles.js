@@ -2800,7 +2800,7 @@ export class MonksActiveTiles {
                     type: "select",
                     subtype: "entity",
                     required: true,
-                    options: { showTile: true, showTagger: true },
+                    options: { showTile: true, showTagger: true, showPrevious: true },
                     restrict: (entity) => { return (entity instanceof Tile); },
                     defaultType: 'tiles',
                     placeholder: "Please select a Tile"
@@ -2829,6 +2829,8 @@ export class MonksActiveTiles {
 
                 let promises = [];
                 for (let entity of entities) {
+                    if (!(entity instanceof TileDocument))
+                        continue;
                     //Add this trigger if it's the original one
                     //MonksActiveTiles.triggered.push(tile.id);
 
@@ -4333,8 +4335,21 @@ export class MonksActiveTiles {
             entities = canvas.tokens.controlled.map(t => t.document);
         }
         else if (id == undefined || id == '' || id == 'previous') {
-            entities = (defaultType == 'tiles' ? [tile] : value[(defaultType || 'tokens')]);
+            let deftype = (defaultType || 'tokens');
+            entities = (deftype == 'tiles' && id != 'previous' ? [tile] : value[deftype]);
             entities = (entities instanceof Array ? entities : [entities]);
+            
+            let collection = canvas[deftype == "tiles" ? "background" : deftype];
+            if (collection) {
+                for (let i = 0; i < entities.length; i++) {
+                    let entity = entities[i];
+                    if (typeof entity == "string") {
+                        let newEnt = collection.get(entity);
+                        if (newEnt?.document)
+                            entities[i] = newEnt.document;
+                    }
+                }
+            }
         }
         else if (id.startsWith('tagger')) {
             if (game.modules.get('tagger')?.active) {
@@ -4462,6 +4477,8 @@ export class MonksActiveTiles {
         if (location.id) {
             if (location?.id == 'previous')
                 name = "Current Location";
+            else if (location.id == 'players')
+                name = "Player's Token";
             else if (location?.id == 'token')
                 name = "Triggering Token";
             else if (location?.id == 'origin')

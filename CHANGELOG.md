@@ -1,3 +1,11 @@
+## Version 1.0.72
+
+Updated the trigger action to use the current tiles.
+
+Updated the function that gets the previous entities to use, so that it can use ids instead.  So if you're using a Macro to return data, you can have it pass an array of ids instead of an array of objects.
+
+Fixed issue when using player token location.
+
 ## Version 1.0.71
 
 Fixed the field length in the action config, so long names won't change the size of the field.
