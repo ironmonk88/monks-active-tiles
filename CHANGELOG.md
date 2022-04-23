@@ -1,3 +1,27 @@
+## Version 1.0.71
+
+Fixed the field length in the action config, so long names won't change the size of the field.
+
+Added the option to pan the canvas to the players token
+
+Fixed issues with who the pan canvas is directed towards
+
+Added the option to create Tokens from Enhanced Journal Encounter Entries or Quick Encounter entries
+
+Added the option to avoid other tokens when creating tokens
+
+Added the option to set who the scrolling text gets displayed to.
+
+Fixed issues with the scrolling text labels, and the scrolling text settings
+
+Added the preload action, so you can control when you preload scenes.
+
+Removed automatic preloading of scenes for teleport and scene changes because it was causing conflicts.
+
+Fixed issues with a lot of the player commands not finding the correct player to run the command for.
+
+Fixed issues with the confetti settings.
+
 ## Version 1.0.70
 
 Added the method that gets passed to the actions.  This will allow you to hide and show things based on hover over.  So if you want to use a "tooltip" with a Tile, you can create a Text Drawing and alter the hidden property based on the method.

@@ -90,6 +90,7 @@
   "MonksActiveTiles.action.dialog": "Show Dialog",
   "MonksActiveTiles.action.scenebackground": "Scene Background",
   "MonksActiveTiles.action.scrollingtext": "Scrolling Text",
+  "MonksActiveTiles.action.preload": "Preload Scene",
 
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
   "MonksActiveTiles.filter.exists": "Check entity count",
@@ -186,6 +187,9 @@
   "MonksActiveTiles.ctrl.slotmachine": "Slot Machine",
   "MonksActiveTiles.ctrl.spins": "Spins",
   "MonksActiveTiles.ctrl.rate": "Spin Rate",
+  "MonksActiveTiles.ctrl.duration": "Duration",
+  "MonksActiveTiles.ctrl.anchor": "Anchor",
+  "MonksActiveTiles.ctrl.direction": "Direction",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -310,6 +314,7 @@
   "MonksActiveTiles.msg.setposition": "Use current view",
   "MonksActiveTiles.msg.usetagger": "Use Tagger",
   "MonksActiveTiles.msg.itempiles": "The drop items feature of Active Tiles conflicts with Item Piles, the setting has been disabled.",
+  "MonksActiveTiles.msg.useplayerlocation": "Use players token location",
 
   "MonksActiveTiles.allow-player.name": "Allow players",
   "MonksActiveTiles.allow-player.hint": "Allow players to activate Tiles if there is no GM present.",

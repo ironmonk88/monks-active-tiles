@@ -182,6 +182,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-coordinates",
                     type: "select",
                     subtype: "position",
+                    options: { showToken: true, showPlayers: true, showPrevious: true },
                     restrict: (entity) => { return (entity instanceof Tile || entity instanceof Token); },
                     required: true
                 },
@@ -210,14 +211,14 @@ export class MonksActiveTiles {
                 const { tile, action, userid, value } = args;
                 let panfor = action.data.panfor || 'trigger';
 
-                let dest = await MonksActiveTiles.getLocation.call(tile, action.data.location, value);
+                let dest = await MonksActiveTiles.getLocation.call(tile, action.data.location, value, null, userid);
                 if (dest.scene != undefined && dest.scene != canvas.scene.id)
                     return;
 
-                if ((panfor == 'token' && game.userid != userid) || panfor != 'token')
+                if (panfor != "gm")
                     MonksActiveTiles.emit('pan', { userid: (panfor == 'token' ? userid : null), animate: action.data.animate, x: dest.x, y: dest.y, scale: dest.scale });
 
-                if (panfor == 'all') {
+                if (panfor == 'all' || panfor == 'gm') {
                     if (action.data.animate)
                         canvas.animatePan(dest);
                     else
@@ -618,10 +619,10 @@ export class MonksActiveTiles {
                     type: "select",
                     subtype: "entity",
                     options: { showPrevious: true },
-                    restrict: (entity) => { return (entity instanceof Actor); },
+                    restrict: (entity) => { return (entity instanceof Actor || entity instanceof JournalEntry); },
                     required: true,
                     defaultType: 'actors',
-                    placeholder: 'Please select an Actor to create'
+                    placeholder: 'Please select an Actor or Encounter to create'
                 },
                 {
                     id: "location",
@@ -643,6 +644,11 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.invisible",
                     type: "checkbox",
                     defvalue: false
+                },
+                {
+                    id: "avoidtokens",
+                    name: "MonksActiveTiles.ctrl.avoidtokens",
+                    type: "checkbox"
                 }
             ],
             fn: async (args = {}) => {
@@ -651,54 +657,129 @@ export class MonksActiveTiles {
                 let entities = await MonksActiveTiles.getEntities(args, null, 'actors');
 
                 if (entities && entities.length > 0) {
+                    const actors = await entities.reduce(async (promise, e) => {
+                        let a = await promise;
+                        if (e instanceof JournalEntry) {
+                            if ((e.data.flags["monks-enhanced-journal"]?.actors || []).length && game.modules.get("monks-enhanced-journal")?.active) {
+                                for (let ea of (e.data.flags['monks-enhanced-journal']?.actors || [])) {
+                                    let actor;
+                                    if (ea.pack) {
+                                        const pack = game.packs.get(ea.pack);
+                                        let id = ea.id;
+                                        if (ea.lookup) {
+                                            if (!pack.index.length) await pack.getIndex();
+                                            const entry = pack.index.find(i => (i._id === ea.lookup) || (i.name === ea.lookup));
+                                            id = entry.id;
+                                        }
+                                        actor = id ? await pack.getDocument(id) : null;
+                                    } else {
+                                        actor = game.actors.get(ea.id);
+                                    }
+
+                                    if (actor) {
+                                        let quantity = String(ea.quantity || "1");
+                                        if (quantity.indexOf("d") != -1) {
+                                            let r = new Roll(quantity);
+                                            await r.evaluate({ async: true });
+                                            quantity = r.total;
+                                        } else {
+                                            quantity = parseInt(quantity);
+                                            if (isNaN(quantity)) quantity = 1;
+                                        }
+
+                                        for (let i = 0; i < (quantity || 1); i++) {
+                                            a.push(actor);
+                                        }
+                                    }
+                                }
+                            } else if (e.data.flags["quick-encounters"]?.quickEncounter && game.modules.get("quick-encounters")?.active) {
+                                try {
+                                    let data = JSON.parse(e.data.flags["quick-encounters"]?.quickEncounter);
+
+                                    for (let ea of (data.extractedActors || [])) {
+                                        let actor;
+                                        if (ea.dataPackName) {
+                                            const pack = game.packs.get(ea.dataPackName);
+                                            let id = ea.actorID;
+                                            if (ea.lookup) {
+                                                if (!pack.index.length) await pack.getIndex();
+                                                const entry = pack.index.find(i => (i._id === ea.lookup) || (i.name === ea.lookup));
+                                                id = entry.id;
+                                            }
+                                            actor = id ? await pack.getDocument(id) : null;
+                                        } else {
+                                            actor = game.actors.get(ea.actorID);
+                                        }
+
+                                        if (actor) {
+                                            for (let i = 0; i < (ea.numActors || 1); i++) {
+                                                a.push(actor);
+                                            }
+                                        }
+                                    }
+                                } catch (err) {
+                                    log(err);
+                                }
+                            }
+                        } else if (e instanceof Actor)
+                            a.push(e);
+
+                        return a;
+                    }, Promise.resolve([]));
+
                     let dest = await MonksActiveTiles.getLocation.call(tile, action.data.location, value);
 
                     let result = { continue: true, tokens: [], entities: entities };
-                    for (let actor of entities) {
-                        if (actor instanceof Actor) {
-                            //let actor = await Actor.implementation.fromDropData({id: entity.id, type: 'Actor'});
-                            if (actor.compendium) {
-                                const actorData = game.actors.fromCompendium(actor);
-                                actor = await Actor.implementation.create(actorData);
-                            }
-
-                            let data = {
-                                x: dest.x,
-                                y: dest.y,
-                                hidden: false
-                            };
-                            // Prepare the Token data
-                            const td = await actor.getTokenData(data);
-
-                            // Bypass snapping
-                            if (!action.data.snap) {
-                                td.update({
-                                    x: td.x - (td.width * canvas.grid.w / 2),
-                                    y: td.y - (td.height * canvas.grid.h / 2)
-                                });
-                            }
-                            // Otherwise snap to nearest vertex, adjusting for large tokens
-                            else {
-                                const hw = canvas.grid.w / 2;
-                                const hh = canvas.grid.h / 2;
-                                td.update(canvas.grid.getSnappedPosition(td.x - (td.width * hw), td.y - (td.height * hh)));
-                            }
-
-                            // Validate the final position
-                            if (!canvas.dimensions.rect.contains(td.x, td.y)) continue;
-
-                            if (action.data.invisible)
-                                td.hidden = true;
-
-                            // Submit the Token creation request and activate the Tokens layer (if not already active)
-                            const cls = getDocumentClass("Token");
-                            let tkn = await cls.create(td, { parent: tile.parent });
-
-                            if (action.data.invisible)
-                                tkn.update({ hidden: true });
-
-                            result.tokens.push(tkn);
+                    for (let actor of actors) {
+                        //let actor = await Actor.implementation.fromDropData({id: entity.id, type: 'Actor'});
+                        if (actor.compendium) {
+                            const actorData = game.actors.fromCompendium(actor);
+                            actor = await Actor.implementation.create(actorData);
                         }
+
+                        let data = {
+                            x: dest.x,
+                            y: dest.y,
+                            hidden: false
+                        };
+
+                        // Prepare the Token data
+                        const td = await actor.getTokenData(data);
+
+                        if (action.data.avoidtokens) {
+                            data = mergeObject(data, MonksActiveTiles.findVacantSpot(data, { data: td }, tile.parent, dest, action.data.snap));
+                            td.x = data.x;
+                            td.y = data.y;
+                        }
+
+                        // Bypass snapping
+                        if (!action.data.snap) {
+                            td.update({
+                                x: td.x - (td.width * canvas.grid.w / 2),
+                                y: td.y - (td.height * canvas.grid.h / 2)
+                            });
+                        }
+                        // Otherwise snap to nearest vertex, adjusting for large tokens
+                        else {
+                            const hw = canvas.grid.w / 2;
+                            const hh = canvas.grid.h / 2;
+                            td.update(canvas.grid.getSnappedPosition(td.x - (td.width * hw), td.y - (td.height * hh)));
+                        }
+
+                        // Validate the final position
+                        if (!canvas.dimensions.rect.contains(td.x, td.y)) continue;
+
+                        if (action.data.invisible)
+                            td.hidden = true;
+
+                        // Submit the Token creation request and activate the Tokens layer (if not already active)
+                        const cls = getDocumentClass("Token");
+                        let tkn = await cls.create(td, { parent: tile.parent });
+
+                        if (action.data.invisible)
+                            tkn.update({ hidden: true });
+
+                        result.tokens.push(tkn);
                     }
                     return result;
                 }
@@ -3448,12 +3529,12 @@ export class MonksActiveTiles {
                     subtype: "entity",
                     options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true }
                 },
-                /*{
+                {
                     id: "for",
                     name: "MonksActiveTiles.ctrl.for",
                     list: "for",
                     type: "list"
-                },*/
+                },
                 {
                     id: "duration",
                     name: "MonksActiveTiles.ctrl.duration",
@@ -3518,35 +3599,81 @@ export class MonksActiveTiles {
                         content = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
                     }
 
-                    /*
-                    if (action.data.for == 'gm')
-                        messageData.whisper = ChatMessage.getWhisperRecipients("GM").map(u => u.id);
-                    else if (action.data.for == 'token') {
-                        let tokenOwners = (tkn ? Object.entries(tkn?.actor.data.permission).filter(([k, v]) => { return v == CONST.ENTITY_PERMISSIONS.OWNER }).map(a => { return a[0]; }) : []);
-                        messageData.whisper = Array.from(new Set(ChatMessage.getWhisperRecipients("GM").map(u => u.id).concat(tokenOwners)));
-                    }*/
+                    if (action.data.for != 'token') {
+                        token.hud.createScrollingText(content, {
+                            duration: action.data.duration * 1000,
+                            anchor: parseInt(action.data.anchor),
+                            direction: parseInt(action.data.direction)
+                        });
+                    }
 
-                    /*
-                     * {
-      //duration: 5000,
-      anchor: CONST.TEXT_ANCHOR_POINTS.TOP,
-      //direction: CONST.TEXT_ANCHOR_POINTS.LEFT,
-      fill: (isError)?"#FF1111":"#FFFFFF",
-      stroke: (isError)?"#FF1111":"#FFFFFF",
-      //fontSize: 50
-    }
-    */
+                    if (action.data.for != 'gm') {
+                        let owners = [];
+                        if (token.actor) {
+                            for (let [user, perm] of Object.entries(token.actor.data.permission)) {
+                                if (perm >= CONST.DOCUMENT_PERMISSION_LEVELS.OWNER && !owners.includes(user))
+                                    owners.push(user);
+                            }
+                        }
 
-                    token.hud.createScrollingText(content, {
-                        duration: action.data.duration * 1000,
-                        anchor: action.data.anchor,
-                        direction: action.data.direction
-                    })
+                        MonksActiveTiles.emit("scrollingtext", {
+                            users: (action.data.for == 'token' ? owners : null),
+                            tokenid: token.id,
+                            content,
+                            duration: action.data.duration * 1000,
+                            anchor: parseInt(action.data.anchor),
+                            direction: parseInt(action.data.direction)
+                        });
+                    }
                 }
             },
             content: async (trigger, action) => {
                 let msg = action.data.text.substr(0, 15);
                 return `<span class="action-style">${i18n(trigger.name)}</span> for <span class="value-style">&lt;${i18n(trigger.values.for[action.data?.for])}&gt;</span> "${msg}..."`;
+            }
+        },
+        'preload': {
+            name: "MonksActiveTiles.action.preload",
+            options: { allowDelay: true },
+            ctrls: [
+                {
+                    id: "sceneid",
+                    name: "MonksActiveTiles.ctrl.scene",
+                    list: () => {
+                        let result = {};
+                        for (let s of game.scenes)
+                            result[s.id] = s.name;
+                        return result;
+                    },
+                    type: "list",
+                    required: true
+                },
+                {
+                    id: "for",
+                    name: "MonksActiveTiles.ctrl.for",
+                    list: "for",
+                    type: "list"
+                }
+            ],
+            values: {
+                'for': {
+                    'all': "MonksActiveTiles.for.all",
+                    'gm': "MonksActiveTiles.for.gm",
+                    'token': "MonksActiveTiles.for.token"
+                },
+            },
+            fn: async (args = {}) => {
+                const { tile, action, userid, value, method } = args;
+
+                if (action.data.for != "token" || game.user.id == userid)
+                    await game.scenes.preload(action.data.sceneid);
+
+                if (action.data.for != "gm")
+                    MonksActiveTiles.emit('preload', { userid: action.data.for == "token" ? userid : null, sceneid: action.data.sceneid });
+            },
+            content: async (trigger, action) => {
+                let scene = game.scenes.get(action.data.sceneid)
+                return `<span class="action-style">${i18n(trigger.name)}</span> <span class="detail-style">"${scene.name || 'Unkown Scene'}"</span> for <span class="value-style">&lt;${i18n(trigger.values.for[action.data?.for])}&gt;</span>`;
             }
         },
         
@@ -4263,13 +4390,28 @@ export class MonksActiveTiles {
         return name;
     }
 
-    static async getLocation(location, value, pt) {
+    static async getLocation(location, value, pt, userid) {
 
         if (location.id == 'previous')
             location = value["location"];
         else if (location.id == 'origin')
             location = value["original"];
-        else if (location.id == 'token')
+        else if (location.id == 'players') {
+            let user = game.users.get(userid);
+            if (user && user.character?.id) {
+                let scene = game.scenes.get(user.viewedScene);
+                if (scene) {
+                    let token = scene.data.tokens.find(t => t.actor.id == user.character.id);
+                    if (token) {
+                        return {
+                            x: token.data.x + ((token.data.width * scene.dimensions.size) / 2),
+                            y: token.data.y + ((token.data.height * scene.dimensions.size) / 2),
+                            scene: scene.id
+                        };
+                    }
+                }
+            }
+        } else if (location.id == 'token')
             location = pt;
 
         if (location.id) {
@@ -4693,13 +4835,13 @@ export class MonksActiveTiles {
         }
 
         let outsideTile = function (pt) {
-            let checkpt = duplicate(pt);
-            if (snap) {
-                checkpt.x += ((token.data.width * scene.data.size)/ 2);
-                checkpt.y += ((token.data.height * scene.data.size) / 2);
-            }
+            if (dest && dest.width && dest.height) {
+                let checkpt = duplicate(pt);
+                if (snap) {
+                    checkpt.x += ((token.data.width * scene.data.size)/ 2);
+                    checkpt.y += ((token.data.height * scene.data.size) / 2);
+                }
 
-            if (dest) {
                 //gr.lineStyle(2, 0x808080).drawRect(dest.data.x + debugoffset.x, dest.data.y + debugoffset.y, dest.data.width, dest.data.height);
                 return (checkpt.x < dest.x || checkpt.y < dest.y || checkpt.x > dest.x + dest.width || checkpt.y > dest.y + dest.height);
             }
@@ -4728,7 +4870,11 @@ export class MonksActiveTiles {
             checkspot.y = checkspot.y.toNearest(scene.data.size);
         }
         let ray = new Ray({ x: pos.x, y: pos.y }, { x: checkspot.x, y: checkspot.y });
+
         while (tokenCollide(checkspot) || wallCollide(ray) || outsideTile(checkspot)) {
+
+            //log("Checking Position:", checkspot, tknRes, wallRes, tileRes);
+
             count++;
             //move the point along
             if (angle == undefined || angle > 2 * Math.PI) {
@@ -4782,6 +4928,8 @@ export class MonksActiveTiles {
                 break;
             }
         }
+
+        //log("Found spot", spot, count, scene.tokens.contents.length);
 
         //gr.lineStyle(2, 0x00ff00).drawCircle(spot.x + debugoffset.x, spot.y + debugoffset.y, 4);
 
@@ -5443,7 +5591,7 @@ export class MonksActiveTiles {
                 }
             } break;
             case 'switchview': {
-                if (data.userid.find(u => u == game.user.id).length > 0) {
+                if (data.userid.find(u => u == game.user.id) != undefined) {
                     //let oldSize = canvas.scene.data.size;
                     //let oldPos = canvas.scene._viewPosition;
                     let offset = { dx: (canvas.scene._viewPosition.x - data.oldpos?.x), dy: (canvas.scene._viewPosition.y - data.oldpos?.y) };
@@ -5530,7 +5678,7 @@ export class MonksActiveTiles {
                 }
             } break;
             case 'playsound': {
-                if ((data.userid == undefined || data.userid.find(u => u == game.user.id).length > 0) && (data.sceneid == undefined || canvas.scene.id == data.sceneid)) {
+                if ((data.userid == undefined || data.userid.find(u => u == game.user.id) != undefined) && (data.sceneid == undefined || canvas.scene.id == data.sceneid)) {
                     let tile = await fromUuid(data.tileid);
                     if (tile) {
                         if (tile.soundeffect != undefined) {
@@ -5554,7 +5702,7 @@ export class MonksActiveTiles {
                 if (data.type == 'all') {
                     game.audio.playing.forEach((s) => s.stop());
                 } else {
-                    if ((data.userid == undefined || data.userid.find(u => u == game.user.id).length > 0)) {
+                    if ((data.userid == undefined || data.userid.find(u => u == game.user.id) != undefined)) {
                         let tile = await fromUuid(data.tileid);
                         if (tile) {
                             if (tile.soundeffect != undefined) {
@@ -5633,6 +5781,23 @@ export class MonksActiveTiles {
             case 'target': {
                 if (data.userid == game.user.id) {
                     game.user.updateTokenTargets(data.tokens);
+                }
+            } break;
+            case 'scrollingtext': {
+                if (data.userid == undefined || data.userids.find(u => u == game.user.id) != undefined) {
+                    let token = canvas.tokens.get(data.tokenid);
+                    if (token) {
+                        token.hud.createScrollingText(data.content, {
+                            duration: data.duration,
+                            anchor: data.anchor,
+                            direction: data.direction
+                        });
+                    }
+                }
+            } break;
+            case 'preload': {
+                if (data.userid == undefined || data.userid == game.user.id) {
+                    game.scenes.preload(data.sceneid);
                 }
             } break;
             case 'slotmachine': {
@@ -5846,6 +6011,7 @@ export class MonksActiveTiles {
 
                 //check to see if the clicked point is within the Tile
                 if (pt == undefined || (triggerData.usealpha ? this.object.containsPixel(pt.x, pt.y) : this.pointWithin(pt))) {
+                    //this.preloadScene();
                     return this.trigger({ tokens: tokens, method: (clicktype == 'dblclick' ? 'DoubleClick' : 'Click'), pt: pt });
                 }
             }
@@ -6007,19 +6173,32 @@ export class MonksActiveTiles {
             }
         }
 
+        /*
         TileDocument.prototype.preloadScene = function () {
             let actions = this.data.flags["monks-active-tiles"]?.actions || [];
+            if (!this._preload)
+                this._preload = {};
             for (let action of actions) {
                 if (action.action == 'teleport' && action.data.location.sceneId && action.data.location.sceneId != canvas.scene.id) {
-                    log('preloading scene', action.data.location.sceneId);
-                    game.scenes.preload(action.data.location.sceneId, true);
+                    if (!this._preload[action.data.location.sceneId]) {
+                        log('preloading scene', action.data.location.sceneId, this._preload);
+                        this._preload[action.data.location.sceneId] = game.scenes.preload(action.data.location.sceneId, true).then(() => {
+                            delete this._preload[action.data.location.sceneId];
+                            log('clearing preloading scene', action.data.location.sceneId, this._preload);
+                        });
+                    }
                 }
                 if (action.action == 'scene') {
-                    log('preloading scene', action.data.sceneid);
-                    game.scenes.preload(action.data.sceneid, true);
+                    if (!this._preload[action.data.location.sceneId]) {
+                        log('preloading scene', action.data.sceneid);
+                        this._preload[action.data.location.sceneId] = game.scenes.preload(action.data.sceneid, true).then(() => {
+                            delete this._preload[action.data.location.sceneId];
+                            log('clearing preloading scene', action.data.location.sceneId, this._preload);
+                        });
+                    }
                 }
             }
-        }
+        }*/
 
         TileDocument.prototype.checkStop = function () {
             let when = this.getFlag('monks-active-tiles', 'trigger');
@@ -6467,7 +6646,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                         let tpts = tile.document.canTrigger(document.object, collision, dest, elevation);
                         if (tpts) {
                             //preload any teleports to other scenes
-                            tile.document.preloadScene();
+                            //tile.document.preloadScene();
 
                             let doTrigger = async function (idx) {
                                 if (idx >= tpts.length)
@@ -6853,7 +7032,7 @@ Hooks.on("setupTileActions", (app) => {
             fn: async (args = {}) => {
                 const { action, userid } = args;
 
-                const shootConfettiProps = window.confetti.getShootConfettiProps(action.data.strength);
+                const shootConfettiProps = window.confetti.getShootConfettiProps(parseInt(action.data.strength));
                 window.confetti.shootConfetti(shootConfettiProps);
 
                 return { };

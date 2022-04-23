@@ -302,6 +302,10 @@
     text-overflow: ellipsis;
 }
 
+#trigger-action .select-field-group {
+    max-width: 400px;
+}
+
 #board.cooldown {
     cursor: wait !important;
 }
