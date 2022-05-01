@@ -56,6 +56,14 @@ export const WithActiveTileConfig = (TileConfig) => {
                     };
                 }));
 
+            tiledata.sounds = Object.entries(this.object.soundeffect || {}).map(([k, v]) => {
+                let filename = v.src.split('\\').pop().split('/').pop();
+                return {
+                    id: k,
+                    name: filename
+                };
+            })
+
             let renderhtml = await renderTemplate(template, tiledata);
             tab.append(renderhtml);
 
@@ -172,6 +180,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             $('.action-create', html).click(this._createAction.bind(this));
             $('.action-edit', html).click(this._editAction.bind(this));
             $('.action-delete', html).click(this._deleteAction.bind(this));
+            $('.action-stop', html).click(this._stopSound.bind(this));
             $('.view-history', html).click(function () {
                 new TileHistory(that.object).render(true);
             });
@@ -212,6 +221,19 @@ export const WithActiveTileConfig = (TileConfig) => {
             //this.object.setFlag("monks-active-tiles", "actions", actions);
             $(`li[data-id="${id}"]`, this.element).remove();
             this.setPosition({ height: 'auto' });
+        }
+
+        _stopSound(event) {
+            let id = event.currentTarget.closest('.item').dataset.id;
+            this.object.soundeffect[id].stop();
+            delete this.object.soundeffect[id];
+            MonksActiveTiles.emit('stopsound', {
+                tileid: this.object.uuid,
+                type: 'tile',
+                userid: null,
+                actionid: id
+            });
+            this.render();
         }
 
         cloneAction(id) {

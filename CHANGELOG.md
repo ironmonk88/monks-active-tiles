@@ -1,3 +1,33 @@
+## Version 1.0.73
+
+Added the option to edit the location field.  By double clicking on the field you can manually edit the location.  This will now allow you to enter `-100` for example, in the x or y field and have the location be relative to the token.
+
+Added a list of the currently playing sounds so that if your Tile starts playing the sound and you have it looped there is a way to stop it from laying.
+
+Also added the option for a Tile to play more than one sound effect at a time.
+
+Fixed some colour styling that was causing Cyberpunk Red Core to have unreadable labels.
+
+Added the option to trigger at the end of a token's turn in combat
+
+Added the option to set the duration of how long a pan to a canvas spot takes.
+
+Fixed issues with the Pan Canvas action not respecting who the pan canvas was meant for.
+
+Fixed issues with tokens created using Quick Encounters not using the location originally specified when they were created.
+
+Fixed issue where a GM only chatmessage was also being sent to the triggering token's owner.
+
+Fixed an issue where setting the image cycle to the last image wasn't working.
+
+Fixed issue with the way Set Image Cycle was being displayed.
+
+Updated the First filter, to allow you to select "first", "last", or any spot in between.
+
+Updated the Filter by Item to allow you to select tokens that *don't* have the item.
+
+Added the Remove Item action.
+
 ## Version 1.0.72
 
 Updated the trigger action to use the current tiles.

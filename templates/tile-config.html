@@ -78,6 +78,29 @@
     </div>
 </div>
 
+{{#if sounds}}
+<ol class="items-list sounds-list">
+    <li class="items-header flexrow">
+        <h3 class="item-name flexrow">{{ localize "MonksActiveTiles.Sounds" }}</h3>
+        <div class="item-controls flexrow"></div>
+    </li>
+
+    <ol class="item-list">
+        {{#each sounds}}
+        <li class="item flexrow " data-id="{{this.id}}" draggable="true">
+            <div class="item-name flexrow">
+                <h4 style="white-space: normal;">{{this.name}}</h4>
+            </div>
+
+            <div class="item-controls flexrow">
+                <a class="item-control action-stop" title="Stop sound playing"><i class="fas fa-stop"></i></a>
+            </div>
+        </li>
+        {{/each}}
+    </ol>
+</ol>
+{{/if}}
+
 <ol class="items-list action-items">
     <li class="items-header flexrow">
         <h3 class="item-name flexrow">{{ localize "MonksActiveTiles.Actions" }}</h3>

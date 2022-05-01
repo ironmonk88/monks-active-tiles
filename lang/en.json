@@ -39,6 +39,7 @@
   "MonksActiveTiles.History": "History",
   "MonksActiveTiles.HoverPointer": "Hoverover Pointer",
   "MonksActiveTiles.UseTransparency": "Exclude transparent area when triggering",
+  "MonksActiveTiles.Sounds": "Sounds Playing",
 
   "MonksActiveTiles.actiontext.pause": "<action>{pause} game</action>",
   "MonksActiveTiles.actiontext.delay": "<action>Wait</action> for <detail>\"{delay} seconds\"</detail>",
@@ -91,6 +92,7 @@
   "MonksActiveTiles.action.scenebackground": "Scene Background",
   "MonksActiveTiles.action.scrollingtext": "Scrolling Text",
   "MonksActiveTiles.action.preload": "Preload Scene",
+  "MonksActiveTiles.action.removeitem": "Remove Item",
 
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
   "MonksActiveTiles.filter.exists": "Check entity count",
@@ -190,6 +192,7 @@
   "MonksActiveTiles.ctrl.duration": "Duration",
   "MonksActiveTiles.ctrl.anchor": "Anchor",
   "MonksActiveTiles.ctrl.direction": "Direction",
+  "MonksActiveTiles.ctrl.doesnthave": "Doesn't Have",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -204,7 +207,8 @@
   "MonksActiveTiles.mode.manual": "Manually Activate",
   "MonksActiveTiles.mode.stop": "On Stop within Tile",
   "MonksActiveTiles.mode.round": "On Combat Round",
-  "MonksActiveTiles.mode.turn": "On Combat Turn",
+  "MonksActiveTiles.mode.turn": "On Combat Turn Start",
+  "MonksActiveTiles.mode.turnend": "On Combat Turn End",
   "MonksActiveTiles.mode.combatstart": "On Combat Start",
   "MonksActiveTiles.mode.combatend": "On Combat End",
   "MonksActiveTiles.mode.canvasready": "On Scene Change",

@@ -378,6 +378,44 @@ export class ActionConfig extends FormApplication {
         });
     }
 
+    async editLocationId(event) {
+        let sceneList = {"": ""};
+        for (let scene of game.scenes) {
+            sceneList[scene.id] = scene.name;
+        }
+        const html = await renderTemplate(`modules/monks-active-tiles/templates/location-dialog.html`, {
+            data: this.object?.data,
+            sceneList: sceneList
+        });
+
+        // Render the confirmation dialog window
+        return Dialog.prompt({
+            title: "Edit location details",
+            content: html,
+            label: i18n("MonksActiveTiles.Save"),
+            callback: async (html) => {
+                let form = $('form', html)[0];
+                const fd = new FormDataExtended(form);
+                let data = foundry.utils.expandObject(fd.toObject());
+
+                if (!isNaN(data.location.x))
+                    data.location.x = parseInt(data.location.x);
+                if (!isNaN(data.location.y))
+                    data.location.y = parseInt(data.location.y);
+
+                let location = data.location;
+                location.name = await MonksActiveTiles.locationName(location);
+                let field = $(event.currentTarget).prev();
+                field.val(JSON.stringify(location)).next().html(location.name);
+                field.trigger('change');
+            },
+            rejectClose: false,
+            options: {
+                width: 400
+            }
+        });
+    }
+
     addToFileList(event) {
         let filename = $(event.currentTarget).val();
         if (filename != '') {
@@ -597,7 +635,7 @@ export class ActionConfig extends FormApplication {
                     if (ctrl.subtype == 'location' || ctrl.subtype == 'either' || ctrl.subtype == 'position') {
                         field.addClass("select-field-group")
                             .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'hidden', name: id }).val(JSON.stringify(data[ctrl.id])).data({ 'type': ctrl.subtype, deftype: ctrl.defaultType }))
-                            .append($('<span>').addClass('display-value').html(await MonksActiveTiles.locationName(data[ctrl.id]) || `<span class="placeholder-style">${ctrl.placeholder || 'Please select a location'}</style>`)) //(data[ctrl.id] ? (data[ctrl.id].name ? data[ctrl.id].name : 'x:' + data[ctrl.id].x + ', y:' + data[ctrl.id].y) + (scene ? ', scene:' + scene.name : '') : '')
+                            .append($('<span>').dblclick(this.editLocationId.bind(this)).addClass('display-value').html(await MonksActiveTiles.locationName(data[ctrl.id]) || `<span class="placeholder-style">${ctrl.placeholder || 'Please select a location'}</style>`)) //(data[ctrl.id] ? (data[ctrl.id].name ? data[ctrl.id].name : 'x:' + data[ctrl.id].x + ', y:' + data[ctrl.id].y) + (scene ? ', scene:' + scene.name : '') : '')
                             .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectlocation") }).addClass('location-picker').html('<i class="fas fa-crosshairs fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'position', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.setposition") }).toggle(ctrl.subtype == 'position').addClass('location-picker').html('<i class="fas fa-crop-alt fa-sm"></i>').click(this.selectPosition.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'token', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetoken") }).toggle(options.showToken).addClass('entity-picker').html('<i class="fas fa-user-alt fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))

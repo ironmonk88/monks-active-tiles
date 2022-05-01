@@ -1,0 +1,34 @@
+<form>
+    <div class="form-group">
+        <label for="location-id">Tile ID</label>
+        <div class="form-fields">
+            <input type="text" name="location.id" value="{{data.location.id}}">
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="location-x">X</label>
+        <div class="form-fields">
+            <input type="text" name="location.x" value="{{data.location.x}}">
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="location-y">Y</label>
+        <div class="form-fields">
+            <input type="text" name="location.y" value="{{data.location.y}}">
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="location-scale">Scale</label>
+        <div class="form-fields">
+            <input type="number" name="location.scale" value="{{data.location.scale}}">
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="location-scale">Scene</label>
+        <div class="form-fields">
+            <select name="location.scene">
+                {{selectOptions sceneList selected="data.location.scene"}}
+            </select>
+        </div>
+    </div>
+</form>

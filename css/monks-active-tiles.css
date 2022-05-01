@@ -79,6 +79,7 @@
     background: rgba(0, 0, 0, 0.05);
     border: 2px groove #eeede0;
     font-weight: bold;
+    color: #7a7971;
 }
 
 .monks-active-tiles.sheet .items-list .items-header > * {
