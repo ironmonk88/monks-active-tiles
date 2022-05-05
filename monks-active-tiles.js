@@ -2082,6 +2082,15 @@ export class MonksActiveTiles {
                     required: true
                 },
                 {
+                    id: "quantity",
+                    name: "MonksActiveTiles.ctrl.quantity",
+                    type: "number",
+                    defvalue: 1,
+                    min: 1,
+                    step: 1,
+                    help: "Set this to blank to use the roll table quantity"
+                },
+                {
                     id: "rollmode",
                     name: 'MonksActiveTiles.ctrl.rollmode',
                     list: "rollmode",
@@ -2126,7 +2135,7 @@ export class MonksActiveTiles {
                         let LootChatCard = await import('/modules/better-rolltables/scripts/loot/loot-chat-card.js');
 
                         const brtBuilder = new BRTBuilder.BRTBuilder(rolltable);
-                        const tblResults = await brtBuilder.betterRoll();
+                        const tblResults = await brtBuilder.betterRoll(action.data?.quantity);
 
                         //action.data.rollmode
                         if (action.data.chatmessage !== false) {
@@ -2145,7 +2154,8 @@ export class MonksActiveTiles {
                         results.results = tblResults;
                         results.roll = brtBuilder.mainRoll;
                     } else {
-                        let tblResults = await rolltable.draw({ rollMode: action.data.rollmode, displayChat: false });
+                        let numRolls = action.data?.quantity || 1;
+                        let tblResults = await rolltable.drawMany(numRolls, { rollMode: action.data.rollmode, displayChat: false });
                         //Check to see what the privacy rules are
 
                         if (action.data.chatmessage !== false) {
@@ -2222,7 +2232,7 @@ export class MonksActiveTiles {
                 let rolltable = await fromUuid(action.data?.rolltableid);
                 if (rolltable.data.document.pack)
                     pack = game.packs.get(rolltable.data.document.pack);
-                return `<span class="action-style">${i18n(trigger.name)}</span>, from <span class="entity-style">${pack ? pack.metadata.name + ":" : ""}${(rolltable?.name || 'Unknown Roll Table')}</span>`;
+                return `<span class="action-style">${i18n(trigger.name)}</span>, <span class="value-style">&lt;${action.data?.quantity || 1} items&gt;</span> from <span class="entity-style">${pack ? pack.metadata.name + ":" : ""}${(rolltable?.name || 'Unknown Roll Table')}</span>`;
             }
         },
         'resetfog': {
@@ -2597,9 +2607,25 @@ export class MonksActiveTiles {
                     type: "number",
                     defvalue: 1,
                     min: 1,
-                    step: 1
+                    step: 1,
+                    help: "Set this to blank to use the items original quantity"
+                },
+                {
+                    id: "distribute",
+                    name: "MonksActiveTiles.ctrl.distribution",
+                    list: "distribute",
+                    type: "list"
                 },
             ],
+            values: {
+                'distribute': {
+                    'everyone': "MonksActiveTiles.distribute.everyone",
+                    'single': "MonksActiveTiles.distribute.single",
+                    'evenall': "MonksActiveTiles.distribute.evenall",
+                    'even': "MonksActiveTiles.distribute.even"
+
+                }
+            },
             fn: async (args = {}) => {
                 const { action } = args;
                 let entities = await MonksActiveTiles.getEntities(args);
@@ -2608,24 +2634,29 @@ export class MonksActiveTiles {
 
                 let items = await MonksActiveTiles.getEntities(args, action.data.item.id, 'items');
                 if (items?.length) {
-                    for (let item of items) {
-                        if (item instanceof Item) {
-                            const itemData = item.toObject();
-                            if (action.data?.quantity) {
-                                let qty = (itemData.data.quantity.hasOwnProperty("value") ? { value: action.data?.quantity } : action.data?.quantity);
-                                itemData.data.quantity = qty;
-                            }
-                            
-                            for (let token of entities) {
-                                if (token instanceof TokenDocument) {
-                                    const actor = token.actor;
-                                    if (!actor) return;
+                    let tokens = entities.filter(e => e instanceof TokenDocument && e.actor);
+                    let dist = action.data?.distribute || "everyone";
+                    let itemsTaken = (dist == "single" ? 1 : (dist == "evenall" ? Math.ceil(items.length / tokens.length) : (dist == "even" ? Math.floor(items.length / tokens.length) : items.length)));
+                    for (let token of tokens) {
+                        const actor = token.actor;
+                        if (!actor) return;
 
-                                    // Create the owned item
-                                    actor.createEmbeddedDocuments("Item", [itemData]);
+                        let addItems = [];
+                        for (let i = 0; i < itemsTaken; i++) {
+                            let item = (dist == "everyone" ? items[i] : items.shift());
+
+                            if (item && item instanceof Item) {
+                                const itemData = item.toObject();
+                                if (action.data?.quantity) {
+                                    let qty = (itemData.data.quantity.hasOwnProperty("value") ? { value: action.data?.quantity } : action.data?.quantity);
+                                    itemData.data.quantity = qty;
                                 }
+                                addItems.push(itemData);
                             }
                         }
+
+                        // Create the owned item
+                        await actor.createEmbeddedDocuments("Item", addItems);
                     }
                 }
 
@@ -6951,7 +6982,7 @@ Hooks.on("updateCombat", async function (combat, delta) {
                 let triggerData = tile.data.flags["monks-active-tiles"];
                 if (triggerData && triggerData.active && triggerData.actions.length > 0 &&
                     ((delta.round && triggerData.trigger == 'round')
-                    || ((delta.turn || delta.round) && triggerData.trigger == 'turn')
+                        || ((delta.turn || delta.round) && triggerData.trigger == 'turn')
                         || (delta.round == 1 && combat.turn == 0 && triggerData.trigger == 'combatstart')
                     )) {
                     let tokens = (triggerData.trigger == 'turn' ? [combat.combatant.token] : combat.combatants.map(c => c.token));

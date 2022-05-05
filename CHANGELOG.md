@@ -28,6 +28,10 @@ Updated the Filter by Item to allow you to select tokens that *don't* have the i
 
 Added the Remove Item action.
 
+Added the option to set the quantity of items to roll from a roll table.
+
+Set how to distribute items to entities.
+
 ## Version 1.0.72
 
 Updated the trigger action to use the current tiles.

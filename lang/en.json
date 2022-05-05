@@ -193,6 +193,7 @@
   "MonksActiveTiles.ctrl.anchor": "Anchor",
   "MonksActiveTiles.ctrl.direction": "Direction",
   "MonksActiveTiles.ctrl.doesnthave": "Doesn't Have",
+  "MonksActiveTiles.ctrl.distribution": "Distribution",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -295,6 +296,11 @@
 
   "MonksActiveTiles.target.target": "Target",
   "MonksActiveTiles.target.clear": "Clear",
+
+  "MonksActiveTiles.distribute.everyone": "Characters gets a copy of all items",
+  "MonksActiveTiles.distribute.single": "Characters get a single item",
+  "MonksActiveTiles.distribute.evenall": "All items distrubted amongst characters",
+  "MonksActiveTiles.distribute.even": "Evenly distrubuted, leftovers are passed on",
 
   "MonksActiveTiles.msg.prevent-teleport": "Teleporting off the map has been prevented",
   "MonksActiveTiles.msg.prevent-movement": "Moving off the map has been prevented",
