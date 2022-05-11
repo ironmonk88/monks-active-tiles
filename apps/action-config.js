@@ -354,8 +354,12 @@ export class ActionConfig extends FormApplication {
     }
 
     async editEntityId(event) {
+
+        let data = expandObject(super._getSubmitData());
+        let entity = JSON.parse(data.data.entity || {});
+
         const html = await renderTemplate(`modules/monks-active-tiles/templates/entity-dialog.html`, {
-            data: this.object?.data
+            data: entity
         });
 
         // Render the confirmation dialog window
@@ -365,10 +369,13 @@ export class ActionConfig extends FormApplication {
             label: i18n("MonksActiveTiles.Save"),
             callback: async (html) => {
                 let entityId = $('input[name="entity-id"]').val();
+                let entity = canvas.tokens.get(entityId);
+                if (entity)
+                    entityId = entity.document.uuid;
                 let field = $(event.currentTarget).prev();
-                let entity = { id: entityId };
-                entity.name = await MonksActiveTiles.entityName(entity);
-                field.val(JSON.stringify(entity)).next().html(entity.name);
+                let data = { id: entityId };
+                data.name = await MonksActiveTiles.entityName(data);
+                field.val(JSON.stringify(data)).next().html(data.name);
                 field.trigger('change');
             },
             rejectClose: false,
@@ -383,8 +390,13 @@ export class ActionConfig extends FormApplication {
         for (let scene of game.scenes) {
             sceneList[scene.id] = scene.name;
         }
+
+        let data = expandObject(super._getSubmitData());
+        let location = JSON.parse(data.data.location || {});
+
         const html = await renderTemplate(`modules/monks-active-tiles/templates/location-dialog.html`, {
-            data: this.object?.data,
+            action: data.action,
+            data: location,
             sceneList: sceneList
         });
 
@@ -671,8 +683,15 @@ export class ActionConfig extends FormApplication {
                             input.attr('placeholder', ctrl.placeholder);
                         if (ctrl.attr)
                             input.attr(ctrl.attr);
-                        if (ctrl.type == 'number')
+                        if (ctrl.type == 'number') {
+                            if (ctrl.min)
+                                input.attr('min', ctrl.min);
+                            if (ctrl.max)
+                                input.attr('max', ctrl.max);
+                            if (ctrl.step)
+                                input.attr('step', ctrl.step);
                             input.css({ flex: '0 0 75px', 'text-align': 'right' });
+                        }
                         if (ctrl.onBlur)
                             input.on('blur', ctrl.onBlur.bind(this, this));
                         field.append(input);

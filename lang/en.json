@@ -98,13 +98,14 @@
   "MonksActiveTiles.filter.exists": "Check entity count",
   "MonksActiveTiles.filter.triggercount": "Check tile trigger count",
   "MonksActiveTiles.filter.tokencount": "Filter by token trigger count",
-  "MonksActiveTiles.filter.first": "First in the list",
+  "MonksActiveTiles.filter.first": "Position in the list",
   "MonksActiveTiles.filter.attribute": "Filter by attributes",
   "MonksActiveTiles.filter.inventory": "Filter by items in inventory",
 
   "MonksActiveTiles.logic.anchor": "Anchor",
   "MonksActiveTiles.logic.goto": "Go to Anchor",
   "MonksActiveTiles.logic.stop": "Stop remaining actions",
+  "MonksActiveTiles.logic.playertype": "Redirect based on player type",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
@@ -194,6 +195,10 @@
   "MonksActiveTiles.ctrl.direction": "Direction",
   "MonksActiveTiles.ctrl.doesnthave": "Doesn't Have",
   "MonksActiveTiles.ctrl.distribution": "Distribution",
+  "MonksActiveTiles.ctrl.position": "Position",
+  "MonksActiveTiles.ctrl.preventsound": "Prevent sound from starting if already playing",
+  "MonksActiveTiles.ctrl.gmredirect": "GM Redirect",
+  "MonksActiveTiles.ctrl.playerredirect": "Player Redirect",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -299,8 +304,8 @@
 
   "MonksActiveTiles.distribute.everyone": "Characters gets a copy of all items",
   "MonksActiveTiles.distribute.single": "Characters get a single item",
-  "MonksActiveTiles.distribute.evenall": "All items distrubted amongst characters",
-  "MonksActiveTiles.distribute.even": "Evenly distrubuted, leftovers are passed on",
+  "MonksActiveTiles.distribute.evenall": "All items distributed amongst characters",
+  "MonksActiveTiles.distribute.even": "Evenly distributed, leftovers are passed on",
 
   "MonksActiveTiles.msg.prevent-teleport": "Teleporting off the map has been prevented",
   "MonksActiveTiles.msg.prevent-movement": "Moving off the map has been prevented",
@@ -341,5 +346,7 @@
   "MonksActiveTiles.default-trigger.name": "Default Trigger",
   "MonksActiveTiles.default-trigger.hint": "Default trigger to use when creating a Tile",
   "MonksActiveTiles.show-help.name": "Show Hints",
-  "MonksActiveTiles.show-help.hint": "Show helpful action hints for fields that have complex values"
+  "MonksActiveTiles.show-help.hint": "Show helpful action hints for fields that have complex values",
+  "MonksActiveTiles.prevent-when-paused.name": "Prevent when paused",
+  "MonksActiveTiles.prevent-when-paused.hint": "Prevent players from triggering Tiles when the game is paused."
 }

@@ -1,3 +1,43 @@
+## Version 1.0.74
+
+Fixed the double-click for entities and location to show the currenct values, and to save the values properly.
+
+Fixed number fields to allow min, max and step values.
+
+Fixed the right-click menu for actions, so that it doesn't disappear off the dialog.
+
+Updated the record history and per token check boxes so that if you click on per token it will also turn on record history, and if you turn off record history it will turn off the per token.
+
+Fix issues with cloning an action if the Tile hasn't been saved yet.
+
+Fixed the pan canvas animate checkbox to show/hide the duration field properly.
+
+Fixed the pan canvas action so that it will save properly.
+
+Fixed the pan canvas duration field.
+
+Fixed the move animation for things other than tokens.  Realized that it wouldn't animate for players properly.
+
+Added array support for the alter action.  So if the field you're editing is an array, using + notaion will add to the array, - will remove and = will set the array.  items for the array are separated by a comma.
+
+Fixed issues with the volume and play sound action.  Didn't realise how Foundry handled the volume property and I was doing it incorrectly.
+
+Added the option to prevent the sound from starting again if the sound is currently playing.  Otherwise the sound will stop and start from the beginning again.
+
+Updated the play sound action so that changes to the Interface volume will affect sounds currently playing.
+
+Updated the Check tile triggered flter, so that you can get the unique triggers.  So you can check number of triggres vs number of individual tokens that have triggered the tile.
+
+Updated the First in List filter to be Position in List.  So you can specify where in the list to draw from, or use "first", "last", or "random" respectively.
+
+Added a new action to check for the player type, so you can have one set of code run for the GM and a different set run for the player.
+
+Fixed issue looking for a flag, if Tiles were created before the Levels module was installed.
+
+Added a setting to prevent Players from activating Tiles if the game is currently paused.
+
+
+
 ## Version 1.0.73
 
 Added the option to edit the location field.  By double clicking on the field you can manually edit the location.  This will now allow you to enter `-100` for example, in the x or y field and have the location be relative to the token.

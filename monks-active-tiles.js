@@ -191,7 +191,7 @@ export class MonksActiveTiles {
                     id: "animate",
                     name: "MonksActiveTiles.ctrl.animate",
                     type: "checkbox",
-                    onChange: (app) => {
+                    onClick: (app) => {
                         app.checkConditional();
                     }
                 },
@@ -199,7 +199,10 @@ export class MonksActiveTiles {
                     id: "duration",
                     name: "MonksActiveTiles.ctrl.duration",
                     type: "number",
-                    defvalue: 0.25,
+                    defvalue: 1,
+                    min: 0.05,
+                    max: null,
+                    step: 0.05,
                     conditional: (app) => { return $('input[name="data.animate"]', app.element).prop("checked") }
                 },
                 {
@@ -229,7 +232,7 @@ export class MonksActiveTiles {
                     if (dest.scene != undefined && dest.scene != canvas.scene.id)
                         return;
 
-                    dest.duration = action.data?.duration;
+                    dest.duration = (action.data?.duration ?? 1) * 1000;
 
                     if (isNaN(dest.x) && (dest.x.startsWith("+") || dest.x.startsWith("-"))) {
                         dest.x = parseInt(eval(`${canvas.scene._viewPosition.x} ${dest.x}`));
@@ -242,8 +245,9 @@ export class MonksActiveTiles {
                         MonksActiveTiles.emit('pan', { userid: (panfor == 'token' ? userid : null), animate: action.data.animate, x: dest.x, y: dest.y, scale: dest.scale, duration: dest.duration });
 
                     if (panfor != "players") {
-                        if (action.data.animate)
+                        if (action.data.animate) {
                             await canvas.animatePan(dest);
+                        }
                         else
                             canvas.pan(dest);
                     }
@@ -581,6 +585,7 @@ export class MonksActiveTiles {
                                     entity._movement = null;
                                 };
 
+                                MonksActiveTiles.emit("move", { entityid: entity.uuid, x: newPos.x, y: newPos.y });
                                 if (action.data.wait)
                                     await animate().then(async () => { await entity.update({ x: newPos.x, y: newPos.y }); });
                                 else
@@ -1130,17 +1135,30 @@ export class MonksActiveTiles {
 
                                     if (val.startsWith('+ ') || val.startsWith('- ')) {
                                         try {
-                                            val = eval(prop + val);
+                                            if (prop instanceof Array) {
+                                                let add = val.startsWith('+ ');
+                                                let parts = val.replace('+ ', '').replace('- ', '').split(',').map(p => p.trim());
+                                                if (add)
+                                                    val = prop.concat(parts).filter((value, index, self) => { return self.indexOf(value) === index; });
+                                                else
+                                                    val = prop.filter(value => { return !parts.includes(value) });
+                                            } else {
+                                                val = eval(prop + val);
+                                            }
                                         } catch (err) {
-                                            val = 0;
+                                            val = (prop instanceof Array ? [] : 0);
                                             debug(err);
                                         }
                                     }
                                     if (typeof val == "string" && val.startsWith('=')) {
                                         try {
-                                            val = eval(val.substring(1));
+                                            if (prop instanceof Array) {
+                                                val = val.replace('=', '').split(',').map(p => p.trim());
+                                            } else {
+                                                val = eval(val.substring(1));
+                                            }
                                         } catch (err) {
-                                            val = 0;
+                                            val = (prop instanceof Array ? [] : 0);
                                             debug(err);
                                         }
                                     }
@@ -1418,7 +1436,6 @@ export class MonksActiveTiles {
                     id: "volume",
                     name: "MonksActiveTiles.ctrl.volume",
                     type: "slider",
-                    variation: "volume",
                     defvalue: "1.0"
                 },
                 {
@@ -1431,6 +1448,11 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.scenerestrict",
                     type: "checkbox"
                 },
+                {
+                    id: "prevent",
+                    name: "MonksActiveTiles.ctrl.preventsound",
+                    type: "checkbox"
+                },
             ],
             values: {
                 'audiofor': {
@@ -1439,10 +1461,6 @@ export class MonksActiveTiles {
                     'token': "MonksActiveTiles.for.player",
                     'owner': "MonksActiveTiles.for.token"
                 },
-                'volume': {
-                    'value': "value",
-                    'percent': "percent"
-                }
             },
             fn: async (args = {}) => {
                 const { tile, tokens, action, userid } = args;
@@ -1482,14 +1500,7 @@ export class MonksActiveTiles {
                     return tile._sounds;
                 }
 
-                //game.settings.get("core", "globalAmbientVolume");
-                let volume = 1;
-                if (action.data.volume.var == 'percent')
-                    volume = game.settings.get("core", "globalAmbientVolume") * action.data.volume.value;
-                else
-                    volume = action.data.volume.value;
-
-                volume = Math.clamped(volume, 0, 1);
+                let volume = Math.clamped((action.data.volume.value ?? action.data.volume ?? 1), 0, 1);
 
                 let audiofiles = await getTileSounds(tile);
                 const audiofile = audiofiles[Math.floor(Math.random() * audiofiles.length)];
@@ -1512,11 +1523,15 @@ export class MonksActiveTiles {
                         loop: action.data.loop,
                         userid: (action.data.audiofor == 'token' ? [userid] : (action.data.audiofor == 'owner' ? owners : null)),
                         sceneid: (action.data.audiofor == 'token' ? null : (action.data.scenerestrict ? tile.parent.id : null)),
-                        volume: volume
+                        volume: volume,
+                        prevent: action.data.prevent
                     });
                 }
                 if (["all", "gm"].includes(action.data.audiofor) || userid == game.user.id || owners.includes(game.user.id)) {
                     if (tile.soundeffect != undefined && tile.soundeffect[action.id] != undefined) {
+                        if (tile.soundeffect[action.id].playing && action.data.prevent == true)
+                            return;
+
                         tile.soundeffect[action.id].stop();
                         delete tile.soundeffect[action.id];
                         MonksActiveTiles.emit('stopsound', {
@@ -1534,6 +1549,7 @@ export class MonksActiveTiles {
                             debug('Finished playing', audiofile);
                             delete tile.soundeffect[action.id];
                         });
+                        tile.soundeffect[action.id]._mattvolume = volume;
                     });
                 }
             },
@@ -4075,6 +4091,11 @@ export class MonksActiveTiles {
                     defvalue: "> 1"
                 },
                 {
+                    id: "unique",
+                    name: "Unique token triggers",
+                    type: "checkbox",
+                },
+                {
                     id: "none",
                     name: "If no success goto",
                     type: "text",
@@ -4092,7 +4113,7 @@ export class MonksActiveTiles {
 
                 let cando = false;
                 try {
-                    cando = !!eval(tile.countTriggered() + " " + count);
+                    cando = !!eval(tile.countTriggered(action.data.unique ? "unique" : null) + " " + count);
                 } catch {
                 }
 
@@ -4105,7 +4126,7 @@ export class MonksActiveTiles {
             content: async (trigger, action) => {
                 let goto = action.data?.none || "";
                 let count = action.data?.count ?? "> 0";
-                return `<span class="filter-style">Continue if</span> Tile triggered <span class="value-style">"${count}"</span>${goto != "" ? ` goto <span class="details-style">"${goto}"</span> if it hasn't` : ""}`;
+                return `<span class="filter-style">Continue if</span> Tile triggered <span class="value-style">"${count}"</span> times ${action.data.unique ? "by unique tokens " : ""} ${goto != "" ? ` goto <span class="details-style">"${goto}"</span> if it hasn't` : ""}`;
             }
         },
         'tokencount': {
@@ -4170,7 +4191,8 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.position",
                     type: "text",
                     required: true,
-                    defvalue: "first"
+                    defvalue: "first",
+                    help: "you can also use <i>first</i>, <i>last</i>, or <i>random</i> to select a spot"
                 },
             ],
             group: "filters",
@@ -4185,6 +4207,8 @@ export class MonksActiveTiles {
                         position = 0;
                     else if (position == "last")
                         position = entities.length - 1;
+                    else if (position == "random")
+                        position = Math.floor(Math.random() * entities.length);
 
                     return { tokens: [entities[position]] };
                 } else
@@ -4379,6 +4403,43 @@ export class MonksActiveTiles {
             content: async (trigger, action) => {
                 let entityName = await MonksActiveTiles.entityName(action.data?.entity, action.data?.collection);
                 return `<span class="filter-style">Find</span> <span class="entity-style">${entityName}</span> ${action.data?.exclude ? "without item" : "with item"} <span class="value-style">&lt;${action.data?.item}&gt;</span>`;
+            }
+        },
+        'playertype': {
+            name: "MonksActiveTiles.logic.playertype",
+            ctrls: [
+                {
+                    id: "gm",
+                    name: "MonksActiveTiles.ctrl.gmredirect",
+                    type: "text",
+                },
+                {
+                    id: "player",
+                    name: "MonksActiveTiles.ctrl.playerredirect",
+                    type: "text",
+                }
+            ],
+            group: "logic",
+            fn: async (args = {}) => {
+                let { action, userid } = args;
+
+                let user = game.users.get(userid);
+                if (user.isGM) {
+                    if (action.data.gm)
+                        return { goto: action.data.gm };
+                    else
+                        return { continue: false };
+                } else {
+                    if (action.data.player)
+                        return { goto: action.data.player };
+                    else
+                        return { continue: false };
+                }
+            },
+            content: async (trigger, action) => {
+                let gmredirect = (action.data.gm ? `<span class="entity-style">GM</span> to <span class="value-style">&lt;${action.data.gm}&gt;</span>` : "");
+                let playerredirect = (action.data.player ? `<span class="entity-style">Player</span> to <span class="value-style">&lt;${action.data.player}&gt;</span>` : "");
+                return `<span class="filter-style">Redirect player</span> ${gmredirect} ${playerredirect}`;
             }
         },
         'anchor': {
@@ -5906,13 +5967,18 @@ export class MonksActiveTiles {
                     let tile = await fromUuid(data.tileid);
                     if (tile) {
                         if (tile.soundeffect != undefined && tile.soundeffect[data.actionid] != undefined) {
+                            if (tile.soundeffect[data.actionid].playing && data.prevent)
+                                return;
+
                             try {
                                 tile.soundeffect[data.actionid].stop();
                             } catch {}
                         }
 
+                        let volume = Math.clamped(data.volume, 0, 1);
+
                         debug('Playing', data.src);
-                        AudioHelper.play({ src: data.src, volume: data.volume, loop: data.loop }, false).then((sound) => {
+                        AudioHelper.play({ src: data.src, volume: volume, loop: data.loop }, false).then((sound) => {
                             if (tile.soundeffect == undefined)
                                 tile.soundeffect = {};
                             tile.soundeffect[data.actionid] = sound;
@@ -5920,6 +5986,7 @@ export class MonksActiveTiles {
                                 debug('Finished playing', data.src);
                                 delete tile.soundeffect[data.actionid];
                             });
+                            tile.soundeffect[action.id]._mattvolume = volume;
                         });
                     }
                 }
@@ -6141,6 +6208,42 @@ export class MonksActiveTiles {
                     }
                 }
             } break;
+            case 'move':
+                {
+                    let entity = await fromUuid(data.entityid);
+
+                    let object = entity.object;
+                    await CanvasAnimation.terminateAnimation(`${entity.documentName}.${entity.id}.animateMovement`);
+
+                    let animate = async () => {
+                        let ray = new Ray({ x: entity.data.x, y: entity.data.y }, { x: data.x, y: data.y });
+
+                        // Move distance is 10 spaces per second
+                        const s = canvas.dimensions.size;
+                        entity._movement = ray;
+                        const speed = s * 10;
+                        const duration = (ray.distance * 1000) / speed;
+
+                        // Define attributes
+                        const attributes = [
+                            { parent: object, attribute: 'x', to: data.x },
+                            { parent: object, attribute: 'y', to: data.y }
+                        ];
+
+                        // Dispatch the animation function
+                        let animationName = `${entity.documentName}.${entity.id}.animateMovement`;
+                        await CanvasAnimation.animateLinear(attributes, {
+                            name: animationName,
+                            context: object,
+                            duration: duration
+                        });
+
+                        entity._movement = null;
+                    };
+
+                    animate();
+
+                } break;
         }
     }
 
@@ -6220,8 +6323,8 @@ export class MonksActiveTiles {
             return this.parent.tokens.filter(t => {
                 const midToken = { x: t.data.x + (t.data.width / 2), y: t.data.y + (t.data.height / 2) };
                 if (game.modules.get("levels")?.active) {
-                    let tileht = this.data.flags.levels.rangeTop ?? 1000;
-                    let tilehb = this.data.flags.levels.rangeBottom ?? -1000;
+                    let tileht = this.data.flags.levels?.rangeTop ?? 1000;
+                    let tilehb = this.data.flags.levels?.rangeBottom ?? -1000;
                     if (t.data.elevation >= tilehb && t.data.elevation <= tileht)
                         return this.pointWithin(midToken);
                 } else
@@ -6232,6 +6335,10 @@ export class MonksActiveTiles {
         TileDocument.prototype.checkClick = function (pt, clicktype = 'click') {
             let triggerData = this.data.flags["monks-active-tiles"];
             if (triggerData && triggerData.active && triggerData.trigger == clicktype) {
+                //prevent triggering when game is paused
+                if (setting("prevent-when-paused") && game.paused && !game.user.isGM)
+                    return;
+
                 //check to see if this trigger is restricted by control type
                 if ((triggerData.controlled == 'gm' && !game.user.isGM) || (triggerData.controlled == 'player' && game.user.isGM))
                     return;
@@ -6327,6 +6434,10 @@ export class MonksActiveTiles {
         TileDocument.prototype.canTrigger = function (token, collision, destination, elevation) {
             let triggerData = this.data.flags["monks-active-tiles"];
             if (triggerData) {
+                // prevent players from triggering a tile if the game is paused.
+                if (setting("prevent-when-paused") && game.paused && !game.user.isGM)
+                    return;
+
                 let when = this.getFlag('monks-active-tiles', 'trigger');
 
                 if (!["enter", "exit", "both", "elevation", "movement", "stop"].includes(when))
@@ -6630,6 +6741,8 @@ export class MonksActiveTiles {
                     count += result.length;
                 }
                 return count;
+            } else if (tokenid == "unique") {
+                return Object.keys(tileHistory).length;
             } else {
                 let result = tileHistory[tokenid]?.triggered.filter(h => {
                     return (method == undefined || h.how == method) && (userid == undefined || h.who == userid);
@@ -7431,5 +7544,15 @@ Hooks.on('preUpdateWall', async (document, update, options, userId) => {
             MonksActiveTiles.wallchange = "close";
         else if (update.ds == 1)
             MonksActiveTiles.wallchange = "open";
+    }
+});
+
+Hooks.on("globalInterfaceVolumeChanged", (volume) => {
+    for (let tile of canvas.scene.tiles) {
+        for (let sound of Object.values(tile.soundeffect || {})) {
+            if (sound._mattvolume) {
+                sound.volume = volume * (sound._mattvolume ?? 1);
+            }
+        }
     }
 });

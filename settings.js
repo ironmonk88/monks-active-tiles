@@ -77,6 +77,15 @@ export const registerSettings = function () {
 		type: Boolean,
 	});
 
+	game.settings.register(modulename, "prevent-when-paused", {
+		name: i18n("MonksActiveTiles.prevent-when-paused.name"),
+		hint: i18n("MonksActiveTiles.prevent-when-paused.hint"),
+		scope: "world",
+		config: true,
+		default: true,
+		type: Boolean,
+	});
+
 	game.settings.register(modulename, "prevent-cycle", {
 		scope: "world",
 		config: false,

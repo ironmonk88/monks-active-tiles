@@ -12,7 +12,7 @@
     <div class="form-fields">
         <button class="view-history" type="button" style="height: 20px; line-height: 15px;">View&nbsp;History</button>
         <div></div>
-        <input type="checkbox" name="flags.monks-active-tiles.record" {{ checked data.flags.monks-active-tiles.record }}>
+        <input class="record-history" type="checkbox" name="flags.monks-active-tiles.record" {{ checked data.flags.monks-active-tiles.record }}>
     </div>
 </div>
 
@@ -60,7 +60,7 @@
 <div class="form-group">
     <label>{{ localize "MonksActiveTiles.PerToken" }}</label>
     <div class="form-fields">
-        <input type="checkbox" name="flags.monks-active-tiles.pertoken" {{ checked data.flags.monks-active-tiles.pertoken }}>
+        <input type="checkbox" class="per-token" name="flags.monks-active-tiles.pertoken" {{ checked data.flags.monks-active-tiles.pertoken }}>
     </div>
 </div>
 
@@ -112,7 +112,7 @@
         </div>
     </li>
 
-    <ol class="item-list">
+    <ol class="item-list" style="position: relative;">
         {{#each actions}}
         <li class="item flexrow " data-id="{{this.id}}" draggable="true">
             <div class="item-name flexrow">

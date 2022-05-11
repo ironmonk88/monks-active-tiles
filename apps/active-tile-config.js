@@ -2,6 +2,21 @@ import { MonksActiveTiles, log, setting, i18n, makeid } from '../monks-active-ti
 import { ActionConfig } from "../apps/action-config.js";
 import { TileHistory } from './tile-history.js';
 
+class ActiveTileContextMenu extends ContextMenu {
+    constructor(...args) {
+        super(...args);
+    }
+
+    _setPosition(html, target) {
+        super._setPosition(html, target);
+
+        let container = target.closest('.item-list');
+        let y = container.height() - (target.position().top + container.scrollTop());
+
+        html.removeClass("expand-down").css({ "bottom": `${y}px` }).insertAfter(target.closest('.action-items'));
+    }
+}
+
 export const WithActiveTileConfig = (TileConfig) => {
     class ActiveTileConfig extends TileConfig {
         constructor(...args) {
@@ -31,7 +46,7 @@ export const WithActiveTileConfig = (TileConfig) => {
         async _renderInner(data) {
             let html = await super._renderInner(data);
             $('.sheet-tabs', html).append($('<a>').addClass('item').attr('data-tab', "triggers").html(`<i class="fas fa-running"></i> ${i18n("MonksActiveTiles.Triggers")}`));
-            let tab = $('<div>').addClass('tab').attr('data-tab', "triggers").insertAfter($('div[data-tab="animation"]', html));
+            let tab = $('<div>').addClass('tab').attr('data-tab', "triggers").css({"position": "relative"}).insertAfter($('div[data-tab="animation"]', html));
 
             let template = "modules/monks-active-tiles/templates/tile-config.html";
             const tiledata = mergeObject({ 'data.flags.monks-active-tiles.minrequired': 0 }, data);
@@ -174,8 +189,7 @@ export const WithActiveTileConfig = (TileConfig) => {
 
             const contextOptions = this._getContextOptions();
             Hooks.call(`getActiveTileConfigContext`, html, contextOptions);
-            let context = new ContextMenu($(html), ".action-items .item", contextOptions);
-            //context.container = ".window-app";
+            new ActiveTileContextMenu($(html), ".action-items .item", contextOptions);
 
             $('.action-create', html).click(this._createAction.bind(this));
             $('.action-edit', html).click(this._editAction.bind(this));
@@ -184,6 +198,9 @@ export const WithActiveTileConfig = (TileConfig) => {
             $('.view-history', html).click(function () {
                 new TileHistory(that.object).render(true);
             });
+
+            $('.record-history', html).click(this.checkRecordHistory.bind(this));
+            $('.per-token', html).click(this.checkPerToken.bind(this));
 
             $('select[name="flags.monks-active-tiles.trigger"]', html).change(function () {
                 $('.usealpha', html).toggle(["click", "dblclick", "rightclick"].includes($(this).val()));
@@ -249,7 +266,21 @@ export const WithActiveTileConfig = (TileConfig) => {
             let clone = duplicate(action);
             clone.id = makeid();
             actions.splice(idx + 1, 0, clone);
-            this.object.setFlag("monks-active-tiles", "actions", actions);
+            if (this.object.id) {
+                this.object.setFlag("monks-active-tiles", "actions", actions);
+            }
+        }
+
+        checkRecordHistory(event) {
+            // if turning off record-history, then also turn off per token
+            if (!$('.record-history', this.element).prop("checked"))
+                $('.per-token', this.element).prop("checked", false);
+        }
+
+        checkPerToken(event) {
+            // if turning on per token, then also turn on record-history
+            if ($('.per-token', this.element).prop("checked"))
+                $('.record-history', this.element).prop("checked", true);
         }
 
         resetPerToken() {
