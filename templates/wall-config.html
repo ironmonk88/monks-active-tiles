@@ -4,6 +4,9 @@
         <input type="hidden" data-deftype="tiles" data-type="entity" name="flags.monks-active-tiles.entity" value="{{entity}}">
         <span class="display-value">{{tilename}}</span>
         <button type="button" data-type="entity" data-target="flags.monks-active-tiles.entity" title="Select an entity" class="entity-picker"><i class="fas fa-crosshairs fa-sm"></i></button>
+        {{#if showtagger}}
+        <button type="button" data-type="tagger" data-target="flags.monks-active-tiles.entity" title="{{localize "MonksActiveTiles.msg.usetagger"}}" class="entity-picker"><i class="fas fa-tag fa-sm"></i></button>
+        {{/if}}
     </div>
 </div>
 

@@ -36,8 +36,6 @@ Fixed issue looking for a flag, if Tiles were created before the Levels module w
 
 Added a setting to prevent Players from activating Tiles if the game is currently paused.
 
-
-
 ## Version 1.0.73
 
 Added the option to edit the location field.  By double clicking on the field you can manually edit the location.  This will now allow you to enter `-100` for example, in the x or y field and have the location be relative to the token.

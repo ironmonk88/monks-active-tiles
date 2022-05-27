@@ -327,7 +327,7 @@ export class ActionConfig extends FormApplication {
         field.trigger('change');
     }
 
-    async addTag(event) {
+    static async addTag(event) {
         const html = await renderTemplate(`modules/monks-active-tiles/templates/tagger-dialog.html`, {
             data: this.object?.data
         });
@@ -392,7 +392,7 @@ export class ActionConfig extends FormApplication {
         }
 
         let data = expandObject(super._getSubmitData());
-        let location = JSON.parse(data.data.location || {});
+        let location = JSON.parse(data.data.location || "{}");
 
         const html = await renderTemplate(`modules/monks-active-tiles/templates/location-dialog.html`, {
             action: data.action,
@@ -507,10 +507,17 @@ export class ActionConfig extends FormApplication {
     async _updateObject(event, formData) {
         log('updating action', event, formData, this.object);
 
+        $('[needs-parse="true"]', this.element).each(function () {
+            let name = $(this).attr("name");
+            if (formData[name])
+                formData[name] = (formData[name].startsWith('{') ? JSON.parse(formData[name]) : formData[name]);
+        });
+
+        /*
         for (let check of ['location', 'entity', 'item', 'actor', 'token']) {
             if (formData[`data.${check}`])
                 formData[`data.${check}`] = (formData[`data.${check}`].startsWith('{') ? JSON.parse(formData[`data.${check}`]) : formData[`data.${check}`]);
-        }
+        }*/
 
         if (formData['data.attack'])
             formData['data.attack'] = { id: formData['data.attack'], name: $('select[name="data.attack"] option:selected', this.element).text()};
@@ -654,7 +661,7 @@ export class ActionConfig extends FormApplication {
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'players', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useplayerlocation") }).toggle(options.showPrevious).addClass('location-picker').html('<i class="fas fa-users fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'previous', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usepreviouslocation") }).toggle(options.showPrevious).addClass('location-picker').html('<i class="fas fa-history fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'origin', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useorigin") }).toggle(options.showOrigin).addClass('location-picker').html('<i class="fas fa-walking fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
-                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'tagger', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetagger") }).toggle(options.showTagger && game.modules.get('tagger')?.active).addClass('location-picker').html('<i class="fas fa-tag fa-sm"></i>').click(this.addTag.bind(this)));
+                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'tagger', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetagger") }).toggle(options.showTagger && game.modules.get('tagger')?.active).addClass('location-picker').html('<i class="fas fa-tag fa-sm"></i>').click(ActionConfig.addTag.bind(this)));
 
                     } else if (ctrl.subtype == 'entity') {
                         let displayValue = (ctrl.placeholder && !data[ctrl.id] && !!ctrl.required ? `<span class="placeholder-style">${ctrl.placeholder}</style>` : await MonksActiveTiles.entityName(data[ctrl.id], (ctrl.defaultType || data?.collection)) || `<span class="placeholder-style">'Please select an Entity'</style>`);
@@ -668,10 +675,11 @@ export class ActionConfig extends FormApplication {
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'players', 'data-target': id, 'title': (command == "openjournal" ? i18n("MonksActiveTiles.msg.useplayersjournal") : i18n("MonksActiveTiles.msg.useplayers")) }).toggle(options.showPlayers).addClass('entity-picker').html('<i class="fas fa-users fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'previous', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useprevious") }).toggle(options.showPrevious).addClass('entity-picker').html('<i class="fas fa-history fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'controlled', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usecontrolled") }).toggle(options.showControlled).addClass('entity-picker').html('<i class="fas fa-bullhorn fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
-                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'tagger', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetagger") }).toggle(options.showTagger && game.modules.get('tagger')?.active).addClass('entity-picker').html('<i class="fas fa-tag fa-sm"></i>').click(this.addTag.bind(this)));
+                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'tagger', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetagger") }).toggle(options.showTagger && game.modules.get('tagger')?.active).addClass('entity-picker').html('<i class="fas fa-tag fa-sm"></i>').click(ActionConfig.addTag.bind(this)));
                     }
+                    let input = $('input[type="hidden"]', field);
+                    input.attr("needs-parse", "true");
                     if (ctrl.onChange) {
-                        let input = $('input[type="hidden"]', field);
                         input.on('change', ctrl.onChange.bind(input, this, input));
                     }
                     break;

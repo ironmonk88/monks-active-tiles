@@ -199,6 +199,7 @@
   "MonksActiveTiles.ctrl.preventsound": "Prevent sound from starting if already playing",
   "MonksActiveTiles.ctrl.gmredirect": "GM Redirect",
   "MonksActiveTiles.ctrl.playerredirect": "Player Redirect",
+  "MonksActiveTiles.ctrl.fade": "Fade",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -348,5 +349,7 @@
   "MonksActiveTiles.show-help.name": "Show Hints",
   "MonksActiveTiles.show-help.hint": "Show helpful action hints for fields that have complex values",
   "MonksActiveTiles.prevent-when-paused.name": "Prevent when paused",
-  "MonksActiveTiles.prevent-when-paused.hint": "Prevent players from triggering Tiles when the game is paused."
+  "MonksActiveTiles.prevent-when-paused.hint": "Prevent players from triggering Tiles when the game is paused.",
+  "MonksActiveTiles.allow-door-passthrough.name": "Allow Door Click-through",
+  "MonksActiveTiles.allow-door-passthrough.hint": "Allow Tiles underneath a door to still be triggered if the door is clicked on"
 }
