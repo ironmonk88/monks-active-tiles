@@ -2154,6 +2154,10 @@ export class MonksActiveTiles {
                 const { action } = args;
                 //Find the macro to be run, call it with the data from the trigger
                 let macro = await fromUuid(action.data?.macroid);
+
+                if (!macro)
+                    macro = game.macros.get(action.data?.macroid);
+
                 if (macro instanceof Macro) {
                     return await MonksActiveTiles._executeMacro(macro, args);
                 }
@@ -2161,6 +2165,10 @@ export class MonksActiveTiles {
             content: async (trigger, action) => {
                 let pack;
                 let macro = await fromUuid(action.data?.macroid);
+
+                if (!macro)
+                    macro = game.macros.get(action.data?.macroid);
+
                 if (macro.data.document.pack)
                     pack = game.packs.get(macro.data.document.pack);
                 return `<span class="action-style">${i18n(trigger.name)}</span>, <span class="entity-style">${pack ? pack.metadata.name + ":" : ""}${(macro?.name || 'Unknown Macro')}</span>${(action.data.runasgm != undefined && action.data.runasgm != 'unknown' ? ' as <span class="value-style">&lt;' + i18n(trigger.values.runas[action.data.runasgm]) + '&gt;</span>' : '')}`;
@@ -6098,6 +6106,9 @@ export class MonksActiveTiles {
             case 'runmacro': {
                 if (game.user.id == data.userid) {
                     let macro = (data?.macroid ? await fromUuid(data.macroid) : null);
+                    if (!macro)
+                        macro = game.macros.get(data.macroid);
+
                     let tile = (data?.tileid ? await fromUuid(data.tileid) : null);
                     let token = (data?.tokenid ? await fromUuid(data.tokenid) : null);
                     let tokens = data.tokens;

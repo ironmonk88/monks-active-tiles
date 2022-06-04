@@ -1,3 +1,7 @@
+## Version 1.0.78
+
+Fixed issues with Macros not loading since the update to being able to use them from compendiums.
+
 ## Version 1.0.77
 
 Fixed an issue with creating encounter using a journal entry from rolltables.
