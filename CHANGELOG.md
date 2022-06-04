@@ -1,3 +1,80 @@
+## Version 1.0.76
+
+Added the option to run Macros from a Compendium
+
+Fixed issue with internationalization and the placeholder from entity selection fields
+
+Prevented the textarea fields in the action config from being resized horizontally.
+
+Added the option to allow some Tiles to be triggered even if the game is paused.
+
+Fixed issues with moving an object when using offset measurments.
+
+Added the option to select a collection when creating a token, so you can use journals created from a rolltable.
+
+Added the option to create a token from a Note.
+
+Cleaned up the text displayed when setting the quantity to blank when rolling a rolltable.  Even though the value will still reset when you edit the action again.
+
+Tried to fix an issue when assigning items using the GURPS system, and a handful of other ones.
+
+Added the option to select the currently activated scene, or current scene when changing the scene.
+
+Prevented selecting entities that should be restricted.  Mostly so you can't select an Actor with the add to Combat Action.
+
+Added the option to use HTML when writing the content of a dialog box.  Any field added to the dialog, with the name attribute will get added to the current array of values passed to further actions.
+
+Fixed some issues with the function that calculated points based on Tile rotation.
+
+Added additional collections to use with the filter by positon filter.
+
+Added tagger support when triggering tiles using a door.
+
+Fixed issue with hover over and tiles that are restricted to specific users.  So if it's a GM only Tile, hover over will only show for the GM.
+
+Added auto anchors for door triggers.
+
+Added auto anchors for specific players.
+
+Fixed issues with wall config when it re-renders.
+
+## Version 1.0.75
+
+Fixed issues with action inputs that need to be parsed.
+
+Fixed issues with defaulting the location information.
+
+Added setting to allow any clicks that click on the door to be pass through to any tiles underneath.
+
+Added tagger support for triggers from a door.
+
+Fixed issues when a token's width or height is set to a negative value.
+
+Updated Show/Hide action to use collection when selecting current values, so you can use the action with more than just tokens.
+
+Fixed issues when setting location from Quick Encounters
+
+Added support for using the alter action with arrays
+
+Added the option to fade a sound being played
+
+Added the option to prevent a sound from starting again if it's already playing.  This way multiple triggers of the same sound effect won't set it back tot he beginning.
+
+Removed the value/percent option for playlists
+
+Rolltable rolls will no longer be shown to the players if the rollmode is not roll.
+
+Fixed issue with the exists filter that was still checking if the entity cound was zero instead of what the logic was set to.
+
+Added the option to use entity collections when using the current values witht he position in list filter.  This means you can now use it to filter tiles or drawings.
+
+Fixed issues with attribute filters and arrays
+
+Added auto anchors.  So if you name you anchor `_gm` it will automatically go to that anchor first if you are the GM, and the same with `_player`.  You can also use the name of a trigger so `_click`, `_enter`, and `_exit` will all work.  This should eliminate the use of a Macro.
+
+** Breaking Change **
+Changed how the trigger method is being passed.  Instead of text, it needs to be the id of the trigger.  This will break any code or macros that trigger a Tile manually.
+
 ## Version 1.0.74
 
 Fixed the double-click for entities and location to show the currenct values, and to save the values properly.

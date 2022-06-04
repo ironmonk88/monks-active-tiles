@@ -36,6 +36,7 @@ export const WithActiveTileConfig = (TileConfig) => {
         getData(options) {
             let data = super.getData(options);
             data.usingAlpha = ["click", "dblclick", "rightclick"].includes(data.data.flags["monks-active-tiles"]?.trigger);
+            data.preventPaused = setting("prevent-when-paused");
             return data;
         }
 

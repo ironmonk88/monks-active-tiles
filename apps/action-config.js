@@ -145,7 +145,8 @@ export class ActionConfig extends FormApplication {
         let action = $('[name="action"]', this.element).val();
 
         if (data.type == "Macro" && action == "runmacro") {
-            $('select[name="data.macroid"]').val(data.id);
+            let id = (data.pack ? `Compendium.${data.pack}.${data.id}` : `Macro.${data.id}`);
+            $('select[name="data.macroid"]').val(id);
         } else if (data.type == "Scene" && action == "scene") {
             $('select[name="data.sceneid"]').val(data.id);
         } else if (data.type == "RollTable" && action == "rolltable") {
@@ -654,7 +655,7 @@ export class ActionConfig extends FormApplication {
                     if (ctrl.subtype == 'location' || ctrl.subtype == 'either' || ctrl.subtype == 'position') {
                         field.addClass("select-field-group")
                             .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'hidden', name: id }).val(JSON.stringify(data[ctrl.id])).data({ 'type': ctrl.subtype, deftype: ctrl.defaultType }))
-                            .append($('<span>').dblclick(this.editLocationId.bind(this)).addClass('display-value').html(await MonksActiveTiles.locationName(data[ctrl.id]) || `<span class="placeholder-style">${ctrl.placeholder || 'Please select a location'}</style>`)) //(data[ctrl.id] ? (data[ctrl.id].name ? data[ctrl.id].name : 'x:' + data[ctrl.id].x + ', y:' + data[ctrl.id].y) + (scene ? ', scene:' + scene.name : '') : '')
+                            .append($('<span>').dblclick(this.editLocationId.bind(this)).addClass('display-value').html(await MonksActiveTiles.locationName(data[ctrl.id]) || `<span class="placeholder-style">${i18n(ctrl.placeholder) || 'Please select a location'}</style>`)) //(data[ctrl.id] ? (data[ctrl.id].name ? data[ctrl.id].name : 'x:' + data[ctrl.id].x + ', y:' + data[ctrl.id].y) + (scene ? ', scene:' + scene.name : '') : '')
                             .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectlocation") }).addClass('location-picker').html('<i class="fas fa-crosshairs fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'position', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.setposition") }).toggle(ctrl.subtype == 'position').addClass('location-picker').html('<i class="fas fa-crop-alt fa-sm"></i>').click(this.selectPosition.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'token', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetoken") }).toggle(options.showToken).addClass('entity-picker').html('<i class="fas fa-user-alt fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
@@ -664,7 +665,7 @@ export class ActionConfig extends FormApplication {
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'tagger', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetagger") }).toggle(options.showTagger && game.modules.get('tagger')?.active).addClass('location-picker').html('<i class="fas fa-tag fa-sm"></i>').click(ActionConfig.addTag.bind(this)));
 
                     } else if (ctrl.subtype == 'entity') {
-                        let displayValue = (ctrl.placeholder && !data[ctrl.id] && !!ctrl.required ? `<span class="placeholder-style">${ctrl.placeholder}</style>` : await MonksActiveTiles.entityName(data[ctrl.id], (ctrl.defaultType || data?.collection)) || `<span class="placeholder-style">'Please select an Entity'</style>`);
+                        let displayValue = (ctrl.placeholder && !data[ctrl.id] && !!ctrl.required ? `<span class="placeholder-style">${i18n(ctrl.placeholder)}</style>` : await MonksActiveTiles.entityName(data[ctrl.id], (ctrl.defaultType || data?.collection)) || `<span class="placeholder-style">'Please select an Entity'</style>`);
                         field.addClass("select-field-group")//.css({ 'flex-direction': 'row', 'align-items': 'flex-start' })
                             .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'hidden', name: id }).val(typeof data[ctrl.id] == 'object' ? JSON.stringify(data[ctrl.id]) : data[ctrl.id]).data({ 'restrict': ctrl.restrict, 'type': 'entity', deftype: ctrl.defaultType }))
                             .append($('<span>').dblclick(this.editEntityId.bind(this)).addClass('display-value').html(displayValue))
@@ -686,9 +687,9 @@ export class ActionConfig extends FormApplication {
                 case 'text':
                 case 'number':
                     {
-                        let input = $(`<${ctrl.subtype == "multiline" ? "textarea" : "input"}>`).toggleClass('required', !!ctrl.required).attr({ type: ctrl.type, name: id }).val(val);
+                        let input = $(`<${ctrl.subtype == "multiline" ? "textarea" : "input"}>`).css({ resize: "vertical" }).toggleClass('required', !!ctrl.required).attr({ type: ctrl.type, name: id }).val(val);
                         if (ctrl.placeholder)
-                            input.attr('placeholder', ctrl.placeholder);
+                            input.attr('placeholder', i18n(ctrl.placeholder));
                         if (ctrl.attr)
                             input.attr(ctrl.attr);
                         if (ctrl.type == 'number') {
