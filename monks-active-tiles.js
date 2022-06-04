@@ -744,7 +744,7 @@ export class MonksActiveTiles {
             values: {
                 'collection': {
                     'actors': "Actors",
-                    'journalentry': "Journal Entries"
+                    'journals': "Journal Entries"
                 }
             },
             fn: async (args = {}) => {
@@ -1549,6 +1549,10 @@ export class MonksActiveTiles {
                     let source = "data";
                     let pattern = audiofile;
                     const browseOptions = { wildcard: true };
+
+                    if (typeof ForgeVTT != "undefined" && ForgeVTT.usingTheForge) {
+                        source = "forgevtt";
+                    }
 
                     // Support S3 matching
                     if (/\.s3\./.test(pattern)) {
@@ -4141,7 +4145,7 @@ export class MonksActiveTiles {
                     'actors': "Actors",
                     'items': "Items",
                     'walls': "Walls",
-                    'journalentry': "Journal Entries"
+                    'journals': "Journal Entries"
                 }
             },
             group: "filters",
@@ -4314,7 +4318,7 @@ export class MonksActiveTiles {
                     'actors': "Actors",
                     'items': "Items",
                     'walls': "Walls",
-                    'journalentry': "Journal Entries",
+                    'journals': "Journal Entries",
                     'scene': "Scene"
                 }
             },
@@ -4407,7 +4411,7 @@ export class MonksActiveTiles {
                     'actors': "Actors",
                     'items': "Items",
                     'walls': "Walls",
-                    'journalentry': "Journal Entries"
+                    'journals': "Journal Entries"
                 }
             },
             group: "filters",
@@ -4927,6 +4931,10 @@ export class MonksActiveTiles {
                 let pattern = file.name;
                 const browseOptions = { wildcard: true };
 
+                if (typeof ForgeVTT != "undefined" && ForgeVTT.usingTheForge) {
+                    source = "forgevtt";
+                }
+
                 // Support S3 matching
                 if (/\.s3\./.test(pattern)) {
                     source = "s3";
@@ -5097,16 +5105,24 @@ export class MonksActiveTiles {
                 title: title,
                 content: content,
                 yes: (html) => {
+                    let data = (yes ? { goto: yes } : { continue: false });
+
                     const form = html[0].querySelector("form");
-                    const fd = new FormDataExtended(form);
-                    let data = foundry.utils.mergeObject((yes ? { goto: yes } : { continue: false }), fd.toObject());
+                    if (form) {
+                        const fd = new FormDataExtended(form);
+                        data = foundry.utils.mergeObject(data, fd.toObject());
+                    }
 
                     return data;
                 },
-                no: () => {
+                no: (html) => {
+                    let data = (no ? { goto: no } : { continue: false });
+
                     const form = html[0].querySelector("form");
-                    const fd = new FormDataExtended(form);
-                    let data = foundry.utils.mergeObject((no ? { goto: no } : { continue: false }), fd.toObject());
+                    if (form) {
+                        const fd = new FormDataExtended(form);
+                        data = foundry.utils.mergeObject(data, fd.toObject());
+                    }
 
                     return data;
                 },

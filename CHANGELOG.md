@@ -1,3 +1,13 @@
+## Version 1.0.77
+
+Fixed an issue with creating encounter using a journal entry from rolltables.
+
+Fixed an issue playing sounds when on the Forge
+
+Fixed issue with the show Dialog box action.  The new code was interfering with the old code.
+
+Updated the action config dialog so that if you resize a textarea field, the dialog will resize to fit.
+
 ## Version 1.0.76
 
 Added the option to run Macros from a Compendium

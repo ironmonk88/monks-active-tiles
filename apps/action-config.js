@@ -585,6 +585,8 @@ export class ActionConfig extends FormApplication {
     }
 
     async changeAction() {
+        let that = this;
+
         let command = $('select[name="action"]', this.element).val();
         let action = MonksActiveTiles.triggerActions[command];
 
@@ -690,6 +692,9 @@ export class ActionConfig extends FormApplication {
                         let input = $(`<${ctrl.subtype == "multiline" ? "textarea" : "input"}>`).css({ resize: "vertical" }).toggleClass('required', !!ctrl.required).attr({ type: ctrl.type, name: id }).val(val);
                         if (ctrl.placeholder)
                             input.attr('placeholder', i18n(ctrl.placeholder));
+                        if (ctrl.subtype == "multiline") {
+                            new ResizeObserver(() => { if (that.element.length) that.setPosition() }).observe(input.get(0));
+                        }
                         if (ctrl.attr)
                             input.attr(ctrl.attr);
                         if (ctrl.type == 'number') {
@@ -747,8 +752,6 @@ export class ActionConfig extends FormApplication {
                 $('.action-controls', this.element).append($('<p>').addClass("notes").html(ctrl.help));
 
             if (ctrl.id == 'attribute') {
-                let that = this;
-
                 this.attributes = this.tokenAttr;
 
                 var substringMatcher = function () {
