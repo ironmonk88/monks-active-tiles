@@ -4872,7 +4872,7 @@ export class MonksActiveTiles {
                 else if (entity.scene !== "_active" && entity.scene)
                     options.sceneId = entity.scene;
 
-                entities = window.Tagger.getByTag(tag, options);
+                entities = Tagger.getByTag(tag, options);
 
                 if (entity.scene == "_all")
                     entities = [].concat(...Object.values(entities));
@@ -4912,7 +4912,7 @@ export class MonksActiveTiles {
                     }
                 } else {
                     if (game.modules.get('tagger')?.active) {
-                        let tags = window.Tagger.getTags(document);
+                        let tags = Tagger.getTags(document);
                         if (tags.length)
                             name = tags[0];
                     }
@@ -4974,7 +4974,7 @@ export class MonksActiveTiles {
                         else if (l.scene !== "_active" && l.scene)
                             options.sceneId = l.scene;
 
-                        let entities = window.Tagger.getByTag(tag, options);
+                        let entities = Tagger.getByTag(tag, options);
                         if (entities.length) {
                             dest = entities[Math.floor(Math.random() * entities.length)];
                             if (entities.length > 1) {
@@ -5041,7 +5041,7 @@ export class MonksActiveTiles {
                         name = document.name
                     else {
                         if (game.modules.get('tagger')?.active) {
-                            let tags = window.Tagger.getTags(document);
+                            let tags = Tagger.getTags(document);
                             if (tags.length)
                                 name = tags[0];
                         }
@@ -5736,7 +5736,7 @@ export class MonksActiveTiles {
                                 if (entity.id.startsWith("tagger")) {
                                     if (game.modules.get('tagger')?.active) {
                                         let tag = entity.id.substring(7);
-                                        doc = window.Tagger.getByTag(tag)[0];
+                                        doc = Tagger.getByTag(tag)[0];
                                     }
                                 } else {
                                     let parts = entity.id.split(".");
@@ -7435,7 +7435,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
         //Does this cross a tile
         for (let tile of document.parent.tiles) {
             if (tile.data.flags['monks-active-tiles']?.active && tile.data.flags['monks-active-tiles']?.actions?.length > 0) {
-                if (game.modules.get("levels")?.active && _levels && _levels.isTokenInRange && !_levels.isTokenInRange(token, tile))
+                if (game.modules.get("levels")?.active && _levels && _levels.isTokenInRange && !_levels.isTokenInRange(token, tile._object))
                     continue;
 
                 //check and see if the ray crosses a tile

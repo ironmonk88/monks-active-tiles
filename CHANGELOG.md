@@ -1,3 +1,7 @@
+## Version 1.0.82
+
+Fixing issues with Levels
+
 ## Version 1.0.81
 
 Fixed issue with adding tagger
