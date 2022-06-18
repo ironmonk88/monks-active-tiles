@@ -331,8 +331,8 @@ export class ActionConfig extends FormApplication {
 
     static async addTag(event) {
         let data = expandObject(this._getSubmitData());
-        let entity = JSON.parse(data.data.entity || {});
-        entity["tag-name"] = entity.id.substring(7);
+        let entity = JSON.parse(data?.data?.entity || "{}");
+        entity["tag-name"] = entity?.id?.substring(7);
         entity.match = entity.match || "all";
         entity.scene = entity.scene || "_active";
 
@@ -369,9 +369,8 @@ export class ActionConfig extends FormApplication {
     }
 
     async editEntityId(event) {
-
         let data = expandObject(super._getSubmitData());
-        let entity = JSON.parse(data.data.entity || {});
+        let entity = JSON.parse(data?.data?.entity || "{}");
 
         const html = await renderTemplate(`modules/monks-active-tiles/templates/entity-dialog.html`, {
             data: entity
@@ -407,7 +406,7 @@ export class ActionConfig extends FormApplication {
         }
 
         let data = expandObject(super._getSubmitData());
-        let location = JSON.parse(data.data.location || "{}");
+        let location = JSON.parse(data?.data?.location || "{}");
 
         const html = await renderTemplate(`modules/monks-active-tiles/templates/location-dialog.html`, {
             action: data.action,

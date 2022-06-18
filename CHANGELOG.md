@@ -1,3 +1,7 @@
+## Version 1.0.81
+
+Fixed issue with adding tagger
+
 ## Version 1.0.80
 
 Fixed an issue where choosing a sound file for a play sound action that had already had a file saved would open up the FilePicker twice.
