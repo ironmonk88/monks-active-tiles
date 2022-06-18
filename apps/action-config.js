@@ -83,9 +83,10 @@ export class ActionConfig extends FormApplication {
 
     activateListeners(html) {
         var that = this;
-        this.changeAction();
-
         super.activateListeners(html);
+
+        this.changeAction.call(this);
+        
         $('select[name="action"]', html).change(function () {
             //clear out these before saving the new information so we don't get data bleed through
             if (that.object.data) {
@@ -329,8 +330,19 @@ export class ActionConfig extends FormApplication {
     }
 
     static async addTag(event) {
+        let data = expandObject(this._getSubmitData());
+        let entity = JSON.parse(data.data.entity || {});
+        entity["tag-name"] = entity.id.substring(7);
+        entity.match = entity.match || "all";
+        entity.scene = entity.scene || "_active";
+
+        let scenes = [{ id: "_active", name: "-- Active Scene --" }, {id: "_all", name: "-- All Scenes --" }];
+        for (let s of game.scenes)
+            scenes.push({ id: s.id, name: s.name });
+
         const html = await renderTemplate(`modules/monks-active-tiles/templates/tagger-dialog.html`, {
-            data: this.object?.data
+            data: entity,
+            scenes: scenes
         });
 
         // Render the confirmation dialog window
@@ -340,9 +352,11 @@ export class ActionConfig extends FormApplication {
             label: i18n("MonksActiveTiles.Save"),
             callback: async (html) => {
                 let tagName = $('input[name="tag-name"]').val();
+                let match = $('select[name="match"]').val();
+                let scene = $('select[name="scene"]').val();
                 let btn = $(event.currentTarget);
                 let field = $('input[name="' + btn.attr('data-target') + '"]', this.element);
-                let entity = { id: `tagger:${tagName}` };
+                let entity = { id: `tagger:${tagName}`, match: match, scene: scene };
                 entity.name = await MonksActiveTiles.entityName(entity);
                 field.val(JSON.stringify(entity)).next().html(entity.name);
                 field.trigger('change');
@@ -590,6 +604,7 @@ export class ActionConfig extends FormApplication {
         let command = $('select[name="action"]', this.element).val();
         let action = MonksActiveTiles.triggerActions[command];
 
+        let loadingid = this.loadingid = makeid();
         $('.action-controls', this.element).empty();
 
         let data = this.object.data || {};
@@ -745,6 +760,9 @@ export class ActionConfig extends FormApplication {
                     select.append(this.fillList(list, (data[ctrl.id]?.var)));
                 }
             }
+
+            if (loadingid != this.loadingid)
+                break;
 
             div.appendTo($('.action-controls', this.element));
 

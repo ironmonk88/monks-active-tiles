@@ -310,3 +310,13 @@
 #board.cooldown {
     cursor: wait !important;
 }
+
+.system-wfrp4e .monks-active-tiles.sheet .items-list .item-list {
+    background: url(../../../systems/wfrp4e/ui/frames/parchment-texture.webp);
+}
+
+.system-wfrp4e .monks-active-tiles.sheet .items-header {
+    color: #d6d6d6;
+    box-shadow: 0px 0px 10px inset black;
+    background: #352516;
+}

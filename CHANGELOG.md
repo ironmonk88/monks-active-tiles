@@ -1,3 +1,37 @@
+## Version 1.0.80
+
+Fixed an issue where choosing a sound file for a play sound action that had already had a file saved would open up the FilePicker twice.
+
+Updated the tagger interface to allow for the matching and scenes to search.
+
+Fixed the context menu for actions so it wouldn't be mis positioned in Firefox.
+
+Added styling for Warhammer so you can read the action list.
+
+Added a check to make sure the entity exists when using the activate action.
+
+Changed the run macro action to use the fine entity interface, which will let Active Tiles to run macros from a roll table.
+
+Upadates active effects to allow Pathfinder to use effects that have degrees.
+
+Updated image cycle to only activate when a GM is present
+
+Updated the check entity count to also check for macros, scenes and tiles.
+
+Updated anchors, check entity count, and trigger count to allow for handlebars in the goto tag
+
+Updated the entity at position to check for macros
+
+Fixed issue with getting entities when the value returne is undefined.
+
+Fixed up the Dialog interface so you no longer have to supply a goto if you override it with a control field.
+
+Added the option for the Dialog alert to return data from the dialog.
+
+Fixed issue where Smart Doors wasn't allowing Active Tiles to trigger a tile.
+
+Updated the triggering code to rely less on the canvas.
+
 ## Version 1.0.78
 
 Fixed issues with Macros not loading since the update to being able to use them from compendiums.

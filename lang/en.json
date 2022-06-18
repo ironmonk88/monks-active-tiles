@@ -14,6 +14,8 @@
   "MonksActiveTiles.TileHistory": "Tile History",
   "MonksActiveTiles.ResetHistory": "Reset History",
   "MonksActiveTiles.SelectTile": "Select Tile",
+  "MonksActiveTiles.Match": "Match",
+  "MonksActiveTiles.Scene": "Scene",
 
   "MonksActiveTiles.After": "After",
   "MonksActiveTiles.Action": "Action",

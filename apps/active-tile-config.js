@@ -11,9 +11,9 @@ class ActiveTileContextMenu extends ContextMenu {
         super._setPosition(html, target);
 
         let container = target.closest('.item-list');
-        let y = container.height() - (target.position().top + container.scrollTop());
+        let y = container.position().top + (target.position().top + container.scrollTop()) - 55;// - $(html).height();
 
-        html.removeClass("expand-down").css({ "bottom": `${y}px` }).insertAfter(target.closest('.action-items'));
+        html.removeClass("expand-down").css({ "top": `${y}px` }).insertAfter(target.closest('.action-items'));
     }
 }
 
@@ -175,7 +175,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                     let imgat = Math.clamped((action.data?.imgat || 1) - 1, 0, files.length - 1);
                     
                     if (this.object._cycleimages[action.id].length > 0) {
-                        let entities = await MonksActiveTiles.getEntities({ tile: this.object, action: action }, null, 'tiles');
+                        let entities = await MonksActiveTiles.getEntities({ tile: this.object, action: action }, 'tiles');
                         for (let entity of entities) {
                             await entity.update({ img: files[imgat] });
                         }
@@ -269,6 +269,9 @@ export const WithActiveTileConfig = (TileConfig) => {
             actions.splice(idx + 1, 0, clone);
             if (this.object.id) {
                 this.object.setFlag("monks-active-tiles", "actions", actions);
+            } else {
+                setProperty(this.object.data, "flags.monks-active-tiles.actions", actions);
+                this.render();
             }
         }
 

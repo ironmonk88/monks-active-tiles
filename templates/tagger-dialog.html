@@ -5,4 +5,23 @@
             <input type="text" name="tag-name" value="{{data.tag-name}}">
         </div>
     </div>
+    <p class="notes">Separate multiple items with commas</p>
+    <div class="form-group">
+        <label for="tag-name">{{localize 'MonksActiveTiles.Match'}}</label>
+        <div class="form-fields">
+            <select name="match">
+                <option value="any" {{#if (eq data.match "any")}}selected{{/if}}>Any Term</option>
+                <option value="all" {{#if (eq data.match "all")}}selected{{/if}}>Every Term</option>
+                <option value="exact" {{#if (eq data.match "exact")}}selected{{/if}}>Exactly those terms</option>
+            </select>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="tag-name">{{localize 'MonksActiveTiles.Scene'}}</label>
+        <div class="form-fields">
+            <select name="scene">
+                {{selectOptions scenes selected=data.scene nameAttr="id" labelAttr="name"}}
+            </select>
+        </div>
+    </div>
 </form>
