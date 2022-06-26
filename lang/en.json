@@ -175,6 +175,7 @@
   "MonksActiveTiles.ctrl.triggercount": "Trigger Count",
   "MonksActiveTiles.ctrl.tokencount": "Token Trigger Count",
   "MonksActiveTiles.ctrl.itemname": "Item Name",
+  "MonksActiveTiles.ctrl.itemcount": "Item Count",
   "MonksActiveTiles.ctrl.darkness": "Darkness Level",
   "MonksActiveTiles.ctrl.speed": "Speed (seconds)",
   "MonksActiveTiles.ctrl.play": "Play",

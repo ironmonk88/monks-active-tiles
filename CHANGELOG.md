@@ -1,3 +1,21 @@
+## Version 1.0.83
+
+Added error checking if trying to teleport to a destination that doesn't exist.
+
+Added the option to fade when using the show/hide action
+
+Fixed issue when creating a chat message and the token in question doesn't have an associated actor.
+
+Changed the filter by item to allow for checking for a specific quantity of item.
+
+Fixed issue when getting a location based on a tag from any scene.
+
+Added support for Sidebar Macro Directory.
+
+Fixed issue with rotated Tiles.  Apparently Foundry doesn't use angles the same way everyone else does.
+
+Added directional auto anchors, so _top-right will trigger if the token enters from the top right corner.
+
 ## Version 1.0.82
 
 Fixing issues with Levels
