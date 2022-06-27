@@ -1,3 +1,9 @@
+## Version 1.0.84
+
+Fixed issue with show/hide fade.
+
+Fixed issue with directional auto anchors.
+
 ## Version 1.0.83
 
 Added error checking if trying to teleport to a destination that doesn't exist.

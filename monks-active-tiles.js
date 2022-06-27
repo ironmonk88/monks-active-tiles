@@ -681,20 +681,20 @@ export class MonksActiveTiles {
                         if (entity) {
                             let hide = (action.data.hidden == 'toggle' ? !entity.data.hidden : (action.data.hidden == 'previous' ? !value.visible : action.data.hidden !== 'show'));
                             if (action.data?.fade) {
-                                let object = entity.object.icon || entity.object.tile || entity.object;
+                                let icon = entity.object.icon || entity.object.tile || entity.object;
                                 const attributes = [
-                                    { parent: object, attribute: 'alpha', to: (hide ? 0.5 : 1) }
+                                    { parent: icon, attribute: 'alpha', to: (hide ? 0.5 : entity.data.alpha) }
                                 ];
 
                                 //if (!hide)
-                                //    object.alpha = 0.5;
+                                //    icon.alpha = 0.5;
 
                                 let animationName = `MonksActiveTiles.${entity.documentName}.${entity.id}.animateShowHide`;
                                 await CanvasAnimation.terminateAnimation(animationName);
 
                                 CanvasAnimation.animateLinear(attributes, {
                                     name: animationName,
-                                    context: object,
+                                    context: icon,
                                     duration: action.data?.fade * 1000
                                 }).then(() => {
                                     entity.update({ hidden: hide });
@@ -6708,28 +6708,47 @@ export class MonksActiveTiles {
                 if (!entity)
                     return;
 
-                let object = entity.object.icon || entity.object.tile || entity.object;
+                let icon = entity.object.icon || entity.object.tile || entity.object;
                 let animationName = `MonksActiveTiles.${entity.documentName}.${entity.id}.animateShowHide`;
 
                 await CanvasAnimation.terminateAnimation(animationName);
 
                 const attributes = [
-                    { parent: object, attribute: 'alpha', to: (data.hide ? 0 : 1) }
+                    { parent: icon, attribute: 'alpha', to: (data.hide ? 0 : entity.data.alpha), object: entity.object }
                 ];
+
+                if (entity instanceof TokenDocument)
+                    attributes.push({ parent: entity.object.hud, attribute: 'alpha', to: (data.hide ? 0 : 1) });
 
                 let time = data.time - new Date().getTime();
                 if (time < 0)
                     return;
 
                 if (!data.hide) {
-                    object.alpha = 0;
+                    icon.alpha = 0;
+                    entity.object.hud.alpha = 0;
+                    icon.visible = true;
                     entity.object.visible = true;
                 }
 
                 CanvasAnimation.animateLinear(attributes, {
                     name: animationName,
-                    context: object,
-                    duration: time
+                    context: icon,
+                    duration: time,
+                    ontick: (dt, attributes) => {
+                        if (attributes[0].to == 1) {
+                            if (!attributes[0].object.visible)
+                                attributes[0].object.visible = true;
+                            if (attributes[0].object.alpha != attributes[0].done)
+                                attributes[0].object.alpha = attributes[0].done;
+                        }
+
+                        //log("Token fade", attributes[0].parent.alpha, attributes[0].object.alpha, attributes[0].parent.visible, attributes[0].object.visible, attributes[0].remaining, attributes[0].done, attributes[0].delta, attributes[0].d);
+                    }
+                }).then(() => {
+                    if (data.hide)
+                        entity.object.visible = false;
+                    entity.object.hud.alpha = 1;
                 });
             } break;
         }
@@ -6963,7 +6982,9 @@ export class MonksActiveTiles {
                 }
             } else if (usealpha) {
                 //check the spot using alpha
-                //if enter
+
+                // walk from the intersection point to the (token end for on enter, or token start for on exit
+                // if the point is in the alpha map, then change the intersection point to this point.
             }
 
             return intersect;
@@ -7130,7 +7151,6 @@ export class MonksActiveTiles {
                     let midTile = { x: this.data.x + (this.data.width / 2), y: this.data.y + (this.data.height / 2) };
                     const tokenRay = new Ray({ x: midTile.x, y: midTile.y }, { x: pt.x, y: pt.y });
 
-                    let direction = {};
                     direction.y = ((tokenRay.angle == 0 || tokenRay.angle == Math.PI) ? "" : (tokenRay.angle < 0 ? "top" : "bottom"));
                     direction.x = ((Math.abs(tokenRay.angle) == (Math.PI / 2)) ? "" : (Math.abs(tokenRay.angle) < (Math.PI / 2) ? "right" : "left"));
                     value.direction = direction;
