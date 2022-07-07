@@ -26,11 +26,15 @@ export const WithActiveTileConfig = (TileConfig) => {
         }
 
         static get defaultOptions() {
-            return MonksActiveTiles.mergeArray(super.defaultOptions, {
+            let data = MonksActiveTiles.mergeArray(super.defaultOptions, {
                 classes: ["monks-active-tiles"],
                 scrollY: ["ol.item-list"],
-                dragDrop: [{ dragSelector: ".item", dropSelector: ".item-list" }]
+                dragDrop: [{ dragSelector: ".item", dropSelector: ".item-list" }, { dragSelector: ".item", dropSelector: ".file-list" }],
+                tabs: [{ navSelector: '.tabs[data-group="triggers"]', contentSelector: '.tab[data-tab="triggers"]', initial: "trigger-setup" }]
             });
+            data.tabs[0].navSelector = ".sheet-tabs:not(.trigger-tabs)";
+
+            return data;
         }
 
         getData(options) {
@@ -42,6 +46,10 @@ export const WithActiveTileConfig = (TileConfig) => {
 
         get actions() {
             return this.object.getFlag("monks-active-tiles", "actions") || [];
+        }
+
+        get files() {
+            return this.object.getFlag("monks-active-tiles", "files") || [];
         }
 
         async _renderInner(data) {
@@ -78,7 +86,13 @@ export const WithActiveTileConfig = (TileConfig) => {
                     id: k,
                     name: filename
                 };
-            })
+            });
+
+            let index = this.object.getFlag('monks-active-tiles', 'fileindex') || 0;
+            tiledata.files = (this.object.getFlag('monks-active-tiles', 'files') || []).map((f, idx) => {
+                f.selected = (index == idx);
+                return f;
+            });
 
             let renderhtml = await renderTemplate(template, tiledata);
             tab.append(renderhtml);
@@ -86,9 +100,15 @@ export const WithActiveTileConfig = (TileConfig) => {
             return html;
         }
 
+        _onChangeTab(event, tabs, active) {
+            if (active == "triggers") {
+                this._tabs[1].activate(this._tabs[1].active);
+            }
+            super._onChangeTab.bind(this, event, tabs, active)();
+        }
+
         _onDragStart(event) {
             let li = event.currentTarget.closest(".item");
-            const isFolder = li.classList.contains("folder");
             const dragData = { type: this.constructor.documentName, id: li.dataset.id };
             event.dataTransfer.setData("text/plain", JSON.stringify(dragData));
             this._dragType = dragData.type;
@@ -111,25 +131,24 @@ export const WithActiveTileConfig = (TileConfig) => {
             }
 
             // Identify the drop target
-            const selector = this._dragDrop[0].dropSelector;
             const target = event.target.closest(".item") || null;
 
             // Call the drop handler
             if (target && target.dataset.id) {
-                let actions = duplicate(this.actions);
+                let items = duplicate(this[target.dataset.collection]);
 
                 if (data.id === target.dataset.id) return; // Don't drop on yourself
 
-                let from = actions.findIndex(a => a.id == data.id);
-                let to = actions.findIndex(a => a.id == target.dataset.id);
+                let from = items.findIndex(a => a.id == data.id);
+                let to = items.findIndex(a => a.id == target.dataset.id);
                 log('from', from, 'to', to);
-                actions.splice(to, 0, actions.splice(from, 1)[0]);
+                items.splice(to, 0, items.splice(from, 1)[0]);
 
-                this.object.data.flags["monks-active-tiles"].actions = actions;
+                this.object.data.flags["monks-active-tiles"][target.dataset.collection] = items;
                 if (from < to)
-                    $('.action-items .item[data-id="' + data.id + '"]', this.element).insertAfter(target);
+                    $('.item[data-id="' + data.id + '"]', this.element).insertAfter(target);
                 else
-                    $('.action-items .item[data-id="' + data.id + '"]', this.element).insertBefore(target);
+                    $('.item[data-id="' + data.id + '"]', this.element).insertBefore(target);
             }
         }
 
@@ -157,6 +176,7 @@ export const WithActiveTileConfig = (TileConfig) => {
         _getSubmitData(updateData = {}) {
             let data = super._getSubmitData(updateData);
             data["flags.monks-active-tiles.actions"] = (this.object.getFlag("monks-active-tiles", "actions") || []);
+            data["flags.monks-active-tiles.files"] = (this.object.getFlag("monks-active-tiles", "files") || []);
 
             return data;
         }
@@ -164,7 +184,19 @@ export const WithActiveTileConfig = (TileConfig) => {
         async _updateObject(event, formData) {
             await super._updateObject(event, formData);
 
+            this.object._images = await MonksActiveTiles.getTileFiles(this.object.data.flags["monks-active-tiles"].files || []);
+            if (this.object._images.length) {
+                let fileindex = Math.clamped(this.object.data.flags["monks-active-tiles"].fileindex, 0, this.object._images.length - 1);
+                if (this.object._images[fileindex] != this.object.data.img) {
+                    await this.object.update({ img: this.object._images[fileindex] });
+                }
+                if (fileindex != this.object.data.flags["monks-active-tiles"].fileindex) {
+                    await this.object.setFlag("monks-active-tiles", "fileindex", fileindex);
+                }
+            }
+
             //if any of the actions are to cycle the image, then make sure the image lines up with the img at
+            /*
             for (let action of (this.object.getFlag('monks-active-tiles', 'actions') || [])) {
                 if (action.action == 'imagecycle') {
                     let actfiles = (action.data?.files || []);
@@ -181,7 +213,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                         }
                     }
                 }
-            }
+            }*/
         }
 
         activateListeners(html) {
@@ -209,6 +241,74 @@ export const WithActiveTileConfig = (TileConfig) => {
             });
 
             //$('div[data-tab="triggers"] .item-list li.item', html).hover(this._onActionHoverIn.bind(this), this._onActionHoverOut.bind(this));
+            $('.browse-files', html).on("click", this.browseFiles.bind(this));
+            $('button[data-target]', html).on("click", this._activateFilePicker.bind(this));
+            $('.filepath', html).on("change", this.addToFileList.bind(this));
+            $('.file-list .edit-file', html).on("click", this.browseFiles.bind(this));
+            $('.file-list .delete-file', html).on("click", this.removeFile.bind(this));
+            $('.file-list .item', html).on("dblclick", this.selectFile.bind(this));
+        }
+
+        browseFiles(event) {
+            event.preventDefault();
+            $(event.currentTarget).next().click();
+        }
+
+        _activateFilePicker(event) {
+            event.preventDefault();
+            const options = this._getFilePickerOptions(event);
+            options.wildcard = true;
+            options.fileid = event.currentTarget.closest('.item')?.dataset?.id;
+            const fp = new FilePicker(options);
+            this.filepickers.push(fp);
+            return fp.browse();
+        }
+
+        addToFileList(event) {
+            let filename = $(event.currentTarget).val();
+            if (filename != '') {
+                let id = $(event.currentTarget).parent().get(0)?.dataset.id;
+                if(id) {
+                    let file = this.files.find(f => f.id == id);
+                    file.name = filename;
+                    $(`.item[data-id="${id}"] .image-name`, this.element).html(filename);
+                } else {
+                    id = makeid();
+                    $('.file-list', this.element).append($('<li>').attr('data-id', id)
+                        .addClass('flexrow')
+                        .append($('<input>').addClass("filepath").attr({ 'type': 'hidden', 'name': 'files.name' }).val(filename))
+                        .append($('<span>').addClass('image-name').html(filename))
+                        .append($('<a>').addClass('edit-file').css({ 'flex': '0 0 28px', height: '28px', width: '28px' }).html('<i class="fas fa-edit fa-sm"></i>').click(this._activateFilePicker.bind(this)))
+                        .append($('<a>').addClass('delete-file').css({ 'flex': '0 0 28px', height: '28px', width: '28px' }).html('<i class="fas fa-trash fa-sm"></i>').click(this.removeFile.bind(this)))
+                        .append($('<button>').attr('type', 'button').attr("data-target", `files.${id}.name`).hide()));
+                    $(event.currentTarget).val('');
+                    this.setPosition({ height: 'auto' });
+                    this.files.push({id: id, name: filename, selected: false});
+                }
+            }
+        }
+
+        selectFile(event) {
+            let id = event.currentTarget.closest('.file-row').dataset["id"];
+            let idx = this.files.findIndex(f => f.id == id);
+
+            $(`input[name="flags.monks-active-tiles.fileindex"]`, this.element).val(idx);
+
+            mergeObject(this.object.data.flags, {
+                "monks-active-tiles": { fileindex: idx }
+            });
+        }
+
+        removeFile(event) {
+            let id = event.currentTarget.closest('.file-row').dataset["id"];
+            let files = duplicate(this.object.data.flags["monks-active-tiles"]?.files || []);
+            files.findSplice(i => i.id == id);
+            mergeObject(this.object.data.flags, {
+                "monks-active-tiles": { files: files }
+            });
+
+            $(`.file-list li[data-id="${id}"]`, this.element).remove();
+            this.setPosition({ height: 'auto' });
         }
 
         _createAction(event) {

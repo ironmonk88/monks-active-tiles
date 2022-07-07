@@ -108,4 +108,11 @@ export const registerSettings = function () {
 		default: false,
 		type: Boolean
 	});
+
+	game.settings.register(modulename, "fix-imagecycle", {
+		scope: "world",
+		config: false,
+		default: false,
+		type: Boolean
+	});
 }

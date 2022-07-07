@@ -57,6 +57,8 @@ export class ActionConfig extends FormApplication {
                 error(`${group} is not a registered Tile Group`);
                 continue;
             }
+            if (v.visible === false)
+                continue;
             groups[group].push({ id: k, name: i18n(v.name)});
         }
 
@@ -85,7 +87,7 @@ export class ActionConfig extends FormApplication {
         var that = this;
         super.activateListeners(html);
 
-        this.changeAction.call(this);
+        this.changeAction.call(this, this.object.action);
         
         $('select[name="action"]', html).change(function () {
             //clear out these before saving the new information so we don't get data bleed through
@@ -331,7 +333,8 @@ export class ActionConfig extends FormApplication {
 
     static async addTag(event) {
         let data = expandObject(this._getSubmitData());
-        let entity = JSON.parse(data?.data?.entity || "{}");
+        let prop = event.currentTarget.dataset["target"]
+        let entity = JSON.parse(getProperty(data, prop) || "{}");
         entity["tag-name"] = entity?.id?.substring(7);
         entity.match = entity.match || "all";
         entity.scene = entity.scene || "_active";
@@ -597,10 +600,10 @@ export class ActionConfig extends FormApplication {
         this.setPosition({ height: 'auto' });
     }
 
-    async changeAction() {
+    async changeAction(command) {
         let that = this;
 
-        let command = $('select[name="action"]', this.element).val();
+        command = command || $('select[name="action"]', this.element).val();
         let action = MonksActiveTiles.triggerActions[command];
 
         let loadingid = this.loadingid = makeid();

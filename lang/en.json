@@ -1,6 +1,7 @@
 {
   "MonksActiveTiles.Triggers": "Triggers",
-  "MonksActiveTiles.TriggersHint": "Actions to take when a player interacts with this tile",
+  "MonksActiveTiles.TriggersHint": "Setup for when a player interacts with this tile",
+  "MonksActiveTiles.TriggersImages": "List of additional images for this tile",
   "MonksActiveTiles.TriggerAction": "Trigger Action",
 
   "MonksActiveTiles.ThisTile": "This Tile",
@@ -43,6 +44,7 @@
   "MonksActiveTiles.UseTransparency": "Exclude transparent area when triggering",
   "MonksActiveTiles.Sounds": "Sounds Playing",
   "MonksActiveTiles.AllowWhenPaused": "Allow When Paused",
+  "MonksActiveTiles.ShownImage": "Shown Image",
 
   "MonksActiveTiles.actiontext.pause": "<action>{pause} game</action>",
   "MonksActiveTiles.actiontext.delay": "<action>Wait</action> for <detail>\"{delay} seconds\"</detail>",
@@ -96,6 +98,7 @@
   "MonksActiveTiles.action.scrollingtext": "Scrolling Text",
   "MonksActiveTiles.action.preload": "Preload Scene",
   "MonksActiveTiles.action.removeitem": "Remove Item",
+  "MonksActiveTiles.action.tileimage": "Switch Tile Image",
 
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
   "MonksActiveTiles.filter.exists": "Check entity count",
@@ -105,8 +108,8 @@
   "MonksActiveTiles.filter.attribute": "Filter by attributes",
   "MonksActiveTiles.filter.inventory": "Filter by items in inventory",
 
-  "MonksActiveTiles.logic.anchor": "Anchor",
-  "MonksActiveTiles.logic.goto": "Go to Anchor",
+  "MonksActiveTiles.logic.anchor": "Landing",
+  "MonksActiveTiles.logic.goto": "Jump to Landing",
   "MonksActiveTiles.logic.stop": "Stop remaining actions",
   "MonksActiveTiles.logic.playertype": "Redirect based on player type",
 
@@ -204,6 +207,9 @@
   "MonksActiveTiles.ctrl.gmredirect": "GM Redirect",
   "MonksActiveTiles.ctrl.playerredirect": "Player Redirect",
   "MonksActiveTiles.ctrl.fade": "Fade",
+  "MonksActiveTiles.ctrl.transition": "Transition",
+  "MonksActiveTiles.ctrl.returndata": "Use returned data",
+  "MonksActiveTiles.ctrl.select": "Change To",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
@@ -224,6 +230,7 @@
   "MonksActiveTiles.mode.combatend": "On Combat End",
   "MonksActiveTiles.mode.canvasready": "On Scene Change",
   "MonksActiveTiles.mode.elevation": "On Elevation Change",
+  "MonksActiveTiles.mode.create": "On Token Create",
 
   "MonksActiveTiles.restrict.all": "Allow All Tokens",
   "MonksActiveTiles.restrict.player": "Only Player Tokens",
@@ -306,6 +313,20 @@
 
   "MonksActiveTiles.target.target": "Target",
   "MonksActiveTiles.target.clear": "Clear",
+
+  "MonksActiveTiles.transition.none": "None",
+  "MonksActiveTiles.transition.fade": "Fade",
+  "MonksActiveTiles.transition.slide-left": "Slide Left",
+  "MonksActiveTiles.transition.slide-up": "Slide Up",
+  "MonksActiveTiles.transition.slide-right": "Slide Right",
+  "MonksActiveTiles.transition.slide-down": "Slide Down",
+  "MonksActiveTiles.transition.slide-random": "Slide Random",
+  "MonksActiveTiles.transition.bump-left": "Bump Left",
+  "MonksActiveTiles.transition.bump-up": "Bump Up",
+  "MonksActiveTiles.transition.bump-right": "Bump Right",
+  "MonksActiveTiles.transition.bump-down": "Bump Down",
+  "MonksActiveTiles.transition.bump-random": "Bump Random",
+  "MonksActiveTiles.transition.slotmachine": "Slot Machine",
 
   "MonksActiveTiles.distribute.everyone": "Characters gets a copy of all items",
   "MonksActiveTiles.distribute.single": "Characters get a single item",

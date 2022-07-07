@@ -246,7 +246,8 @@
     margin: 0px;
 }
 
-#trigger-action .files-list .items-header .item-controls {
+#trigger-action .files-list .items-header .item-controls,
+.monks-active-tiles .files-list .items-header .item-controls {
     justify-content: flex-end;
     color: #7a7971;
     font-size: 12px;
@@ -256,22 +257,33 @@
     padding-left: 0px;
     margin-top: 0px;
     color: #191813;
-    max-height:100px;
-    overflow-y:auto;
-    max-width:400px;
+    max-height: 100px;
+    overflow-y: auto;
+    max-width: 400px;
 }
 
-#trigger-action .file-list li {
+.monks-active-tiles .file-list {
+    padding-left: 0px;
+    margin-top: 0px;
+    color: #191813;
+    overflow-y: auto;
+    max-width: 400px;
+}
+
+#trigger-action .file-list li,
+.monks-active-tiles.sheet .file-list li.item {
     border-bottom: 1px solid #c9c7b8;
     line-height: 25px;
-    padding-left: 4px;
+    padding: 0px 4px;
 }
 
-#trigger-action .file-list li a {
+#trigger-action .file-list li a,
+.monks-active-tiles .file-list li a {
     color: #7a7971;
     flex: 0 0 28px;
     height: 28px;
     width: 28px;
+    text-align: center;
 }
 
 #trigger-action .items-list .items-header {
@@ -298,7 +310,8 @@
     font-size: 16px;
 }
 
-#trigger-action .file-list .image-name {
+#trigger-action .file-list .image-name,
+.monks-active-tiles .file-list .image-name {
     overflow: hidden;
     text-overflow: ellipsis;
 }

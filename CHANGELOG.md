@@ -1,3 +1,31 @@
+## Version 1.0.85
+
+Fixed issue with editing the tag used for locations
+
+Changed the name Anchor to Landing and Got to Anchor to Jump to Landing to hopefully make a little more sense.
+
+Added the option to use a dire roll for the amount of time delayed.
+
+Changed how the create token action finds a location.  You can now have it randomly add to multiple locations, rather than randomly pick one location to add all tokens to.
+
+Changed how the create token action find a location within a Tile.  Instead of starting at the center and workign outwards, it will randomly pick a location somewhere within the Tile.
+
+Added the door change information to any action that allows handlebars and to the macro arguments.
+
+Fixed the compendium labelling for macro actions
+
+Added the option to add or not add the returned data from a triggered Tile to the current information.
+
+Added transitions to the Image Cycle action.
+
+Added compendium icon to entity names that come from a compendium.
+
+Fixed issue with items returned from a RollTable
+
+Added the option to trigger when a locked door is checked.
+
+Fixed issues with auto anchors based on direction a token enters or exits.
+
 ## Version 1.0.84
 
 Fixed issue with show/hide fade.
