@@ -26,6 +26,12 @@ Added the option to trigger when a locked door is checked.
 
 Fixed issues with auto anchors based on direction a token enters or exits.
 
+Updated the trigger interface.  So instead of having all the setup and actions on the same page, I've split them into three tabs.  The third one os for a list of images available to change this tile into.
+
+BREAKING CHANGE:  Images have been pulled out of the Image Cycle action, and will be added to the images for the Tile itself.  This will give greater flexibility into changing the Tiles images, but will deprecate the Image Cycle action, and the Set Image Cycle action.  They're changing to Switch Tile Image.  Active Tiles should convert your Tiles the first time it loads, but will leave the Image Cycle action, in case you wanted to retain the iformation.  The action will not produce any effect though, and is safe to leave in the list.  Or can be removed in order to clean up the information.
+
+ANY TILES THAT USE THESE ACTIONS NEED TO BE LOOKED INTO.	
+
 ## Version 1.0.84
 
 Fixed issue with show/hide fade.
