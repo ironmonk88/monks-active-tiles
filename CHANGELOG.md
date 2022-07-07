@@ -1,3 +1,11 @@
+## Version 1.0.87
+
+Fixing issue with Levels compatibility
+
+Fixing issues with editing newly added images
+
+Fixed issues with finding a random location within a Tile.
+
 ## Version 1.0.85
 
 Fixed issue with editing the tag used for locations

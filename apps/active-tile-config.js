@@ -56,6 +56,7 @@ export const WithActiveTileConfig = (TileConfig) => {
 
         async _renderInner(data) {
             let html = await super._renderInner(data);
+
             $('.sheet-tabs', html).append($('<a>').addClass('item').attr('data-tab', "triggers").html(`<i class="fas fa-running"></i> ${i18n("MonksActiveTiles.Triggers")}`));
             let tab = $('<div>').addClass('tab').attr('data-tab', "triggers").css({"position": "relative"}).insertAfter($('div[data-tab="animation"]', html));
 
@@ -279,13 +280,13 @@ export const WithActiveTileConfig = (TileConfig) => {
                     $(`.item[data-id="${id}"] .image-name`, this.element).html(filename);
                 } else {
                     id = makeid();
-                    $('.file-list', this.element).append($('<li>').attr('data-id', id)
-                        .addClass('flexrow')
-                        .append($('<input>').addClass("filepath").attr({ 'type': 'hidden', 'name': 'files.name' }).val(filename))
-                        .append($('<span>').addClass('image-name').html(filename))
-                        .append($('<a>').addClass('edit-file').css({ 'flex': '0 0 28px', height: '28px', width: '28px' }).html('<i class="fas fa-edit fa-sm"></i>').click(this._activateFilePicker.bind(this)))
-                        .append($('<a>').addClass('delete-file').css({ 'flex': '0 0 28px', height: '28px', width: '28px' }).html('<i class="fas fa-trash fa-sm"></i>').click(this.removeFile.bind(this)))
-                        .append($('<button>').attr('type', 'button').attr("data-target", `files.${id}.name`).hide()));
+                    $('.file-list', this.element).append($('<li>').attr('data-id', id).attr('draggable', 'true').attr('data-collection', 'files')
+                        .addClass('flexrow file-row item')
+                        .append($('<input>').addClass("filepath").attr({ 'type': 'hidden', 'name': `files.${id}.name` }).val(filename).change(this.addToFileList.bind(this)))
+                        .append($('<div>').attr('title', filename).addClass('image-name').html(filename))
+                        .append($('<a>').addClass('edit-file').html('<i class="fas fa-edit fa-sm"></i>').click(this.browseFiles.bind(this)))
+                        .append($('<button>').attr('type', 'button').attr("data-target", `files.${id}.name`).hide().click(this._activateFilePicker.bind(this)))
+                        .append($('<a>').addClass('delete-file').html('<i class="fas fa-trash fa-sm"></i>').click(this.removeFile.bind(this))));
                     $(event.currentTarget).val('');
                     this.setPosition({ height: 'auto' });
                     this.files.push({id: id, name: filename, selected: false});

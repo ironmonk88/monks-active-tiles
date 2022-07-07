@@ -4,7 +4,7 @@
     <a class="item" data-tab="trigger-images"><i class="fas fa-image"></i> Images</a>
 </nav>
 
-<div class="tab" data-tab="trigger-setup">
+<div class="matt-tab" data-tab="trigger-setup">
     <p class="notes">{{ localize "MonksActiveTiles.TriggersHint" }}</p>
 
     <div class="form-group">
@@ -93,7 +93,7 @@
     </div>
 </div>
 
-<div class="tab" data-tab="trigger-actions">
+<div class="matt-tab" data-tab="trigger-actions">
     {{#if sounds}}
     <ol class="items-list sounds-list">
         <li class="items-header flexrow">
@@ -145,7 +145,7 @@
     </ol>
 </div>
 
-<div class="tab" data-tab="trigger-images">
+<div class="matt-tab" data-tab="trigger-images">
     <p class="notes">{{ localize "MonksActiveTiles.TriggersImages" }}</p>
 
     <div class="form-group">
@@ -158,9 +158,7 @@
     <ol class="files-list items-list">
         <li class="items-header flexrow">
             <div class="item-controls" style="text-align: right;flex: 1;">
-                <a title="Browse Files" class="browse-files" style="margin-right: 12px;">
-                    <i class="fas fa-plus"></i> Add
-                </a>
+                <a title="Browse Files" class="browse-files" style="margin-right: 12px;"><i class="fas fa-plus"></i> Add</a>
                 <button type="button" data-target="_file-list" style="display: none;"></button>
             </div>
             <input type="hidden" class="filepath" name="_file-list">
@@ -169,7 +167,7 @@
             {{#each files}}
             <li data-id="{{this.id}}" data-collection="files" class="flexrow file-row item" draggable="true">
                 <input type="hidden" class="filepath" name="files.{{this.id}}.name" value="{{this.name}}">
-                <span class="image-name">{{this.name}}</span>
+                <div class="image-name" title="{{this.name}}">{{this.name}}</div>
                 <a class="edit-file"><i class="fas fa-edit fa-sm"></i></a>
                 <button type="button" data-target="files.{{this.id}}.name" style="display: none;"></button>
                 <a class="delete-file"><i class="fas fa-trash fa-sm"></i></a>

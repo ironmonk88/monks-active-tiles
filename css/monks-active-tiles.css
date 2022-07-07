@@ -267,7 +267,6 @@
     margin-top: 0px;
     color: #191813;
     overflow-y: auto;
-    max-width: 400px;
 }
 
 #trigger-action .file-list li,
@@ -314,6 +313,7 @@
 .monks-active-tiles .file-list .image-name {
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 #trigger-action .select-field-group {
@@ -332,4 +332,17 @@
     color: #d6d6d6;
     box-shadow: 0px 0px 10px inset black;
     background: #352516;
+}
+
+.matt-tab[data-tab] {
+    display: none;
+}
+
+.matt-tab[data-tab].active {
+    display: block;
+}
+
+.matt-tab[data-tab].active.flexrow,
+.matt-tab[data-tab].active.flexcol {
+    display: flex;
 }

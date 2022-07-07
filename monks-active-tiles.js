@@ -773,7 +773,7 @@ export class MonksActiveTiles {
                     name: "MonksActiveTiles.ctrl.select-coordinates",
                     type: "select",
                     subtype: "either",
-                    options: { showTagger: true, showPrevious: true },
+                    options: { showTagger: true, showPrevious: true, showTile: true },
                     restrict: (entity) => { return (entity instanceof Tile && this.scene.id == entity.parent.id) || this.scene.id == entity.id; },
                     required: true
                 },
@@ -912,6 +912,11 @@ export class MonksActiveTiles {
                             }
                         } else if (entity instanceof Actor) {
                             let dest = dests[Math.floor(Math.random() * dests.length)];
+                            if (dest.dest instanceof TileDocument) {
+                                // Find a random location within this Tile
+                                dest.x = dest.dest.data.x + Math.floor((Math.random() * Math.abs(dest.dest.data.width)));
+                                dest.y = dest.dest.data.y + Math.floor((Math.random() * Math.abs(dest.dest.data.height)));
+                            }
                             let data = {
                                 x: dest.x,
                                 y: dest.y,
