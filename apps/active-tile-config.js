@@ -41,6 +41,8 @@ export const WithActiveTileConfig = (TileConfig) => {
             let data = super.getData(options);
             data.usingAlpha = ["click", "dblclick", "rightclick"].includes(data.data.flags["monks-active-tiles"]?.trigger);
             data.preventPaused = setting("prevent-when-paused");
+            let fileindex = this.object.getFlag("monks-active-tiles", "fileindex");
+            data.index = (fileindex != undefined ? fileindex + 1 : '');
             return data;
         }
 
@@ -177,6 +179,9 @@ export const WithActiveTileConfig = (TileConfig) => {
             let data = super._getSubmitData(updateData);
             data["flags.monks-active-tiles.actions"] = (this.object.getFlag("monks-active-tiles", "actions") || []);
             data["flags.monks-active-tiles.files"] = (this.object.getFlag("monks-active-tiles", "files") || []);
+
+            if (data["flags.monks-active-tiles.fileindex"] != '')
+                data["flags.monks-active-tiles.fileindex"] = data["flags.monks-active-tiles.fileindex"] - 1;
 
             return data;
         }
