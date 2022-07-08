@@ -44,6 +44,31 @@ export let oldObjectClass = () => {
     return MonksActiveTiles._oldObjectClass;
 };
 
+class UpdateBatch {
+    constructor() {
+        this.docParentPackUpdatesMap = new Map();
+    }
+
+    add(entity, update) {
+        const parentPackUpdatesMap = this.docParentPackUpdatesMap.get(entity.constructor) ?? new Map();
+        const packUpdatesMap = parentPackUpdatesMap.get(entity.parent) ?? new Map();
+        const updates = (packUpdatesMap.get(entity.pack) ?? []).concat({_id: entity.id, ...update});
+        packUpdatesMap.set(entity.pack, updates);
+        parentPackUpdatesMap.set(entity.parent, packUpdatesMap);
+        this.docParentPackUpdatesMap.set(entity.constructor, parentPackUpdatesMap);
+    }
+
+    async executeUpdates() {
+        for (let [doc, parentPackUpdatesMap] of this.docParentPackUpdatesMap) {
+            for (let [parent, packUpdatesMap] of parentPackUpdatesMap) {
+                for (let [pack, updates] of packUpdatesMap) {
+                    doc.updateDocuments(updates, {parent, pack});
+                }
+            }
+        }
+        this.docParentPackUpdatesMap.clear();
+    }
+}
 export class MonksActiveTiles {
     static _oldSheetClass;
     //static _oldObjectClass;
@@ -696,6 +721,7 @@ export class MonksActiveTiles {
 
                 if (entities && entities.length > 0) {
                     //set or toggle visible
+                    const updateBatch = new UpdateBatch();
                     let result = { entities: entities };
                     for (let entity of entities) {
                         if (entity) {
@@ -722,12 +748,12 @@ export class MonksActiveTiles {
 
                                 MonksActiveTiles.emit("showhide", { entityid: entity.uuid, time: new Date().getTime() + (action.data?.fade * 1000), hide: hide });
                             } else
-                                await entity.update({ hidden: hide });
+                                updateBatch.add(entity, { hidden: hide });
 
                             MonksActiveTiles.addToResult(entity, result);
                         }
                     }
-                   
+                    await updateBatch.executeUpdates();
                     return result;
                 }
             },
@@ -1109,14 +1135,16 @@ export class MonksActiveTiles {
                 if (entities.length == 0)
                     return;
 
+                const updateBatch = new UpdateBatch();
                 for (let entity of entities) {
                     if (entity) {
                         if (entity instanceof AmbientLightDocument || entity instanceof AmbientSoundDocument || entity._object?.terrain != undefined)
-                            await entity.update({ hidden: (action.data.activate == 'toggle' ? !entity.data.hidden : (action.data.activate == 'previous' ? !value.activate : action.data.activate != 'activate')) });
+                            updateBatch.add(entity, { hidden: (action.data.activate == 'toggle' ? !entity.data.hidden : (action.data.activate == 'previous' ? !value.activate : action.data.activate != 'activate')) });
                         else if (entity instanceof TileDocument)
                             await entity.setFlag('monks-active-tiles', 'active', (action.data.activate == 'toggle' ? !entity.getFlag('monks-active-tiles', 'active') : (action.data.activate == 'previous' ? !value.activate : action.data.activate == 'activate')));
                     }
                 }
+                await updateBatch.executeUpdates();
             },
             content: async (trigger, action) => {
                 let entityName = await MonksActiveTiles.entityName(action.data?.entity, 'tiles');
@@ -1189,6 +1217,7 @@ export class MonksActiveTiles {
                 let entities = await MonksActiveTiles.getEntities(args);
 
                 if (entities && entities.length > 0) {
+                    const updateBatch = new UpdateBatch();
                     for (let entity of entities) {
                         if (entity) {
                             let attrs = action.data.attribute.split(";");
@@ -1303,10 +1332,11 @@ export class MonksActiveTiles {
                                 }
                                 update[attr] = val;
                             }
-                            base.update(update); 
+                            updateBatch.add(base, update); 
                         }
                     }
 
+                    await updateBatch.executeUpdates();
                     let result = { entities: entities };
                     if (entities[0] instanceof TokenDocument)
                         result.tokens = entities;
@@ -1843,13 +1873,14 @@ export class MonksActiveTiles {
                 const { tile, tokens, action, userid } = args;
                 //play the sound
                 if (action.data.audiotype == 'all') {
+                    const updateBatch = new UpdateBatch();
                     game.playlists.forEach(async (p) => {
                         p.sounds.forEach(async (s) => {
                             if (s.playing)
-                                await s.update({ playing: false, pausedTime: s.sound.currentTime });
+                                updateBatch.add(s, { playing: false, pausedTime: s.sound.currentTime });
                         });
                     });
-
+                    await updateBatch.executeUpdates();
                     MonksActiveTiles.emit('stopsound', {
                         type: action.data.audiotype,
                     });
@@ -1943,6 +1974,7 @@ export class MonksActiveTiles {
                 //Find the door in question, set the state to whatever value
                 if (action.data.entity.id) {
                     let walls = await MonksActiveTiles.getEntities(args, 'walls');
+                    const updateBatch = new UpdateBatch();
                     for (let wall of walls) {
                         if (wall && wall.data.door != 0) {
                             let updates = {}
@@ -1958,9 +1990,10 @@ export class MonksActiveTiles {
                                     type = (wall.data.door == CONST.WALL_DOOR_TYPES.DOOR ? CONST.WALL_DOOR_TYPES.SECRET : CONST.WALL_DOOR_TYPES.DOOR);
                                 updates.door = type;
                             }
-                            await wall.update(updates);
+                            updateBatch.add(wall, updates);
                         }
                     }
+                    updateBatch.executeUpdates();
                 }
             },
             content: async (trigger, action) => {
@@ -3462,8 +3495,8 @@ export class MonksActiveTiles {
             fn: async (args = {}) => {
                 const { tile, tokens, action, userid, value, method, change } = args;
                 let entities = await MonksActiveTiles.getEntities(args);
-
                 if (entities && entities.length > 0) {
+                    const updateBatch = new UpdateBatch();
                     for (let entity of entities) {
                         if (!(entity instanceof TokenDocument))
                             continue;
@@ -3507,9 +3540,10 @@ export class MonksActiveTiles {
                             val = parseFloat(val);
 
                         update.elevation = val;
-                        await entity.update(update);
+                        updateBatch.add(entity, update);
                     }
 
+                    await updateBatch.executeUpdates();
                     return { tokens: entities, entities: entities };
                 }
             },
