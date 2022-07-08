@@ -197,7 +197,7 @@
   "MonksActiveTiles.ctrl.slotmachine": "Slot Machine",
   "MonksActiveTiles.ctrl.spins": "Spins",
   "MonksActiveTiles.ctrl.rate": "Spin Rate",
-  "MonksActiveTiles.ctrl.duration": "Duration",
+  "MonksActiveTiles.ctrl.duration": "Duration (sec)",
   "MonksActiveTiles.ctrl.anchor": "Anchor",
   "MonksActiveTiles.ctrl.direction": "Direction",
   "MonksActiveTiles.ctrl.doesnthave": "Doesn't Have",
@@ -210,6 +210,7 @@
   "MonksActiveTiles.ctrl.transition": "Transition",
   "MonksActiveTiles.ctrl.returndata": "Use returned data",
   "MonksActiveTiles.ctrl.select": "Change To",
+  "MonksActiveTiles.ctrl.loops": "Loops",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",

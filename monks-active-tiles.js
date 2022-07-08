@@ -3716,7 +3716,7 @@ export class MonksActiveTiles {
             },
             content: async (trigger, action) => {
                 let entityName = await MonksActiveTiles.entityName(action.data?.entity, 'tiles');
-                return `<span style="color: darkred;">DEPRECATED</span><span class="action-style">${i18n(trigger.name)}</span> has been deprecated, use Switch Tile Image`; //`<span class="action-style">${i18n(trigger.name)}</span> for <span class="entity-style">${entityName}</span>${(action.data?.random ? ' <i class="fas fa-random" title="Pick a random image"></i>' : "")} ${action.data?.transition != "none" ? `<span class="detail-style">"${i18n("MonksActiveTiles.transition." + action.data?.transition)}"</span>` : ''}`;
+                return `<span style="color: darkred;">DEPRECATED</span> <span class="action-style">${i18n(trigger.name)}</span> has been deprecated, use Switch Tile Image`; //`<span class="action-style">${i18n(trigger.name)}</span> for <span class="entity-style">${entityName}</span>${(action.data?.random ? ' <i class="fas fa-random" title="Pick a random image"></i>' : "")} ${action.data?.transition != "none" ? `<span class="detail-style">"${i18n("MonksActiveTiles.transition." + action.data?.transition)}"</span>` : ''}`;
             }
         },
         'imagecycleset': {
@@ -3847,7 +3847,7 @@ export class MonksActiveTiles {
             },
             content: async (trigger, action) => {
                 let entityName = await MonksActiveTiles.entityName(action.data?.entity, 'tiles');
-                return `<span style="color: darkred;">DEPRECATED</span><span class="action-style">${i18n(trigger.name)}</span> has been deprecated, use Switch Tile Image`; //`<span class="action-style">${i18n(trigger.name)}</span> to <span class="details-style">"${action.data.imgat}"</span> for <span class="entity-style">${entityName}</span>`;
+                return `<span style="color: darkred;">DEPRECATED</span> <span class="action-style">${i18n(trigger.name)}</span> has been deprecated, use Switch Tile Image`; //`<span class="action-style">${i18n(trigger.name)}</span> to <span class="details-style">"${action.data.imgat}"</span> for <span class="entity-style">${entityName}</span>`;
             }
         },
         'tileimage': {
@@ -3889,6 +3889,14 @@ export class MonksActiveTiles {
                     step: "0.05",
                     conditional: (app) => { return $('select[name="data.transition"]', app.element).val() != "none"; }
                 },
+                {
+                    id: "loop",
+                    name: "MonksActiveTiles.ctrl.loops",
+                    type: "number",
+                    defvalue: 1,
+                    step: 1,
+                    conditional: (app) => { return $('select[name="data.transition"]', app.element).val() != "none"; }
+                },
             ],
             values: {
                 'transition': {
@@ -3903,15 +3911,12 @@ export class MonksActiveTiles {
                     "bump-up": 'MonksActiveTiles.transition.bump-up',
                     "bump-right": 'MonksActiveTiles.transition.bump-right',
                     "bump-down": 'MonksActiveTiles.transition.bump-down',
-                    "bump-random": 'MonksActiveTiles.transition.bump-random',
-                    "slotmachine": 'MonksActiveTiles.transition.slotmachine'
+                    "bump-random": 'MonksActiveTiles.transition.bump-random'
                 }
             },
             fn: async (args = {}) => {
                 const { tile, tokens, action, userid, value, method, change } = args;
                 let entities = await MonksActiveTiles.getEntities(args, 'tiles');
-
-                let time = new Date().getTime() + (action.data?.speed * 1000);
 
                 let promises = [];
                 if (entities && entities.length > 0) {
@@ -3920,51 +3925,67 @@ export class MonksActiveTiles {
                             entity._images = await MonksActiveTiles.getTileFiles(entity.data.flags["monks-active-tiles"].files || []);
                         }
 
-                        let fileindex = entity.data.flags["monks-active-tiles"].fileindex || 0;
-                        let position = action.data?.select ?? "next";
+                        let getPosition = async function () {
+                            let fileindex = entity.data.flags["monks-active-tiles"].fileindex || 0;
+                            let position = action.data?.select ?? "next";
 
-                        if (position.includes("{{")) {
-                            let context = {
-                                actor: tokens[0]?.actor?.data,
-                                token: tokens[0]?.data,
-                                tile: tile.data,
-                                entity: entity,
-                                user: game.users.get(userid),
-                                value: value,
-                                scene: canvas.scene,
-                                method: method,
-                                change: change,
-                                fileindex: fileindex,
-                                files: entity._images
-                            };
+                            if (position.includes("{{")) {
+                                let context = {
+                                    actor: tokens[0]?.actor?.data,
+                                    token: tokens[0]?.data,
+                                    tile: tile.data,
+                                    entity: entity,
+                                    user: game.users.get(userid),
+                                    value: value,
+                                    scene: canvas.scene,
+                                    method: method,
+                                    change: change,
+                                    fileindex: fileindex,
+                                    files: entity._images
+                                };
 
-                            const compiled = Handlebars.compile(position);
-                            position = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
+                                const compiled = Handlebars.compile(position);
+                                position = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
+                            }
+
+                            if (position == "first")
+                                position = 1;
+                            else if (position == "last")
+                                position = entity._images.length;
+                            else if (position == "random")
+                                position = Math.floor(Math.random() * entity._images.length) + 1;
+                            else if (position == "next")
+                                position = ((fileindex + 1) % entity._images.length) + 1;
+                            else if (position == "previous")
+                                position = (fileindex == 0 ? entity._images.length : fileindex);
+                            else if (position.indexOf("d") != -1) {
+                                let r = new Roll(position);
+                                await r.evaluate({ async: true });
+                                position = r.total;
+                            } else if (position.indexOf("-") != -1) {
+                                let parts = position.split("-");
+                                let min = parseInt(parts[0]);
+                                let max = parseInt(parts[1]);
+                                position = Math.round(min + (Math.random() * (max - min)));
+                            } else
+                                position = parseInt(position);
+
+                            position = Math.clamped(position, 1, entity._images.length);
+
+                            return position;
                         }
 
-                        if (position == "first")
-                            position = 1;
-                        else if (position == "last")
-                            position = entity._images.length;
-                        else if (position == "random")
-                            position = Math.floor(Math.random() * entity._images.length) + 1;
-                        else if (position == "next")
-                            position = ((fileindex + 1) % entity._images.length) + 1;
-                        else if (position == "previous")
-                            position = (fileindex == 0 ? entity._images.length : fileindex);
-                        else if (position.indexOf("d") != -1) {
-                            let r = new Roll(position);
-                            await r.evaluate({ async: true });
-                            position = r.total;
-                        } else if (position.indexOf("-") != -1) {
-                            let parts = position.split("-");
-                            let min = parseInt(parts[0]);
-                            let max = parseInt(parts[1]);
-                            position = Math.round(min + (Math.random() * (max - min)));
-                        } else
-                            position = parseInt(position);
+                        let getTransition = function () {
+                            let transition = action.data.transition;
+                            if (transition.endsWith("random")) {
+                                let options = ["left", "right", "up", "down"];
+                                transition = transition.replace('random', options[Math.floor(Math.random() * 4)]);
+                            }
 
-                        position = Math.clamped(position, 1, entity._images.length);
+                            return transition;
+                        }
+
+                        let position = await getPosition();
 
                         if (action.data.transition == "none") {
                             if (entity._images[position - 1]) {
@@ -3973,25 +3994,49 @@ export class MonksActiveTiles {
                             }
                         } else {
                             if (entity._images[position - 1]) {
-                                let transition = action.data.transition;
-                                if (transition.endsWith("random")) {
-                                    let options = ["left", "right", "up", "down"];
-                                    transition = transition.replace('random', options[Math.floor(Math.random() * 4)]);
-                                }
-
-                                MonksActiveTiles.emit("transition", {
+                                
+                                let time = new Date().getTime() + (action.data?.speed * 1000);
+                                let transData = {
                                     id: action.id,
-                                    transition: transition,
                                     tileid: tile.uuid,
                                     entityid: entity.uuid,
                                     from: entity.data.img,
+                                    transition: getTransition(),
                                     img: entity._images[position - 1],
-                                    time: time
-                                });
-                                promises.push(MonksActiveTiles.transitionImage(entity, entity.data.img, entity._images[position - 1], transition, time).then(async () => {
-                                    await entity.update({ img: entity._images[position - 1] });
-                                    await entity.setFlag('monks-active-tiles', 'fileindex', position - 1);
-                                }));
+                                    time: time,
+                                    position: position - 1
+                                }
+
+                                const doTransition = (data) => {
+                                    MonksActiveTiles.emit("transition", data);
+                                    return MonksActiveTiles.transitionImage(entity, data.from, data.img, data.transition, data.time);
+                                }
+
+                                let loop = action.data.loop || 1;
+
+                                const doNextPromise = (data) => {
+                                    return doTransition(data).then(async () => {
+                                        loop--;
+                                        if (loop > 0) {
+                                            entity.data.flags["monks-active-tiles"].fileindex = data.position;
+                                            let position = await getPosition();
+                                            data.position = position - 1;
+                                            data.transition = getTransition();
+                                            data.from = data.img;
+                                            data.img = entity._images[data.position];
+                                            data.time = new Date().getTime() + (action.data?.speed * 1000);
+
+                                            return doNextPromise(data);
+                                        } else {
+                                            await entity.update({ img: data.img });
+                                            await entity.setFlag('monks-active-tiles', 'fileindex', data.position);
+                                        }
+                                    })
+                                }
+
+                                if (loop > 0) {
+                                    promises.push(doNextPromise(transData));
+                                }
                             }
                         }
                     }
@@ -5836,8 +5881,10 @@ export class MonksActiveTiles {
         await CanvasAnimation.terminateAnimation(animationName);
 
         let duration = time - new Date().getTime();
-        if (duration < 0)
+        if (duration < 0) {
+            log("Transition time has already passed");
             return;
+        }
 
         const container = new PIXI.Container();
         t._transition = t.addChild(container);
@@ -6301,7 +6348,7 @@ export class MonksActiveTiles {
                     //check if this is associated with a Tile
                     if (wall.data.flags["monks-active-tiles"]?.entity) {
                         if ((!!wall.data.flags["monks-active-tiles"][wall._wallchange || "checklock"]) ||
-                            (wall.data.flags["monks-active-tiles"].open == undefined && wall.data.flags["monks-active-tiles"].close == undefined && wall.data.flags["monks-active-tiles"].lock == undefined && wall.data.flags["monks-active-tiles"].secret == undefined)) {
+                            (wall.data.flags["monks-active-tiles"].open == undefined && wall.data.flags["monks-active-tiles"].close == undefined && wall.data.flags["monks-active-tiles"].lock == undefined && wall.data.flags["monks-active-tiles"].secret == undefined && wall.data.flags["monks-active-tiles"].checklock == undefined)) {
 
                             let entity = JSON.parse(wall.data.flags['monks-active-tiles']?.entity || "{}");
                             if (entity.id) {
@@ -6884,7 +6931,12 @@ export class MonksActiveTiles {
                         tokens[i] = await fromUuid(tokens[i]);
                     let tile = await fromUuid(data.tileid);
 
-                    tile.trigger({ tokens: tokens, userid: data.senderId, method: data.method, pt: data.pt });
+                    if (data.options.walls) {
+                        for (let i = 0; i < data.options.walls.length; i++)
+                            data.options.walls[i] = await fromUuid(data.options.walls[i]);
+                    }
+
+                    tile.trigger({ tokens: tokens, userid: data.senderId, method: data.method, pt: data.pt, options: data.options });
                 }
             } break;
             case 'switchview': {
@@ -7303,7 +7355,8 @@ export class MonksActiveTiles {
 
                 if (!data.hide) {
                     icon.alpha = 0;
-                    entity.object.hud.alpha = 0;
+                    if (entity.object.hud)
+                        entity.object.hud.alpha = 0;
                     icon.visible = true;
                     entity.object.visible = true;
                 }
@@ -7325,7 +7378,8 @@ export class MonksActiveTiles {
                 }).then(() => {
                     if (data.hide)
                         entity.object.visible = false;
-                    entity.object.hud.alpha = 1;
+                    if (entity.object.hud)
+                        entity.object.hud.alpha = 1;
                 });
             } break;
         }
@@ -7773,6 +7827,9 @@ export class MonksActiveTiles {
             } else {
                 //post this to the GM
                 let tokenData = tokens.map(t => (t?.document?.uuid || t?.uuid));
+                if (options.walls) {
+                    options.walls = options.walls.map(w => (w?.document?.uuid || w?.uuid));
+                }
                 MonksActiveTiles.emit('trigger', { tileid: this.uuid, tokens: tokenData, method: method, pt: pt, options: options } );
             }
         }

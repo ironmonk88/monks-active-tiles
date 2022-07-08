@@ -355,6 +355,75 @@ export class ActionConfig extends FormApplication {
             label: i18n("MonksActiveTiles.Save"),
             callback: async (html) => {
                 let tagName = $('input[name="tag-name"]').val();
+
+                if (game.modules.get("tagger")?.active) {
+                    let tags = tagName.split(",");
+
+                    const rules = {
+                        /**
+                         * Replaces a portion of the tag with a number based on how many objects in this scene has the same numbered tag
+                         * @private
+                         */
+                        "{#}": (tag, regx) => {
+                            const findTag = new RegExp("^" + tag.replace(regx, "([1-9]+[0-9]*)") + "$");
+                            const existingDocuments = Tagger.getByTag(findTag)
+                            if (!existingDocuments.length) return tag.replace(regx, 1);
+
+                            const numbers = existingDocuments.map(existingDocument => {
+                                return Number(Tagger.getTags(existingDocument).find(tag => {
+                                    return tag.match(findTag);
+                                }).match(findTag)[1]);
+                            })
+
+                            const length = Math.max(...numbers) + 1;
+                            for (let i = 1; i <= length; i++) {
+                                if (!numbers.includes(i)) {
+                                    return tag.replace(regx, i)
+                                }
+                            }
+                        },
+
+                        /**
+                         *  Replaces the section of the tag with a random ID
+                         *  @private
+                         */
+                        "{id}": (tag, regx, index) => {
+                            let id = temporaryIds?.[tag]?.[index];
+                            if (!id) {
+                                if (!temporaryIds?.[tag]) {
+                                    temporaryIds[tag] = []
+                                }
+                                id = randomID();
+                                temporaryIds[tag].push(id);
+                            }
+                            return tag.replace(regx, id);
+                        }
+                    }
+
+                    const tagRules = Object.entries(rules).filter(entry => {
+                        entry[0] = new RegExp(`${entry[0]}`, "g");
+                        return entry;
+                    });
+
+                    tags = Tagger._validateTags(tags, "TaggerHandler");
+
+                    tags = tags.map((tag, index) => {
+
+                        const applicableTagRules = tagRules.filter(([regx]) => {
+                            return tag.match(regx)
+                        });
+                        if (!applicableTagRules.length) return tag;
+
+                        applicableTagRules.forEach(([regx, method]) => {
+                            tag = method(tag, regx, index);
+                        })
+
+                        return tag;
+                    });
+
+                    tagName = tags.join(",");
+                }
+
                 let match = $('select[name="match"]').val();
                 let scene = $('select[name="scene"]').val();
                 let btn = $(event.currentTarget);

@@ -131,7 +131,7 @@
         <ol class="item-list" style="position: relative;">
             {{#each actions}}
             <li class="item flexrow " data-id="{{this.id}}" data-collection="actions" draggable="true">
-                <div class="item-name flexrow">
+                <div class="item-name flexrow{{#if this.disabled}} disabled{{/if}}">
                     <h4 style="white-space: normal;">{{{this.content}}}</h4>
                 </div>
 
@@ -159,7 +159,7 @@
         <li class="items-header flexrow">
             <div class="item-controls" style="text-align: right;flex: 1;">
                 <a title="Browse Files" class="browse-files" style="margin-right: 12px;"><i class="fas fa-plus"></i> Add</a>
-                <button type="button" data-target="_file-list" style="display: none;"></button>
+                <button type="button" class="add-image" data-target="_file-list" style="display: none;"></button>
             </div>
             <input type="hidden" class="filepath" name="_file-list">
         </li>
@@ -169,7 +169,7 @@
                 <input type="hidden" class="filepath" name="files.{{this.id}}.name" value="{{this.name}}">
                 <div class="image-name" title="{{this.name}}">{{this.name}}</div>
                 <a class="edit-file"><i class="fas fa-edit fa-sm"></i></a>
-                <button type="button" data-target="files.{{this.id}}.name" style="display: none;"></button>
+                <button type="button" class="add-image" data-target="files.{{this.id}}.name" style="display: none;"></button>
                 <a class="delete-file"><i class="fas fa-trash fa-sm"></i></a>
             </li>
             {{/each}}

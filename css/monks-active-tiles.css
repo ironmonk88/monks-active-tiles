@@ -58,6 +58,12 @@
     color: #191813;
 }
 
+.monks-active-tiles.sheet .items-list .item .item-name.disabled {
+    color: #999;
+    text-decoration: line-through;
+    text-decoration-color: red;
+}
+
 .monks-active-tiles.sheet .items-list .item .item-name .item-image {
     flex: 0 0 30px;
     height: 30px;

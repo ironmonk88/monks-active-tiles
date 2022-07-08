@@ -67,6 +67,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             tiledata.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
             tiledata.triggerControlled = { 'all': i18n("MonksActiveTiles.control.all"), 'player': i18n("MonksActiveTiles.control.player"), 'gm': i18n("MonksActiveTiles.control.gm") };
 
+            
             tiledata.actions = await Promise.all((this.object.getFlag('monks-active-tiles', 'actions') || [])
                 .map(async (a) => {
                     let trigger = MonksActiveTiles.triggerActions[a.action];
@@ -79,9 +80,19 @@ export const WithActiveTileConfig = (TileConfig) => {
                     content += (a.delay > 0 ? ' after ' + a.delay + ' seconds' : '');
                     return {
                         id: a.id,
-                        content: content
+                        content: content,
+                        disabled: trigger?.visible === false,
+                        deactivated: a.action == "activate" && a.data?.activate == "deactivate" && (a.data?.entity?.id == this.object.id || a.data?.entity == "")
                     };
                 }));
+
+            let disabled = false;
+            for (let a of tiledata.actions) {
+                if (disabled)
+                    a.disabled = true;
+                if (a.deactivated)
+                    disabled = true;
+            }
 
             tiledata.sounds = Object.entries(this.object.soundeffect || {}).map(([k, v]) => {
                 let filename = v.src.split('\\').pop().split('/').pop();
@@ -248,7 +259,7 @@ export const WithActiveTileConfig = (TileConfig) => {
 
             //$('div[data-tab="triggers"] .item-list li.item', html).hover(this._onActionHoverIn.bind(this), this._onActionHoverOut.bind(this));
             $('.browse-files', html).on("click", this.browseFiles.bind(this));
-            $('button[data-target]', html).on("click", this._activateFilePicker.bind(this));
+            $('.add-image', html).on("click", this._activateFilePicker.bind(this));
             $('.filepath', html).on("change", this.addToFileList.bind(this));
             $('.file-list .edit-file', html).on("click", this.browseFiles.bind(this));
             $('.file-list .delete-file', html).on("click", this.removeFile.bind(this));
@@ -285,7 +296,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                         .append($('<input>').addClass("filepath").attr({ 'type': 'hidden', 'name': `files.${id}.name` }).val(filename).change(this.addToFileList.bind(this)))
                         .append($('<div>').attr('title', filename).addClass('image-name').html(filename))
                         .append($('<a>').addClass('edit-file').html('<i class="fas fa-edit fa-sm"></i>').click(this.browseFiles.bind(this)))
-                        .append($('<button>').attr('type', 'button').attr("data-target", `files.${id}.name`).hide().click(this._activateFilePicker.bind(this)))
+                        .append($('<button>').addClass("add-image").attr('type', 'button').attr("data-target", `files.${id}.name`).hide().click(this._activateFilePicker.bind(this)))
                         .append($('<a>').addClass('delete-file').html('<i class="fas fa-trash fa-sm"></i>').click(this.removeFile.bind(this))));
                     $(event.currentTarget).val('');
                     this.setPosition({ height: 'auto' });

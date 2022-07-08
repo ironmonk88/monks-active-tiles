@@ -1,3 +1,19 @@
+## Version 1.0.88
+
+Added the option to use Tagger tag rules when setting an entities tag name.
+
+Added disabled highlight to actions that are no longer available.
+
+Fixed issues with selecting the Tile image.
+
+Added the option to perform loops when switching the Tile image.
+
+Removed the slot machine option from Switch Tile Image.
+
+Fixed issues with triggering when players check a locked door.
+
+Fixed issues with fading out a token image.
+
 ## Version 1.0.87
 
 Fixing issue with Levels compatibility
