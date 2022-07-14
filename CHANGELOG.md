@@ -30,7 +30,7 @@ Updated door triggers and hover over to respect the pause settign when preventin
 
 Fixed issues with create token trigger triggering on enter as well.
 
-Fixed issues with directional auto triggers.
+Fixed issues with directional auto triggers.  And changed the auto anchors to better reflect the intended directions.  So top has been replaced with up and bottom replaced by down.
 
 Added support for FXMaster
 
