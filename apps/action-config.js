@@ -348,84 +348,85 @@ export class ActionConfig extends FormApplication {
             scenes: scenes
         });
 
+        let adjustTags = function (tagName) {
+            if (game.modules.get("tagger")?.active) {
+                let tags = tagName.split(",");
+
+                const rules = {
+                    /**
+                     * Replaces a portion of the tag with a number based on how many objects in this scene has the same numbered tag
+                     * @private
+                     */
+                    "{#}": (tag, regx) => {
+                        const findTag = new RegExp("^" + tag.replace(regx, "([1-9]+[0-9]*)") + "$");
+                        const existingDocuments = Tagger.getByTag(findTag)
+                        if (!existingDocuments.length) return tag.replace(regx, 1);
+
+                        const numbers = existingDocuments.map(existingDocument => {
+                            return Number(Tagger.getTags(existingDocument).find(tag => {
+                                return tag.match(findTag);
+                            }).match(findTag)[1]);
+                        })
+
+                        const length = Math.max(...numbers) + 1;
+                        for (let i = 1; i <= length; i++) {
+                            if (!numbers.includes(i)) {
+                                return tag.replace(regx, i)
+                            }
+                        }
+                    },
+
+                    /**
+                     *  Replaces the section of the tag with a random ID
+                     *  @private
+                     */
+                    "{id}": (tag, regx, index) => {
+                        let id = temporaryIds?.[tag]?.[index];
+                        if (!id) {
+                            if (!temporaryIds?.[tag]) {
+                                temporaryIds[tag] = []
+                            }
+                            id = randomID();
+                            temporaryIds[tag].push(id);
+                        }
+                        return tag.replace(regx, id);
+                    }
+                }
+
+                const tagRules = Object.entries(rules).filter(entry => {
+                    entry[0] = new RegExp(`${entry[0]}`, "g");
+                    return entry;
+                });
+
+                tags = Tagger._validateTags(tags, "TaggerHandler");
+
+                tags = tags.map((tag, index) => {
+
+                    const applicableTagRules = tagRules.filter(([regx]) => {
+                        return tag.match(regx)
+                    });
+                    if (!applicableTagRules.length) return tag;
+
+                    applicableTagRules.forEach(([regx, method]) => {
+                        tag = method(tag, regx, index);
+                    })
+
+                    return tag;
+                });
+
+                return tags.join(",");
+            }
+        }
+
         // Render the confirmation dialog window
         return Dialog.prompt({
             title: "Enter tag",
             content: html,
             label: i18n("MonksActiveTiles.Save"),
             callback: async (html) => {
-                let tagName = $('input[name="tag-name"]').val();
-
-                if (game.modules.get("tagger")?.active) {
-                    let tags = tagName.split(",");
-
-                    const rules = {
-                        /**
-                         * Replaces a portion of the tag with a number based on how many objects in this scene has the same numbered tag
-                         * @private
-                         */
-                        "{#}": (tag, regx) => {
-                            const findTag = new RegExp("^" + tag.replace(regx, "([1-9]+[0-9]*)") + "$");
-                            const existingDocuments = Tagger.getByTag(findTag)
-                            if (!existingDocuments.length) return tag.replace(regx, 1);
-
-                            const numbers = existingDocuments.map(existingDocument => {
-                                return Number(Tagger.getTags(existingDocument).find(tag => {
-                                    return tag.match(findTag);
-                                }).match(findTag)[1]);
-                            })
-
-                            const length = Math.max(...numbers) + 1;
-                            for (let i = 1; i <= length; i++) {
-                                if (!numbers.includes(i)) {
-                                    return tag.replace(regx, i)
-                                }
-                            }
-                        },
-
-                        /**
-                         *  Replaces the section of the tag with a random ID
-                         *  @private
-                         */
-                        "{id}": (tag, regx, index) => {
-                            let id = temporaryIds?.[tag]?.[index];
-                            if (!id) {
-                                if (!temporaryIds?.[tag]) {
-                                    temporaryIds[tag] = []
-                                }
-                                id = randomID();
-                                temporaryIds[tag].push(id);
-                            }
-                            return tag.replace(regx, id);
-                        }
-                    }
-
-                    const tagRules = Object.entries(rules).filter(entry => {
-                        entry[0] = new RegExp(`${entry[0]}`, "g");
-                        return entry;
-                    });
-
-                    tags = Tagger._validateTags(tags, "TaggerHandler");
-
-                    tags = tags.map((tag, index) => {
-
-                        const applicableTagRules = tagRules.filter(([regx]) => {
-                            return tag.match(regx)
-                        });
-                        if (!applicableTagRules.length) return tag;
-
-                        applicableTagRules.forEach(([regx, method]) => {
-                            tag = method(tag, regx, index);
-                        })
-
-                        return tag;
-                    });
-
-                    tagName = tags.join(",");
-                }
-
-                let match = $('select[name="match"]').val();
-                let scene = $('select[name="scene"]').val();
+                let tagName = $('input[name="tag-name"]', html).val();
+                let match = $('select[name="match"]', html).val();
+                let scene = $('select[name="scene"]', html).val();
                 let btn = $(event.currentTarget);
                 let field = $('input[name="' + btn.attr('data-target') + '"]', this.element);
                 let entity = { id: `tagger:${tagName}`, match: match, scene: scene };
@@ -436,6 +437,13 @@ export class ActionConfig extends FormApplication {
             rejectClose: false,
             options: {
                 width: 400
+            },
+            render: (html) => {
+                $('.alter-tags', html).on("click", (event) => {
+                    let tagName = $('input[name="tag-name"]', html).val();
+                    tagName = adjustTags(tagName);
+                    $('input[name="tag-name"]', html).val(tagName);
+                })
             }
         });
     }
@@ -747,7 +755,7 @@ export class ActionConfig extends FormApplication {
                             .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectlocation") }).addClass('location-picker').html('<i class="fas fa-crosshairs fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'position', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.setposition") }).toggle(ctrl.subtype == 'position').addClass('location-picker').html('<i class="fas fa-crop-alt fa-sm"></i>').click(this.selectPosition.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'token', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetoken") }).toggle(options.showToken).addClass('entity-picker').html('<i class="fas fa-user-alt fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
-                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'players', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useplayerlocation") }).toggle(options.showPrevious).addClass('location-picker').html('<i class="fas fa-users fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
+                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'players', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useplayerlocation") }).toggle(options.showPlayers).addClass('location-picker').html('<i class="fas fa-users fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'previous', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usepreviouslocation") }).toggle(options.showPrevious).addClass('location-picker').html('<i class="fas fa-history fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'origin', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useorigin") }).toggle(options.showOrigin).addClass('location-picker').html('<i class="fas fa-walking fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'tagger', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetagger") }).toggle(options.showTagger && game.modules.get('tagger')?.active).addClass('location-picker').html('<i class="fas fa-tag fa-sm"></i>').click(ActionConfig.addTag.bind(this)));

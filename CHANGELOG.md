@@ -1,3 +1,39 @@
+## Version 1.0.89
+
+Fixed issues with automatically assigning tagger tags in the tagger dialog.  There's now a button to do it.
+
+Fixed issue with use player destination icon when selecting the previous token destination for a location.
+
+Fixed the strikethorugh effect following a deactivation of the tile to respect that a landing can bypass this.
+
+Fixed issue with wall config showing html instead of the tagger icon.
+
+Added a batch manager to run actions as a batch instead of trying to process each one individually.  So multiple calls to alter will add each change together and run them all at once in the end.
+
+Added an action to run all the current batch commands.  Active Tiles will do it automatically, but if you needed to run any actions before other actions, you can use this to execute alll the batch actions.
+
+Tried to fix some issues with the fading of tiles when using show/hide
+
+Fixed issues when using "current" journal entries.
+
+Stopped Show/Hide from activating/deactivating an ambient light or sound when found using tagger.
+
+Added blur effect when transitioning between Tile Images.
+
+Updated the find item to ignore case and to trim leading and trailing spaces.
+
+Fixed issue where clicking a tile and requesting a location destination from the triggering token was having issues.
+
+Fixed issue with Tile Image change when the tile is rotated.
+
+Updated door triggers and hover over to respect the pause settign when preventing actions from happening.
+
+Fixed issues with create token trigger triggering on enter as well.
+
+Fixed issues with directional auto triggers.
+
+Added support for FXMaster
+
 ## Version 1.0.88
 
 Added the option to use Tagger tag rules when setting an entities tag name.

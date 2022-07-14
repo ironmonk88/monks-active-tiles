@@ -78,19 +78,27 @@ export const WithActiveTileConfig = (TileConfig) => {
                         } catch { }
                     }
                     content += (a.delay > 0 ? ' after ' + a.delay + ' seconds' : '');
+
+                    let deactivated = "";
+                    if (a.action == "activate" && a.data?.activate == "deactivate" && (a.data?.entity?.id == this.object.id || a.data?.entity == ""))
+                        deactivated = "on";
+                    if (a.action == "anchor")
+                        deactivated = "off";
                     return {
                         id: a.id,
                         content: content,
                         disabled: trigger?.visible === false,
-                        deactivated: a.action == "activate" && a.data?.activate == "deactivate" && (a.data?.entity?.id == this.object.id || a.data?.entity == "")
+                        deactivated: deactivated
                     };
                 }));
 
             let disabled = false;
             for (let a of tiledata.actions) {
+                if (a.deactivated == "off")
+                    disabled = false;
                 if (disabled)
                     a.disabled = true;
-                if (a.deactivated)
+                if (a.deactivated == "on")
                     disabled = true;
             }
 

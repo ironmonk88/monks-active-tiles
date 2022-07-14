@@ -352,3 +352,8 @@
 .matt-tab[data-tab].active.flexcol {
     display: flex;
 }
+
+.alter-tags {
+    width: 28px;
+    height: 28px;
+}
