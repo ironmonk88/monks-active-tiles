@@ -1,3 +1,9 @@
+## Version 1.0.90
+
+Fixing issues with Show/Hide
+
+Fixing issues with Fading show/hide
+
 ## Version 1.0.89
 
 Fixed issues with automatically assigning tagger tags in the tagger dialog.  There's now a button to do it.

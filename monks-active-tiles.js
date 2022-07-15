@@ -764,31 +764,18 @@ export class MonksActiveTiles {
                         if (entity) {
                             let hide = (action.data.hidden == 'toggle' ? !entity.data.hidden : (action.data.hidden == 'previous' ? !value.visible : action.data.hidden !== 'show'));
                             if (action.data?.fade) {
-                                let icon = entity.object.icon || entity.object.tile || entity.object;
-                                const attributes = [
-                                    { parent: icon, attribute: 'alpha', to: (hide ? 0.5 : entity.data.alpha) }
-                                ];
-
-                                //if (!hide)
-                                //    icon.alpha = 0.5;
-
-                                let animationName = `MonksActiveTiles.${entity.documentName}.${entity.id}.animateShowHide`;
-                                await CanvasAnimation.terminateAnimation(animationName);
-
-                                CanvasAnimation.animateLinear(attributes, {
-                                    name: animationName,
-                                    context: icon,
-                                    duration: action.data?.fade * 1000
-                                }).then(() => {
+                                let time = new Date().getTime() + (action.data?.fade * 1000);
+                                MonksActiveTiles.fadeImage(entity, hide, time).then(() => {
                                     if (hide)
                                         entity.update({ hidden: hide });
                                 });
 
-                                MonksActiveTiles.emit("showhide", { entityid: entity.uuid, time: new Date().getTime() + (action.data?.fade * 1000), hide: hide });
-                            }
+                                MonksActiveTiles.emit("showhide", { entityid: entity.uuid, time: time, hide: hide });
 
-                            if (!hide)
-                                MonksActiveTiles.batch.add("update", entity, { hidden: hide });
+                                if (!hide)
+                                    MonksActiveTiles.batch.add("update", entity, { hidden: hide });
+                            } else
+                                MonksActiveTiles.batch.add("update", entity, { hidden: hide });                           
 
                             MonksActiveTiles.addToResult(entity, result);
                         }
@@ -5996,6 +5983,62 @@ export class MonksActiveTiles {
             resolve(true);
     }
 
+    static async fadeImage(entity, hide, time) {
+        let icon = entity.object.icon || entity.object.tile || entity.object;
+        let animationName = `MonksActiveTiles.${entity.documentName}.${entity.id}.animateShowHide`;
+
+        await CanvasAnimation.terminateAnimation(animationName);
+
+        if (!hide) {
+            icon.alpha = (game.user.isGM ? icon.alpha : 0);
+            if (entity.object.hud)
+                entity.object.hud.alpha = 0;
+            icon.visible = true;
+            entity.object.visible = true;
+
+            entity.object._showhide = icon.alpha;
+        }
+
+        const attributes = [
+            { parent: icon, attribute: 'alpha', to: (hide ? (game.user.isGM ? 0.5 : 0) : entity.data.alpha || 1), object: entity.object, hide: hide, from: icon.alpha }
+        ];
+
+        if (entity instanceof TokenDocument)
+            attributes.push({ parent: entity.object.hud, attribute: 'alpha', to: (hide ? 0 : 1) });
+
+        let duration = time - new Date().getTime();
+        if (duration < 0) {
+            log("Fade time has already passed");
+            return new Promise((resolve) => { resolve(); });
+        }
+
+        return CanvasAnimation.animateLinear(attributes, {
+            name: animationName,
+            context: icon,
+            duration: duration,
+            ontick: (dt, attributes) => {
+                for (let attribute of attributes) {
+                    if (attribute.object && !attribute.hide) {
+                        if (!attribute.object.visible)
+                            attribute.object.visible = true;
+                        let realval = attributes[0].from + attributes[0].done;
+                        if (attribute.parent.alpha != realval)
+                            attribute.parent.alpha = realval;
+                        entity.object._showhide = attribute.parent[attribute.attribute];
+                    }
+                }
+
+                log("Token fade", attributes[0].object.alpha, attributes[0].parent.alpha, attributes[0].from + attributes[0].done, attributes[0].remaining, attributes[0].done, attributes[0].delta, attributes[0].object.visible, attributes[0].parent.visible);
+            }
+        }).then(() => {
+            if (hide)
+                entity.object.visible = false;
+            if (entity.object.hud)
+                entity.object.hud.alpha = 1;
+            delete entity.object._showhide;
+        });
+    }
+
     static async transitionImage(entity, from, to, transition, time) {
         let t = entity._object;
 
@@ -6006,7 +6049,7 @@ export class MonksActiveTiles {
         let duration = time - new Date().getTime();
         if (duration < 0) {
             log("Transition time has already passed");
-            return;
+            new Promise((resolve) => { resolve(); });
         }
 
         const container = new PIXI.Container();
@@ -7541,59 +7584,8 @@ export class MonksActiveTiles {
             case 'showhide': {
                 let entity = await fromUuid(data.entityid);
 
-                if (!entity)
-                    return;
-
-                let icon = entity.object.icon || entity.object.tile || entity.object;
-                let animationName = `MonksActiveTiles.${entity.documentName}.${entity.id}.animateShowHide`;
-
-                await CanvasAnimation.terminateAnimation(animationName);
-
-                const attributes = [
-                    { parent: icon, attribute: 'alpha', to: (data.hide ? 0 : entity.data.alpha), object: entity.object }
-                ];
-
-                if (entity instanceof TokenDocument)
-                    attributes.push({ parent: entity.object.hud, attribute: 'alpha', to: (data.hide ? 0 : 1) });
-
-                let time = data.time - new Date().getTime();
-                if (time < 0)
-                    return;
-
-                if (!data.hide) {
-                    icon.alpha = 0;
-                    if (entity.object.hud)
-                        entity.object.hud.alpha = 0;
-                    icon.visible = true;
-                    entity.object.visible = true;
-
-                    entity.object._showhide = 0;
-                }
-
-                CanvasAnimation.animateLinear(attributes, {
-                    name: animationName,
-                    context: icon,
-                    duration: time,
-                    ontick: (dt, attributes) => {
-                        for (let attribute of attributes) {
-                            if (attribute.to == 1 && attribute.object) {
-                                if (!attribute.object.visible)
-                                    attribute.object.visible = true;
-                                if (attribute.object.alpha != attribute.done)
-                                    attribute.object.alpha = attribute.done;
-                                entity.object._showhide = attribute.done;
-                            }
-                        }
-
-                        //log("Token fade", attributes[0].parent.alpha, attributes[0].object.alpha, attributes[0].parent.visible, attributes[0].object.visible, attributes[0].remaining, attributes[0].done, attributes[0].delta, attributes[0].d);
-                    }
-                }).then(() => {
-                    if (data.hide)
-                        entity.object.visible = false;
-                    if (entity.object.hud)
-                        entity.object.hud.alpha = 1;
-                    delete entity.object._showhide;
-                });
+                if (entity)
+                    MonksActiveTiles.fadeImage(entity, data.hide, data.time);
             } break;
         }
     }
