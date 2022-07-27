@@ -1,4 +1,4 @@
-import { MonksActiveTiles, log, setting, i18n, makeid } from '../monks-active-tiles.js';
+import { MonksActiveTiles, log, error, setting, i18n, makeid } from '../monks-active-tiles.js';
 import { ActionConfig } from "../apps/action-config.js";
 import { TileHistory } from './tile-history.js';
 
@@ -22,7 +22,18 @@ export const WithActiveTileConfig = (TileConfig) => {
         constructor(...args) {
             super(...args);
 
-            this.object._normalize();
+            if (getProperty(this.object, "flags.monks-active-tiles") == undefined) {
+                this.object.flags = mergeObject(this.object.flags, {
+                    'monks-active-tiles': {
+                        active: true,
+                        trigger: setting('default-trigger'),
+                        chance: 100,
+                        restriction: 'all',
+                        controlled: 'all',
+                        actions: []
+                    }
+                });
+            }
         }
 
         static get defaultOptions() {
@@ -75,7 +86,9 @@ export const WithActiveTileConfig = (TileConfig) => {
                     if (trigger.content) {
                         try {
                             content = await trigger.content(trigger, a);
-                        } catch { }
+                        } catch (e) {
+                            error(e);
+                        }
                     }
                     content += (a.delay > 0 ? ' after ' + a.delay + ' seconds' : '');
 
@@ -166,7 +179,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                 log('from', from, 'to', to);
                 items.splice(to, 0, items.splice(from, 1)[0]);
 
-                this.object.data.flags["monks-active-tiles"][target.dataset.collection] = items;
+                this.object.flags["monks-active-tiles"][target.dataset.collection] = items;
                 if (from < to)
                     $('.item[data-id="' + data.id + '"]', this.element).insertAfter(target);
                 else
@@ -209,13 +222,13 @@ export const WithActiveTileConfig = (TileConfig) => {
         async _updateObject(event, formData) {
             await super._updateObject(event, formData);
 
-            this.object._images = await MonksActiveTiles.getTileFiles(this.object.data.flags["monks-active-tiles"].files || []);
+            this.object._images = await MonksActiveTiles.getTileFiles(this.object.flags["monks-active-tiles"].files || []);
             if (this.object._images.length) {
-                let fileindex = Math.clamped(this.object.data.flags["monks-active-tiles"].fileindex, 0, this.object._images.length - 1);
-                if (this.object._images[fileindex] != this.object.data.img) {
-                    await this.object.update({ img: this.object._images[fileindex] });
+                let fileindex = Math.clamped(this.object.flags["monks-active-tiles"].fileindex, 0, this.object._images.length - 1);
+                if (this.object._images[fileindex] != this.object.texture.src) {
+                    await this.object.update({ texture: { src: this.object._images[fileindex] } });
                 }
-                if (fileindex != this.object.data.flags["monks-active-tiles"].fileindex) {
+                if (fileindex != this.object.flags["monks-active-tiles"].fileindex) {
                     await this.object.setFlag("monks-active-tiles", "fileindex", fileindex);
                 }
             }
@@ -319,16 +332,16 @@ export const WithActiveTileConfig = (TileConfig) => {
 
             $(`input[name="flags.monks-active-tiles.fileindex"]`, this.element).val(idx);
 
-            mergeObject(this.object.data.flags, {
+            mergeObject(this.object.flags, {
                 "monks-active-tiles": { fileindex: idx }
             });
         }
 
         removeFile(event) {
             let id = event.currentTarget.closest('.file-row').dataset["id"];
-            let files = duplicate(this.object.data.flags["monks-active-tiles"]?.files || []);
+            let files = duplicate(this.object.flags["monks-active-tiles"]?.files || []);
             files.findSplice(i => i.id == id);
-            mergeObject(this.object.data.flags, {
+            mergeObject(this.object.flags, {
                 "monks-active-tiles": { files: files }
             });
 
@@ -358,7 +371,7 @@ export const WithActiveTileConfig = (TileConfig) => {
         deleteAction(id) {
             let actions = duplicate(this.actions);
             actions.findSplice(i => i.id == id);
-            mergeObject(this.object.data.flags, {
+            mergeObject(this.object.flags, {
                 "monks-active-tiles": { actions: actions }
             });
             //this.object.setFlag("monks-active-tiles", "actions", actions);
@@ -395,7 +408,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             if (this.object.id) {
                 this.object.setFlag("monks-active-tiles", "actions", actions);
             } else {
-                setProperty(this.object.data, "flags.monks-active-tiles.actions", actions);
+                setProperty(this.object, "flags.monks-active-tiles.actions", actions);
                 this.render();
             }
         }

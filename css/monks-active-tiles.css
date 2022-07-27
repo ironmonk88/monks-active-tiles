@@ -100,6 +100,7 @@
     font-weight: 700;
     text-align: left;
     font-size: 16px;
+    border-bottom: 0px;
 }
 
 .action-sheet form .form-group label {
@@ -356,4 +357,9 @@
 .alter-tags {
     width: 28px;
     height: 28px;
+}
+
+.history-list .item-list {
+    overflow-y: auto;
+    max-height: 500px;
 }

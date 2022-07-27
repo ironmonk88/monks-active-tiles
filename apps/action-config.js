@@ -9,25 +9,29 @@ export class ActionConfig extends FormApplication {
 
         //let's just grab the first player character we can find
         log("Checking token");
-        let token = canvas.scene.tokens?.contents[0]?.data;
+        let token = canvas.scene.tokens?.contents[0];
         if (token) {
-            let attributes = getDocumentClass("Token").getTrackedAttributes(token ?? {});
-            if (attributes)
-                this.tokenAttr = (this.tokenAttr || []).concat(attributes.value.concat(attributes.bar).map(a => a.join('.')));
+            try {
+                let attributes = getDocumentClass("Token").getTrackedAttributes(token ?? {});
+                if (attributes)
+                    this.tokenAttr = (this.tokenAttr || []).concat(attributes.value.concat(attributes.bar).map(a => a.join('.')));
+            } catch { }
         }
         log("Checking player");
         let player = game.actors.find(a => a.type == 'character');
         if (player) {
-            //try {
-            let attributes = getDocumentClass("Token").getTrackedAttributes(player.data.data ?? {});
+            try {
+            let attributes = getDocumentClass("Token").getTrackedAttributes(player.system ?? {});
                 if (attributes)
                     this.tokenAttr = (this.tokenAttr || []).concat(attributes.value.concat(attributes.bar).map(a => a.join('.')));
-            //} catch {}
+            } catch {}
         }
 
-        let tile = canvas.scene.data.tiles?.contents[0]?.data;
+        let tile = canvas.scene.tiles?.contents[0];
         if (tile) {
-            this.tileAttr = (ActionConfig.getTileTrackedAttributes(tile ?? {}) || []).map(a => a.join('.'));
+            try {
+                this.tileAttr = (ActionConfig.getTileTrackedAttributes(tile ?? {}) || []).map(a => a.join('.'));
+            } catch { }
         }
     }
 
@@ -621,7 +625,7 @@ export class ActionConfig extends FormApplication {
             this.object.id = makeid();
             let actions = duplicate(this.options.parent.object.getFlag("monks-active-tiles", "actions") || []);
             actions.push(this.object);
-            mergeObject(this.options.parent.object.data.flags, {
+            mergeObject(this.options.parent.object.flags, {
                 "monks-active-tiles": { actions: actions }
             });
             //add this row to the parent
@@ -652,7 +656,7 @@ export class ActionConfig extends FormApplication {
                 if (action.data.item) action.data.item = {};
                 if (action.data.actor) action.data.actor = {};
                 mergeObject(action, formData);
-                this.options.parent.object.data.flags["monks-active-tiles"].actions = actions;
+                this.options.parent.object.flags["monks-active-tiles"].actions = actions;
                 //update the text for this row
                 let trigger = MonksActiveTiles.triggerActions[action.action];
                 let content = i18n(trigger.name);

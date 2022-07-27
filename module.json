@@ -1,17 +1,15 @@
 {
-  "name": "monks-active-tiles",
   "title": "Monk's Active Tile Triggers",
   "description": "Want to teleport, or open doors, or hide characters, or display a message, or play a sound, or change a token's elevation when a token walks over a tile... now you can",
-	"version": "1.0.90",
-	"minimumCoreVersion": "9",
-	"compatibleCoreVersion": "9",
-	"author": "IronMonk",
-	"authors": [{
-		"name": "IronMonk",
-		"discord": "ironmonk88#4075",
-		"patreon": "https://www.patreon.com/ironmonk",
-		"ko-fi": "https://ko-fi.com/ironmonk88"
-    }],
+  "version": "1.0.91",
+  "authors": [
+    {
+      "name": "IronMonk",
+      "discord": "ironmonk88#4075",
+	  "patreon": "https://www.patreon.com/ironmonk",
+      "ko-fi": "https://ko-fi.com/ironmonk88"
+    }
+  ],
   "socket": true,
   "languages": [
     {
@@ -24,19 +22,19 @@
       "name": "日本語",
       "path": "lang/ja.json"
     },
-	{
-		"lang": "fr",
-		"name": "Français",
-		"path": "lang/fr.json"
-	}
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr.json"
+    }
   ],
   "packs": [
     {
       "name": "active-tile-macros",
       "label": "Active Tile Macros",
       "path": "packs/active-tile-macros.db",
-      "entity": "Macro",
-      "module": "monks-active-tiles"
+      "type": "Macro",
+      "private": false
     }
   ],
   "esmodules": [
@@ -50,8 +48,16 @@
     "css/monks-active-tiles.css"
   ],
   "url": "https://github.com/ironmonk88/monks-active-tiles",
-  "download": "https://github.com/ironmonk88/monks-active-tiles/archive/1.0.90.zip",
+  "download": "https://github.com/ironmonk88/monks-active-tiles/archive/1.0.91.zip",
   "manifest": "https://github.com/ironmonk88/monks-active-tiles/releases/latest/download/module.json",
   "bugs": "https://github.com/ironmonk88/monks-active-tiles/issues",
-  "allowBugReporter": true
+  "allowBugReporter": true,
+  "id": "monks-active-tiles",
+  "compatibility": {
+    "minimum": "10",
+    "verified": "10"
+  },
+  "name": "monks-active-tiles",
+  "minimumCoreVersion": "10",
+  "compatibleCoreVersion": "10"
 }
