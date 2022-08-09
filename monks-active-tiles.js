@@ -3318,6 +3318,125 @@ export class MonksActiveTiles {
                 return `<span class="action-style">${i18n(trigger.name)}</span> <span class="entity-style">${entityName}</span> using <span class="details-style">"${actor?.name || 'Unknown Actor'}: ${item?.name || 'Unknown Item'}"</span>`;
             }
         },
+        'use': {
+            name: "MonksActiveTiles.action.use",
+            options: { allowDelay: false },
+            ctrls: [
+                {
+                    id: "entity",
+                    name: "MonksActiveTiles.ctrl.select-entity",
+                    type: "select",
+                    subtype: "entity",
+                    options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true },
+                    restrict: (entity) => { return (entity instanceof Token ); }
+                },
+                {
+                    id: "actor",
+                    name: "MonksActiveTiles.ctrl.select-actor",
+                    type: "select",
+                    subtype: "entity",
+                    restrict: (entity) => { return (entity instanceof Actor || entity instanceof Token); },
+                    required: true,
+                    defaultType: 'actors',
+                    placeholder: 'Please select an Actor to use an item'
+                },
+                {
+                    id: "use",
+                    name: "MonksActiveTiles.ctrl.use",
+                    list: async function (data) {
+                        if (!data?.actor?.id)
+                            return;
+
+                        let actor = await fromUuid(data?.actor?.id);
+                        if (actor && actor instanceof TokenDocument)
+                            actor = actor.actor;
+                        if (!actor)
+                            return;
+
+                        let result = [];
+
+                        for (let item of actor.items) {
+                            let group = result.find(g => g.type == item.type);
+                            if (group == undefined) {
+                                group = { type: item.type, text: i18n("MonksActiveTiles.use"), groups: {} };
+                                result.push(group);
+                            }
+                            group.groups[item.id] = item.name;
+                        }
+
+                        return result;
+                    },
+                    type: "list",
+                    required: true
+                },
+                {
+                    id: "rollmode",
+                    name: 'MonksActiveTiles.ctrl.rollmode',
+                    list: "rollmode",
+                    type: "list"
+                },
+                {
+                    id: "rollattack",
+                    name: "MonksActiveTiles.ctrl.rollattack",
+                    type: "checkbox",
+                    help: "If you're wanting to integrate with MidiQol, turn this on."
+                }
+            ],
+            values: {
+                'rollmode': {
+                    "roll": 'MonksActiveTiles.rollmode.public',
+                    "gmroll": 'MonksActiveTiles.rollmode.private',
+                    "blindroll": 'MonksActiveTiles.rollmode.blind',
+                    "selfroll": 'MonksActiveTiles.rollmode.self'
+                }
+            },
+            fn: async (args = {}) => {
+                const { action } = args;
+                let entities = await MonksActiveTiles.getEntities(args);
+                if (entities.length == 0)
+                    return;
+
+                for (let entity of entities) {
+                    if (entity)
+                        entity?.object?.setTarget(true, { releaseOthers: false });
+                }
+
+                //get the actor and the use and the entities to apply this to.
+                if (action.data?.actor.id) {
+                    let actor = await fromUuid(action.data?.actor.id);
+                    if (actor && actor instanceof TokenDocument)
+                        actor = actor.actor;
+                    if (actor) {
+                        let item = actor.items.get(action.data?.use?.id);
+
+                        if (item) {
+                            if (action.data?.rollattack && item.useAttack)
+                                item.useAttack({ skipDialog: true });
+                            else if (action.data?.rollattack && item.roll)
+                                item.roll({ rollMode: (action.data?.rollmode || 'roll') });
+                            else if (item.displayCard)
+                                item.displayCard({ rollMode: (action.data?.rollmode || 'roll'), createMessage: true }); //item.roll({configureDialog:false});
+                            else if (item.toChat)
+                                item.toChat(); //item.roll({configureDialog:false});
+                        } else
+                            warn(`Could not find the item when using the use action`);
+                    } else
+                        warn(`Could not find actor when using the item action`);
+                }
+
+                return { tokens: entities, entities: entities };
+            },
+            content: async (trigger, action) => {
+                if (!action.data?.actor.id)
+                    return i18n(trigger.name);
+                let entityName = await MonksActiveTiles.entityName(action.data?.entity);
+                let actor = await fromUuid(action.data?.actor.id);
+                if (actor && actor instanceof TokenDocument)
+                    actor = actor.actor;
+                let item = actor?.items?.get(action.data?.use?.id);
+                return `<span class="action-style">${i18n(trigger.name)}</span> <span class="entity-style">${entityName}</span> using <span class="details-style">"${actor?.name || 'Unknown Actor'}: ${item?.name || 'Unknown Item'}"</span>`;
+            }
+        },
         'trigger': {
             name: "MonksActiveTiles.action.trigger",
             options: { allowDelay: true },

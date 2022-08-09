@@ -175,7 +175,7 @@ export class ActionConfig extends FormApplication {
             ActionConfig.updateSelection.call(this, { id: item.uuid, name: (item?.parent?.name ? item.parent.name + ": " : "") + item.name });
         } else {
             //check to see if there's an entity field on the form, or an item field if it's adding an item.
-            let field = $(`input[name="data.${action == "attack" ? "actor" : "entity"}"]`, this.element);
+            let field = $(`input[name="data.${action == "attack" || action == "use" ? "actor" : "entity"}"]`, this.element);
             if (field.length == 0)
                 return;
 
@@ -296,7 +296,7 @@ export class ActionConfig extends FormApplication {
         }
 
         if (this.waitingfield.attr('name') == 'data.actor') {
-            let select = $('select[name="data.attack"]', this.element);
+            let select = $('select[name="data.attack"]', this.element) ? $('select[name="data.use"]', this.element) : undefined;
             select.empty();
             if (selection.id) {
                 let ctrl = select.parent().data('ctrl');
@@ -615,6 +615,9 @@ export class ActionConfig extends FormApplication {
 
         if (formData['data.attack'])
             formData['data.attack'] = { id: formData['data.attack'], name: $('select[name="data.attack"] option:selected', this.element).text()};
+
+        if (formData['data.use'])
+            formData['data.use'] = { id: formData['data.use'], name: $('select[name="data.use"] option:selected', this.element).text()};
 
         if (this.object.id == undefined) {
             mergeObject(this.object, formData);
