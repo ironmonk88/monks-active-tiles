@@ -1,4 +1,5 @@
-import { MonksActiveTiles, log, error, setting, i18n, makeid } from './monks-active-tiles.js';
+import { MonksActiveTiles, log, error, actiontext, debug, warn, setting, i18n, makeid } from './monks-active-tiles.js';
+import { BatchManager } from "./classes/BatchManager.js";
 
 export class ActionManager {
     static get actions() {
@@ -23,9 +24,6 @@ export class ActionManager {
                 },
                 fn: (args = {}) => {
                     const { action } = args;
-                    // Remove this if Foundry every fixes the togglePause issue
-                    if (action?.data?.pause == 'unpause' && !game.paused)
-                        return;
                     game.togglePause((action?.data?.pause == "toggle" ? null : (action?.data?.pause !== 'unpause')), true);
                 },
                 content: async (trigger, action) => {
@@ -1137,7 +1135,6 @@ export class ActionManager {
                         id: "value",
                         name: "MonksActiveTiles.ctrl.value",
                         type: "text",
-                        required: true,
                         onBlur: (app) => {
                             app.checkConditional();
                         },
@@ -2101,62 +2098,67 @@ export class ActionManager {
                     const { tile, tokens, action, userid, value, method, change } = args;
 
                     let entities = await MonksActiveTiles.getEntities(args);
-                    let entity = (entities.length > 0 ? entities[0] : null);
+                    if (entities.length == 0)
+                        entities = [null];
+                    if (action.data.for !== 'token')
+                        entities = [entities[0]];
 
-                    //Add a chat message
-                    let user = game.users.find(u => u.id == userid);
-                    let scene = game.scenes.find(s => s.id == user?.viewedScene);
+                    for (let entity of entities) {
+                        //Add a chat message
+                        let user = game.users.find(u => u.id == userid);
+                        let scene = game.scenes.find(s => s.id == user?.viewedScene);
 
-                    let tkn = (entity?.object || tokens[0]?.object);
+                        let tkn = (entity?.object || tokens[0]?.object);
 
-                    const speaker = { scene: scene?.id, actor: tkn?.actor.id || user?.character?.id, token: tkn?.id, alias: tkn?.name || user?.name };
+                        const speaker = { scene: scene?.id, actor: tkn?.actor.id || user?.character?.id, token: tkn?.id, alias: tkn?.name || user?.name };
 
-                    let context = {
-                        actor: tokens[0]?.actor?.toObject(false),
-                        token: tokens[0]?.toObject(false),
-                        speaker: tokens[0],
-                        tile: tile.toObject(false),
-                        entity: entity,
-                        user: game.users.get(userid),
-                        value: value,
-                        scene: canvas.scene,
-                        method: method,
-                        change: change
-                    };
-                    let content = action.data.text;
-
-                    if (content.includes("{{")) {
-                        const compiled = Handlebars.compile(content);
-                        content = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
-                    }
-
-                    if (content.startsWith('/')) {
-                        ui.chat.processMessage(content);
-                    } else {
-                        let messageData = {
-                            user: userid,
-                            speaker: speaker,
-                            type: (action.data.incharacter ? CONST.CHAT_MESSAGE_TYPES.IC : CONST.CHAT_MESSAGE_TYPES.OOC),
-                            content: content
+                        let context = {
+                            actor: tokens[0]?.actor?.toObject(false),
+                            token: tokens[0]?.toObject(false),
+                            speaker: tokens[0],
+                            tile: tile.toObject(false),
+                            entity: entity,
+                            user: game.users.get(userid),
+                            value: value,
+                            scene: canvas.scene,
+                            method: method,
+                            change: change
                         };
+                        let content = action.data.text;
 
-                        if (action.data.flavor)
-                            messageData.flavor = action.data.flavor;
-
-                        if (action.data.for == 'gm') {
-                            messageData.whisper = ChatMessage.getWhisperRecipients("GM").map(u => u.id);
-                            messageData.speaker = null;
-                            messageData.user = game.user.id;
-                        }
-                        else if (action.data.for == 'token') {
-                            let tokenOwners = (tkn ? Object.entries(tkn?.actor.ownership).filter(([k, v]) => { return v == CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER }).map(a => { return a[0]; }) : []);
-                            messageData.whisper = Array.from(new Set(ChatMessage.getWhisperRecipients("GM").map(u => u.id).concat(tokenOwners)));
+                        if (content.includes("{{")) {
+                            const compiled = Handlebars.compile(content);
+                            content = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
                         }
 
-                        if (action.data.language != '' && game.modules.get("polyglot")?.active)
-                            mergeObject(messageData, { flags: { 'monks-active-tiles': { language: action.data.language } }, lang: action.data.language });
+                        if (content.startsWith('/')) {
+                            ui.chat.processMessage(content);
+                        } else {
+                            let messageData = {
+                                user: userid,
+                                speaker: speaker,
+                                type: (action.data.incharacter ? CONST.CHAT_MESSAGE_TYPES.IC : CONST.CHAT_MESSAGE_TYPES.OOC),
+                                content: content
+                            };
 
-                        ChatMessage.create(messageData, { chatBubble: action.data.chatbubble });
+                            if (action.data.flavor)
+                                messageData.flavor = action.data.flavor;
+
+                            if (action.data.for == 'gm') {
+                                messageData.whisper = ChatMessage.getWhisperRecipients("GM").map(u => u.id);
+                                messageData.speaker = null;
+                                messageData.user = game.user.id;
+                            }
+                            else if (action.data.for == 'token') {
+                                let tokenOwners = (tkn ? Object.entries(tkn?.actor.ownership).filter(([k, v]) => { return v == CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER }).map(a => { return a[0]; }) : []);
+                                messageData.whisper = Array.from(new Set(ChatMessage.getWhisperRecipients("GM").map(u => u.id).concat(tokenOwners)));
+                            }
+
+                            if (action.data.language != '' && game.modules.get("polyglot")?.active)
+                                mergeObject(messageData, { flags: { 'monks-active-tiles': { language: action.data.language } }, lang: action.data.language });
+
+                            ChatMessage.create(messageData, { chatBubble: action.data.chatbubble });
+                        }
                     }
                 },
                 content: async (trigger, action) => {
@@ -4919,7 +4921,7 @@ export class ActionManager {
                         onChange: (app) => {
                             app.checkConditional();
                         },
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { showToken: true, showTile: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
                         restrict: (entity) => {
                             return (entity instanceof Token ||
                                 entity instanceof Tile ||

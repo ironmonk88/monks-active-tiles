@@ -2,8 +2,6 @@
     list-style: none;
     margin: 0;
     padding: 0;
-    overflow-y: auto;
-    scrollbar-width: thin;
     color: #7a7971;
     margin-bottom: 10px;
 }
@@ -12,6 +10,9 @@
     list-style: none;
     margin: 0;
     padding: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    max-height: 350px;
 }
 
 .monks-active-tiles.sheet .items-list .item-name {
@@ -274,6 +275,7 @@
     margin-top: 0px;
     color: #191813;
     overflow-y: auto;
+    max-height: 350px;
 }
 
 #trigger-action .file-list li,

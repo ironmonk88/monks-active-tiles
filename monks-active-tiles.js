@@ -517,7 +517,7 @@ export class MonksActiveTiles {
         } else {
             try {
                 return new Function(`"use strict";
-            return (async function ({speaker, actor, token, character, args, scene}={}) {
+            return (async function ({speaker, actor, token, character, tile, method, pt, args, scene}={}) {
                 ${this.command}
                 });`)().call(this, context);
             } catch (err) {
@@ -1357,10 +1357,10 @@ export class MonksActiveTiles {
             let result = wrapped(...args);
             if (result instanceof Promise) {
                 return result.then((wall) => {
-                    triggerDoor(wall);
+                    triggerDoor(wall?.document);
                 });
             } else {
-                triggerDoor(this.wall);
+                triggerDoor(this.wall.document);
                 return result;
             }
         }
@@ -3270,47 +3270,41 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
 });
 
 Hooks.on("preUpdateCombat", async function (combat, delta) {
-    if (combat.started && game.user.isGM) {
-        for (let layer of [canvas.background.tiles, canvas.foreground.tiles]) {
-            for (let tile of layer) {
-                let triggerData = tile.flags["monks-active-tiles"];
-                if (triggerData && triggerData.active && triggerData.actions.length > 0 &&
-                    ((delta.turn || delta.round) && triggerData.trigger == 'turnend')) {
-                    let tokens = [combat.combatant.token];
-                    tile.document.trigger({ tokens: tokens, method: 'turnend' });
-                }
+    if (combat.started && game.user.isGM && combat.scene) {
+        for (let tile of combat.scene.tiles) {
+            let triggerData = tile.flags["monks-active-tiles"];
+            if (triggerData && triggerData.active && triggerData.actions.length > 0 &&
+                ((delta.turn || delta.round) && triggerData.trigger == 'turnend')) {
+                let tokens = [combat.combatant.token];
+                tile.document.trigger({ tokens: tokens, method: 'turnend' });
             }
         }
     }
 });
 
 Hooks.on("updateCombat", async function (combat, delta) {
-    if (combat.started && game.user.isGM) {
-        for (let layer of [canvas.background.tiles, canvas.foreground.tiles]) {
-            for (let tile of layer) {
-                let triggerData = tile.flags["monks-active-tiles"];
-                if (triggerData && triggerData.active && triggerData.actions.length > 0 &&
-                    ((delta.round && triggerData.trigger == 'round')
-                        || ((delta.turn || delta.round) && triggerData.trigger == 'turn')
-                        || (delta.round == 1 && combat.turn == 0 && triggerData.trigger == 'combatstart')
-                    )) {
-                    let tokens = (triggerData.trigger == 'turn' ? [combat.combatant.token] : combat.combatants.map(c => c.token));
-                    tile.document.trigger({ tokens: tokens, method: triggerData.trigger });
-                }
+    if (combat.started && game.user.isGM && combat.scene) {
+        for (let tile of combat.scene.tiles) {
+            let triggerData = tile.flags["monks-active-tiles"];
+            if (triggerData && triggerData.active && triggerData.actions.length > 0 &&
+                ((delta.round && triggerData.trigger == 'round')
+                    || ((delta.turn || delta.round) && triggerData.trigger == 'turn')
+                    || (delta.round == 1 && combat.turn == 0 && triggerData.trigger == 'combatstart')
+                )) {
+                let tokens = (triggerData.trigger == 'turn' ? [combat.combatant.token] : combat.combatants.map(c => c.token));
+                tile.document.trigger({ tokens: tokens, method: triggerData.trigger });
             }
         }
     }
 });
 
 Hooks.on("deleteCombat", async function (combat, delta) {
-    if (combat.started && game.user.isGM) {
-        for (let layer of [canvas.background.tiles, canvas.foreground.tiles]) {
-            for (let tile of layer) {
-                let triggerData = tile.flags["monks-active-tiles"];
-                if (triggerData && triggerData.active && triggerData.actions.length > 0 && triggerData.trigger == 'combatend') {
-                    let tokens = combat.combatants.map(c => c.token);
-                    tile.document.trigger({ tokens: tokens, method: 'combatend' });
-                }
+    if (combat.started && game.user.isGM && combat.scene) {
+        for (let tile of combat.scene.tiles) {
+            let triggerData = tile.flags["monks-active-tiles"];
+            if (triggerData && triggerData.active && triggerData.actions.length > 0 && triggerData.trigger == 'combatend') {
+                let tokens = combat.combatants.map(c => c.token);
+                tile.document.trigger({ tokens: tokens, method: 'combatend' });
             }
         }
     }
