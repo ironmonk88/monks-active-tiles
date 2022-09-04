@@ -1716,8 +1716,9 @@ export class MonksActiveTiles {
 
                 // Get the movement rays and check collision along each Ray
                 // These rays are center-to-center for the purposes of collision checking
-                let rays = this._getRaysFromWaypoints(this.waypoints, this.destination);
-                let hasCollision = rays.some(r => canvas.walls.checkCollision(r));
+                let hasCollision = this.segments.some(s => {
+                    return token.checkCollision(s.ray.B, {origin: s.ray.A, type: "move", mode: "any"});
+                });
                 if (hasCollision) {
                     ui.notifications.error("ERROR.TokenCollide", { localize: true });
                     return false;
@@ -1726,7 +1727,7 @@ export class MonksActiveTiles {
                 // Execute the movement path defined by each ray.
                 this._state = Ruler.STATES.MOVING;
                 let priorDest = undefined;
-                for (let r of rays) {
+                for (let r of this.segments.map(x => x.ray)) {
                     // Break the movement if the game is paused
                     if (!wasPaused && game.paused) break;
 
