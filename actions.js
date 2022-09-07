@@ -5344,6 +5344,60 @@ Hooks.on("setupTileActions", (app) => {
                 return `<span class="logic-style">${trigger.name}</span> for <span class="value-style">&lt;${i18n(trigger.values.for[action.data?.for])}&gt;</span>`;
             }
         });
+
+        app.registerTileAction('forien-quest-log', 'openquest',  {
+            name: 'Open FQL Quest',
+            ctrls: [
+                {
+                    id: "quest",
+                    name: "Quest",
+                    list: () => {
+                        const fqlAPI = game.modules.get('forien-quest-log').public.QuestAPI;
+                        let result = {};
+
+                        for(let quest of fqlAPI.DB.getAllQuests())
+                        {
+                            result[quest._id] = quest._name;
+                        }
+
+                        return result;
+                    },
+                    type: "list",
+                    required: true
+                },
+                {
+                    id: "for",
+                    name: "For",
+                    list: "for",
+                    type: "list"
+                }
+            ],
+            values: {
+                'for': {
+                    "trigger": 'Triggering Player',
+                    "everyone": 'Everyone',
+                    "players": 'Players Only',
+                    "gm": 'GM Only'
+                }
+            },
+            group: 'forien-quest-log',
+            fn: async(args = {}) => {
+                const {action, userid } = args;
+
+                if (action.data.for != 'gm')
+                    MonksActiveTiles.emit('fqlquest', { userid: [userid], for: action.data.for, quest: action.data.quest });
+                
+                if (MonksActiveTiles.allowRun && (action.data.for == 'everyone' || action.data.for == 'gm' || action.data.for == undefined || (action.data.for == 'trigger' && userid == game.user.id)))
+                {
+                    const fqlAPI = game.modules.get('forien-quest-log').public.QuestAPI;
+                    fqlAPI.open({ questId: action.data.quest });
+                }
+
+            },
+            content: async (trigger, action) => {
+                return `<span class="logic-style">${trigger.name}</span> "${trigger.ctrls[0].list()[action.data.quest]}" for <span class="value-style">&lt;${i18n(trigger.values.for[action.data?.for])}&gt;</span>`;
+            }
+        });
     }
 
     if (game.modules.get('kandashis-fluid-canvas')?.active) {

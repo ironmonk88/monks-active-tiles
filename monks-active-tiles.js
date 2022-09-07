@@ -2118,6 +2118,12 @@ export class MonksActiveTiles {
                     Hooks.call('ForienQuestLog.Open.QuestLog');
                 }
             } break;
+            case 'fqlquest': {
+                if ((data.for == 'players' && !game.user.isGM) || (data.for == 'trigger' && game.user.id == data.userid) || data.for == 'everyone' || data.for == undefined) {
+                    const fqlAPI = game.modules.get('forien-quest-log').public.QuestAPI;
+                    fqlAPI.open({ questId: data.quest });
+                }
+            } break;
             case 'target': {
                 if (data.userid == game.user.id) {
                     game.user.updateTokenTargets(data.tokens);
