@@ -2707,7 +2707,44 @@ export class ActionManager {
                         restrict: (entity) => { return (entity instanceof JournalEntry); },
                         required: true,
                         defaultType: 'journal',
-                        placeholder: 'Please select a Journal'
+                        placeholder: 'Please select a Journal',
+                        onChange: (app) => {
+                            app.checkConditional();
+                        },
+                    },
+                    {
+                        id: "page",
+                        name: "Page",
+                        placeholder: 'Please select a Journal Page',
+                        type: "list",
+                        required: false,
+                        list: async (data) => {
+                            let result = {};
+
+                            if(data.entity != null)
+                            {
+                                let journalEntry = await fromUuid(data.entity.id);
+                                for(let page of journalEntry.pages)
+                                {
+                                    result[page.id] = page.name;
+                                }
+                            }
+
+                            return result;
+                        },
+                        conditional: (app) => { return $('input[name="data.entity"]', app.element).val() != '' },
+                        onChange: (app) => {
+                            app.checkConditional("page");
+                        },
+                        dependantOn: "entity",
+                        required: true
+                    },
+                    {
+                        id: "subsection",
+                        name: "Anchor",
+                        type: "text",
+                        conditional: (app) => { return $('select[name="data.page"]', app.element).val() != undefined },
+                        required: false
                     },
                     {
                         id: "showto",
@@ -2755,10 +2792,17 @@ export class ActionManager {
                     for (let entity of entities) {
                         //open journal
                         if (entity && action.data.showto != 'gm')
-                            MonksActiveTiles.emit('journal', { showto: action.data.showto, userid: userid, entityid: entity.uuid, permission: action.data.permission, enhanced: action.data.enhanced });
+                            MonksActiveTiles.emit('journal', { 
+                                showto: action.data.showto, 
+                                userid: userid, 
+                                entityid: entity.uuid, 
+                                permission: action.data.permission, 
+                                enhanced: action.data.enhanced, 
+                                page: action.data.page,
+                                subsection: action.data.subsection });
                         if (MonksActiveTiles.allowRun && (action.data.showto == 'everyone' || action.data.showto == 'gm' || action.data.showto == undefined || (action.data.showto == 'trigger' && userid == game.user.id))) {
                             if (!game.modules.get("monks-enhanced-journal")?.active || action.data?.enhanced !== true || !game.MonksEnhancedJournal.openJournalEntry(entity))
-                                entity.sheet.render(true);
+                                entity.sheet.render(true, {pageId: action.data.page, anchor: [action.data.subsection]});
                         }
                     }
 

@@ -114,6 +114,9 @@ export class MonksActiveTiles {
         const { tile, tokens, action, value, userid } = args;
         let id = entry?.id || action.data?.entity?.id;
 
+        if(id != undefined)
+            id = id.split("#")[0];
+
         let entities = [];
         if (id == 'tile')
             entities = [tile];
@@ -2093,7 +2096,7 @@ export class MonksActiveTiles {
                         return ui.notifications.warn(`You do not have permission to view ${entity.name}.`);
 
                     if (!game.modules.get("monks-enhanced-journal")?.active || data?.enhanced !== true || !game.MonksEnhancedJournal.openJournalEntry(entity))
-                        entity.sheet.render(true);
+                        entity.sheet.render(true, {pageId: data.page, anchor: [data.subsection]});
                 }
             } break;
             case 'actor': {

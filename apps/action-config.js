@@ -672,12 +672,40 @@ export class ActionConfig extends FormApplication {
         this.options.parent.setPosition({height:'auto'});
     }
 
-    checkConditional() {
+    async checkConditional(source = null) {
         let that = this;
-        $('.form-group', this.element).each(function () {
-            if ($(this).data('conditional')) 
-                $(this).toggle($(this).data('conditional').call(that, that));
-        })
+        await Promise.all($('.form-group', this.element).each(async function () {
+            if ($(this).data('conditional'))
+            {
+                let id = $(this).data('ctrl-id');
+
+                if(id == source)
+                    return;
+
+                let isVisible = $(this).data('conditional').call(that, that);
+                $(this).toggle(isVisible);
+
+                if(isVisible)
+                {
+                    let command = $('select[name="action"]', that.element).val();
+                    let action = MonksActiveTiles.triggerActions[command];
+                    let ctrl = action.ctrls.find((c) => c.id == id);
+
+                    if(ctrl.dependantOn && ctrl.list)
+                    {
+                        let dependant_data = JSON.parse($(`input[name="data.${ctrl.dependantOn}"]`, that.element).val());
+                        let data = {
+                            [ctrl.dependantOn]: dependant_data
+                        };
+                        let list = await ctrl.list(data);
+                        
+                        let select = $(`select[name="data.${id}"]`, this.element);
+                        select.empty();
+                        select.append(that.fillList(list, (data[id]?.id || data[id] || ctrl.defvalue)));
+                    }
+                }
+            }
+        }))
         this.setPosition({ height: 'auto' });
     }
 
@@ -828,6 +856,8 @@ export class ActionConfig extends FormApplication {
                 .toggle(ctrl.conditional == undefined || (typeof ctrl.conditional == 'function' ? ctrl.conditional.call(this, this) : ctrl.conditional))
                 .append($('<label>').html(i18n(ctrl.name) + (!!ctrl.required ? '<span class="req-field" title="This is a required field">*</span>' : '')))
                 .append(field);
+
+            div.data('ctrl-id', ctrl.id);
 
             if (typeof ctrl.conditional == 'function')
                 div.data('conditional', ctrl.conditional);
