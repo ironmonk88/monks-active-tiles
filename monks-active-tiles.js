@@ -465,7 +465,7 @@ export class MonksActiveTiles {
 
         if (runasgm || userid == game.user.id) {
             if (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active)
-                return await (macro.type == 'script' ? macro.callScriptFunction(context) : macro.execute(args));
+                return await (macro.type == 'script' ? macro.execute(context) : macro.execute(args));
             else
                 return await (macro.type == 'script' ? MonksActiveTiles._execute.call(macro, context) : macro.execute(args));
         } else {
@@ -490,7 +490,7 @@ export class MonksActiveTiles {
         if (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active) {
             if (getProperty(macro, "flags.advanced-macros.runAsGM") || getProperty(macro, "flags.furnace.runAsGM") || userid == game.user.id) {
                 //execute the macro if it's set to run as GM or it was the GM that actually moved the token.
-                return await macro.callScriptFunction(context);
+                return await macro.execute(context);
             } else {
                 //this one needs to be run as the player, so send it back
                 MonksActiveTiles.emit('runmacro', {
@@ -1949,7 +1949,7 @@ export class MonksActiveTiles {
                     };
 
                     let results = (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active ?
-                        await (macro.type == 'script' ? macro.callScriptFunction(context) : macro.execute(data.args)) :
+                        await (macro.type == 'script' ? macro.execute(context) : macro.execute(data.args)) :
                         await MonksActiveTiles._execute.call(macro, context));
                     MonksActiveTiles.emit("returnmacro", { _id: data._id, tileid: data?.tileid, results: results });
                 }
