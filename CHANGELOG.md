@@ -1,3 +1,31 @@
+## Version 10.1
+
+Fixed issue with snap to grid when teleporting to a different scene.
+
+Fixed issue with removing tokens when teleporting to a new scene.
+
+Added duration to the Move action.
+
+Fixed issue with the move action assuming the movement is always outside the bounded area.
+
+Added the rotation action so you can animate the rotation of an object
+
+Added collection to the Delete Action so you can use current when deleting.
+
+Fixed issues with Alter not able to find the correct property to change
+
+Fixed issues with dragging and dropping newly created actions.
+
+Fixed issue with excluding transparent background
+
+Fixed issues with Levels.
+
+Fixed issue with synchronization with token movement and where it meets the Tile.
+
+Fixed issue with combat triggers.
+
+Fixed issues with Wall triggers.
+
 ## Version 1.0.91
 
 Adding v10 support

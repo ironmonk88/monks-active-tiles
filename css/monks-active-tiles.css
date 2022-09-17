@@ -364,4 +364,5 @@
 .history-list .item-list {
     overflow-y: auto;
     max-height: 500px;
+    font-size: var(--font-size-14);
 }

@@ -83,7 +83,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                 .map(async (a) => {
                     let trigger = MonksActiveTiles.triggerActions[a.action];
                     let content = (trigger == undefined ? 'Unknown' : i18n(trigger.name));
-                    if (trigger.content) {
+                    if (trigger?.content) {
                         try {
                             content = await trigger.content(trigger, a);
                         } catch (e) {

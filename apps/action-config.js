@@ -636,7 +636,7 @@ export class ActionConfig extends FormApplication {
                     content = await trigger.content(trigger, this.object);
                 } catch {}
             }
-            let li = $('<li>').addClass('item flexrow').attr('data-id', this.object.id).attr('draggable', true)
+            let li = $('<li>').addClass('item flexrow').attr('data-id', this.object.id).attr('data-collection', 'actions').attr('draggable', true)
                 .append($('<div>').addClass('item-name flexrow').append($('<h4>').css({ 'white-space': 'normal' }).html(content)))
                 .append($('<div>').addClass('item-controls flexrow')
                     .append($('<a>').addClass('item-control action-edit').attr('title', 'Edit Action').html('<i class="fas fa-edit"></i>').click(this.options.parent._editAction.bind(this.options.parent)))
@@ -737,7 +737,7 @@ export class ActionConfig extends FormApplication {
                     {
                         let list;
                         if (typeof ctrl.list == 'function')
-                            list = await ctrl.list.call(action, data);
+                            list = await ctrl.list.call(action, data, this);
                         else
                             list = (action.values && action.values[ctrl.list]);
 
@@ -858,6 +858,10 @@ export class ActionConfig extends FormApplication {
                 var substringMatcher = function () {
                     return function findMatches(q, cb) {
                         var matches, substrRegex;
+
+                        q = q.replace(/[^a-zA-Z.]/gi, '');
+                        if (q == "")
+                            return;
 
                         // an array that will be populated with substring matches
                         matches = [];

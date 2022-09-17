@@ -100,6 +100,7 @@
   "MonksActiveTiles.action.removeitem": "Remove Item",
   "MonksActiveTiles.action.tileimage": "Switch Tile Image",
   "MonksActiveTiles.action.runbatch": "Run All Batch Actions",
+  "MonksActiveTiles.action.rotation": "Rotation",
 
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
   "MonksActiveTiles.filter.exists": "Check entity count",
@@ -212,6 +213,7 @@
   "MonksActiveTiles.ctrl.returndata": "Use returned data",
   "MonksActiveTiles.ctrl.select": "Change To",
   "MonksActiveTiles.ctrl.loops": "Loops",
+  "MonksActiveTiles.ctrl.rotation": "Rotation",
 
   "MonksActiveTiles.mode.enter": "On Enter",
   "MonksActiveTiles.mode.exit": "On Exit",
