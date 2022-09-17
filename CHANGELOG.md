@@ -1,3 +1,9 @@
+## Version 10.2
+
+Fixed issue with show/hide when no animation is called for
+
+Fixed issue with rotation
+
 ## Version 10.1
 
 Fixed issue with snap to grid when teleporting to a different scene.

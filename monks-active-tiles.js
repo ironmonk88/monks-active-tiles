@@ -724,8 +724,8 @@ export class MonksActiveTiles {
         };
         //await CanvasAnimation.terminateAnimation(`${entity.document.documentName}.${entity.id}.animateEntity`);
 
-        let duration = animation.time - new Date().getTime();
-        if (duration < 0) {
+        let duration = (animation.time - new Date().getTime()) ?? animation.duration;
+        if (isNaN(duration) || duration < 0) {
             log("Fade time has already passed");
             return new Promise((resolve) => { resolve(); });
         }
@@ -756,7 +756,7 @@ export class MonksActiveTiles {
             if (dr > 180) r -= 360;
             if (dr < -180) r += 360;
             dr = r - from.rotation;
-            animations["movement"] = [{ attribute: "rotation", from: Math.toRadians(from.rotation), to: Math.toRadians(r), parent: animation }];
+            animations["rotation"] = [{ attribute: "rotation", from: Math.toRadians(from.rotation), to: Math.toRadians(r), parent: object }];
         }
         let hasAlpha = false;
         if (from.alpha != undefined && to.alpha != undefined && from.alpha != to.alpha) {
@@ -782,6 +782,10 @@ export class MonksActiveTiles {
                         setProperty(entity, `_animationAttributes.${attribute.attribute}`, realval)
                         if (attribute.attribute == "alpha" && to.hidden === true && !game.user.isGM && !attribute.parent.visible)
                             attribute.parent.object.visible = true;
+                        if (attribute.parent instanceof AmbientLight) {
+                            attribute.parent.document[attribute.attribute] = realval;
+                            attribute.parent.updateSource();
+                        }
                     }
 
                     log("Animate Entity", animation.attributes[0].parent.rotation, attributes[0].done, attributes[0].from + attributes[0].done, animation.attributes[0].from, animation.attributes[0].to);
@@ -1324,7 +1328,7 @@ export class MonksActiveTiles {
 
             let result = wrapped(...args);
 
-            if (!!options.animation && (positionChange || hasRotation || hasAlpha))
+            if (!!options.animation && options.animation.duration && (positionChange || hasRotation || hasAlpha))
                 MonksActiveTiles.animateEntity(this, initial, options.animation)
 
             return result;
@@ -3572,7 +3576,23 @@ Hooks.on("dropCanvasData", async (canvas, data, options, test) => {
             width: canvas.scene.dimensions.size,
             height: canvas.scene.dimensions.size,
             flags: {
-                'monks-active-tiles': { "active": true, "restriction": "all", "controlled": "all", "trigger": "click", "pertoken": false, "minrequired": 0, "chance": 100, "actions": [{ "action": "distance", "data": { "measure": "eq", "distance": { "value": 1, "var": "sq" }, "continue": "within" }, "id": "UugwKEORHARYwcS2" }, { "action": "exists", "data": { "entity": "" }, "id": "Tal2G8WXfo3xmL5U" }, { "action": "first", "id": "dU81VsGaWmAgLAYX" }, { "action": "showhide", "data": { "entity": { "id": "tile", "name": "This Tile" }, "hidden": "hide" }, "id": "UnujCziObnW2Axkx" }, { "action": "additem", "data": { "entity": "", "item": { "id": item.uuid, "name": "" } }, "id": "IwxJOA8Pi287jBbx" }, { "action": "notification", "data": { "text": "{{value.items.0.name}} has been added to {{value.tokens.0.name}}'s inventory", "type": "info", "showto": "token" }, "id": "oNx3QqEi0WpxfkhV" }, { "action": "activate", "data": { "entity": "", "activate": "deactivate" }, "id": "6K7aEZH8SnGv3Gyq" }] }
+                'monks-active-tiles': {
+                    "active": true,
+                    "restriction": "all",
+                    "controlled": "all",
+                    "trigger": "click",
+                    "pertoken": false,
+                    "minrequired": 0,
+                    "chance": 100,
+                    "actions": [
+                        { "action": "distance", "data": { "measure": "eq", "distance": { "value": 1, "var": "sq" }, "continue": "within" }, "id": "UugwKEORHARYwcS2" },
+                        { "action": "exists", "data": { "entity": "" }, "id": "Tal2G8WXfo3xmL5U" },
+                        { "action": "first", "id": "dU81VsGaWmAgLAYX" },
+                        { "action": "showhide", "data": { "entity": { "id": "tile", "name": "This Tile" }, "hidden": "hide" }, "id": "UnujCziObnW2Axkx" },
+                        { "action": "additem", "data": { "entity": "", "item": { "id": item.uuid, "name": "" } }, "id": "IwxJOA8Pi287jBbx" },
+                        { "action": "notification", "data": { "text": "{{value.items.0.name}} has been added to {{value.tokens.0.name}}'s inventory", "type": "info", "showto": "token" }, "id": "oNx3QqEi0WpxfkhV" },
+                        { "action": "activate", "data": { "entity": "", "activate": "deactivate" }, "id": "6K7aEZH8SnGv3Gyq" }]
+                }
             }
         });
 
@@ -3673,7 +3693,6 @@ Hooks.on("refreshTile", (tile) => {
         tile.mesh.visible = false;
     }
 
-    log("Refreshing Tile");
     if (tile._animationAttributes && tile._animationAttributes.alpha && tile?.mesh?.alpha != tile._animationAttributes.alpha) {
         tile.mesh.alpha = tile._animationAttributes.alpha;
     }
