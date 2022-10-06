@@ -736,14 +736,17 @@ export class ActionConfig extends FormApplication {
                 case 'list':
                     {
                         let list;
-                        if (typeof ctrl.list == 'function')
-                            list = await ctrl.list.call(action, data, this);
+                        if (typeof ctrl.list == 'function') {
+                            list = ctrl.list.call(this, this, action, data);
+                            if (list instanceof Promise)
+                                list = await list;
+                        }
                         else
                             list = (action.values && action.values[ctrl.list]);
 
                         let select = $('<select>').toggleClass('required', !!ctrl.required).attr({ name: id, 'data-dtype': 'String' });
                         if (ctrl.onChange)
-                            select.on('change', ctrl.onChange.bind(select, this, select));
+                            select.on('change', ctrl.onChange.bind(select, this, select, action, data));
                         field.append(select);
                         if (list != undefined) {
                             select.append(this.fillList(list, (data[ctrl.id]?.id || data[ctrl.id] || ctrl.defvalue)));
@@ -781,7 +784,7 @@ export class ActionConfig extends FormApplication {
                     let input = $('input[type="hidden"]', field);
                     input.attr("needs-parse", "true");
                     if (ctrl.onChange) {
-                        input.on('change', ctrl.onChange.bind(input, this, input));
+                        input.on('change', ctrl.onChange.bind(input, this, input, action, data));
                     }
                     break;
                 case 'text':

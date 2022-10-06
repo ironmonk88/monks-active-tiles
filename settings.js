@@ -115,4 +115,18 @@ export const registerSettings = function () {
 		default: false,
 		type: Boolean
 	});
+
+	game.settings.register(modulename, "tile-templates", {
+		scope: "world",
+		config: false,
+		default: [],
+		type: Object
+	});
+
+	game.settings.register(modulename, "tile-template-folders", {
+		scope: "world",
+		config: false,
+		default: [],
+		type: Object
+	});
 }

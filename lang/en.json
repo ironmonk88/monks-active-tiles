@@ -45,6 +45,7 @@
   "MonksActiveTiles.Sounds": "Sounds Playing",
   "MonksActiveTiles.AllowWhenPaused": "Allow When Paused",
   "MonksActiveTiles.ShownImage": "Shown Image",
+  "MonksActiveTiles.TileTemplates": "Tile Templates",
 
   "MonksActiveTiles.actiontext.pause": "<action>{pause} game</action>",
   "MonksActiveTiles.actiontext.delay": "<action>Wait</action> for <detail>\"{delay} seconds\"</detail>",
@@ -262,6 +263,7 @@
   "MonksActiveTiles.for.gm": "GM Only",
   "MonksActiveTiles.for.token": "Token Owner",
   "MonksActiveTiles.for.player": "Triggering Player",
+  "MonksActiveTiles.for.players": "Players Only",
 
   "MonksActiveTiles.audiotype.all": "Ambient Sounds",
   "MonksActiveTiles.audiotype.tile": "Tile Sounds",

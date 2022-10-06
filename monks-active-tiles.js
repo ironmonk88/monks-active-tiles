@@ -1,6 +1,7 @@
 ﻿import { registerSettings } from "./settings.js";
 import { WithActiveTileConfig } from "./apps/active-tile-config.js"
 import { ActionConfig } from "./apps/action-config.js";
+import { TileTemplates } from "./apps/tile-templates.js";
 import { BatchManager } from "./classes/BatchManager.js";
 import { ActionManager } from "./actions.js";
 
@@ -52,7 +53,7 @@ export let patchFunc = (prop, func, type = "WRAPPER") => {
     } else {
         const oldFunc = eval(prop);
         eval(`${prop} = function (event) {
-            return func.call(this, oldFunc.bind(this), ...arguments);
+            return func.call(this, ${type != "OVERRIDE" ? "oldFunc.bind(this)," : ""} ...arguments);
         }`);
     }
 }
@@ -124,6 +125,9 @@ export class MonksActiveTiles {
     static async getEntities(args, defaultType, entry) {
         const { tile, tokens, action, value, userid } = args;
         let id = entry?.id || action.data?.entity?.id;
+
+        if (id != undefined)
+            id = id.split("#")[0];
 
         let entities = [];
         if (id == 'tile')
@@ -275,7 +279,7 @@ export class MonksActiveTiles {
 
                 location = Tagger.getByTag(tag, options);
 
-                if (location.scene == "_all")
+                if (options.allScenes)
                     location = [].concat(...Object.values(location));
             }
         }
@@ -788,7 +792,7 @@ export class MonksActiveTiles {
                         }
                     }
 
-                    log("Animate Entity", animation.attributes[0].parent.rotation, attributes[0].done, attributes[0].from + attributes[0].done, animation.attributes[0].from, animation.attributes[0].to);
+                    //log("Animate Entity", animation.attributes[0].parent.rotation, attributes[0].done, attributes[0].from + attributes[0].done, animation.attributes[0].from, animation.attributes[0].to);
                 }
             }).then(() => {
                 for (let i = 0; i < attributes.length; i++) {
@@ -860,11 +864,21 @@ export class MonksActiveTiles {
     static async transitionImage(entity, from, to, transition, time) {
         let t = entity._object;
 
+        let duration = time - new Date().getTime();
+
+        //log("transition", t._transition, from, to);
+        /*
+        if (t._transition) {
+            t._transitionQueue = t._transitionQueue || [];
+            t._transitionQueue.push({ entity, from, to, transition, duration });
+            log("addng to queue", t._transition, t._transitionQueue);
+            return;
+        }*/
+
         let animationName = `MonksActiveTiles.${entity.documentName}.${entity.id}.animateTransitionImage`;
 
-        await CanvasAnimation.terminateAnimation(animationName);
+        //await CanvasAnimation.terminateAnimation(animationName);
 
-        let duration = time - new Date().getTime();
         if (duration < 0) {
             log("Transition time has already passed");
             new Promise((resolve) => { resolve(); });
@@ -877,6 +891,7 @@ export class MonksActiveTiles {
         container.height = entity.height;
         container.x = entity.x;
         container.y = entity.y;
+        //log("Container", container.x, container.y, t._transition, t._transition.x, t._transition.y);
 
         //Set the image clip region
         if (transition != "fade" && transition != "blur") {
@@ -998,6 +1013,7 @@ export class MonksActiveTiles {
             ontick: (dt, animation) => {
                 if (t.mesh.visible)
                     t.mesh.visible = false;
+                //log("Tick", animation.attributes[0]);
             }
         }).then(() => {
             canvas.primary.removeChild(container);
@@ -1007,6 +1023,11 @@ export class MonksActiveTiles {
             t.texture.y = 0;
             t.mesh.visible = true;
             t.mesh.refresh();
+            //log("checking transition queue", t._transition, t._transitionQueue);
+            //if (t._transitionQueue?.length) {
+            //    let next = t._transitionQueue.shift();
+            //    MonksActiveTiles.transitionImage(next.entity, next.from, next.to, next.transition, new Date().getTime() + next.duration);
+            //}
         });
     }
 
@@ -1348,6 +1369,28 @@ export class MonksActiveTiles {
                 return tileOnUpdate.call(this, oldOnUpdate.bind(this), ...arguments);
             }
         }*/
+
+        let onDropData = async function (wrapper, ...args) {
+            const [event, data] = args;
+            if (data.data) {
+                let tileData = data.data;
+                tileData.x = data.x;
+                tileData.y = data.y;
+                tileData.x = tileData.x - (tileData.width / 2);
+                tileData.y = tileData.y - (tileData.height / 2);
+                if (!event.shiftKey) {
+                    const { x, y } = canvas.grid.getSnappedPosition(tileData.x, tileData.y);
+                    tileData.x = x;
+                    tileData.y = y;
+                }
+                if (event.altKey) tileData.hidden = true;
+                return TileDocument.create(tileData, { parent: canvas.scene });
+            }
+            else
+                return wrapper(...args);
+        }
+
+        patchFunc("TilesLayer.prototype._onDropData", onDropData, "MIXED");
 
         let tileCreatePreview = function (wrapped, ...args) {
             let data = args[0];
@@ -2108,9 +2151,12 @@ export class MonksActiveTiles {
                         actionId: data._id,
                     };
 
-                    let results = (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active ?
+                    let results = (macro.type == 'script' ? MonksActiveTiles._execute.call(macro, context) : macro.execute(args));
+                    /*
+                        (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active ?
                         await (macro.type == 'script' ? macro.callScriptFunction(context) : macro.execute(data.args)) :
                         await MonksActiveTiles._execute.call(macro, context));
+                        */
                     MonksActiveTiles.emit("returnmacro", { _id: data._id, tileid: data?.tileid, results: results });
                 }
             } break;
@@ -2252,8 +2298,20 @@ export class MonksActiveTiles {
                     if (data.permission === true && !entity.testUserPermission(game.user, "LIMITED"))
                         return ui.notifications.warn(`You do not have permission to view ${entity.name}.`);
 
-                    if (!game.modules.get("monks-enhanced-journal")?.active || data?.enhanced !== true || !game.MonksEnhancedJournal.openJournalEntry(entity))
-                        entity.sheet.render(true);
+                    if (!game.modules.get("monks-enhanced-journal")?.active || data?.enhanced !== true || !game.MonksEnhancedJournal.openJournalEntry(entity)) {
+                        if (game.modules.get("monks-enhanced-journal")?.active) {
+                            if (entity instanceof JournalEntry && entity.pages.size == 1 && !!getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type")) {
+                                let type = getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type");
+                                if (type == "base" || type == "oldentry") type = "journalentry";
+                                let types = game.MonksEnhancedJournal.getDocumentTypes();
+                                if (types[type]) {
+                                    entity = entity.pages.contents[0];
+                                    game.MonksEnhancedJournal.fixType(entity);
+                                }
+                            }
+                        }
+                        entity.sheet.render(true, { pageId: data.page, anchor: [data.subsection] });
+                    }
                 }
             } break;
             case 'actor': {
@@ -2275,7 +2333,16 @@ export class MonksActiveTiles {
             } break;
             case 'fql': {
                 if ((data.for == 'players' && !game.user.isGM) || (data.for == 'trigger' && game.user.id == data.userid) || data.for == 'everyone' || data.for == undefined) {
-                    Hooks.call('ForienQuestLog.Open.QuestLog');
+                    if (data.quest) {
+                        const fqlAPI = game.modules.get('forien-quest-log').public.QuestAPI;
+                        fqlAPI.open({ questId: data.quest });
+                    } else
+                        Hooks.call('ForienQuestLog.Open.QuestLog');
+                }
+            } break;
+            case 'party-inventory': {
+                if ((data.for == 'players' && !game.user.isGM) || (data.for == 'trigger' && game.user.id == data.userid) || data.for == 'everyone' || data.for == undefined) {
+                    game.modules.get("party-inventory").api.openWindow();
                 }
             } break;
             case 'target': {
@@ -3235,6 +3302,46 @@ export class MonksActiveTiles {
         }
         return original;
     }
+
+    static saveTemplate() {
+        Dialog.confirm({
+            title: "Name of Template",
+            content: `
+<form>
+    <div class="form-group">
+        <label for= "name" >Template Name</label >
+        <div class="form-fields">
+            <input type="text" name="name" />
+        </div>
+    </div>
+</form>`,
+            yes: (html) => {
+                const form = html[0].querySelector("form");
+                if (form) {
+                    const fd = new FormDataExtended(form);
+                    if (!fd.object.name)
+                        return ui.notifications.error("Tile templates require a name");
+
+                    let templates = setting("tile-templates") || [];
+                    let data = this.object.toObject();
+                    data.name = fd.object.name;
+                    data.visible = true;
+                    delete data.img;
+                    data.img = data.texture.src;
+                    data.id = data._id;
+                    data.thumbnail = data.img || "modules/monks-active-tiles/img/cube.svg";
+                    templates.push(data);
+                    game.settings.set("monks-active-tiles", "tile-templates", templates);
+                    ui.notifications.info("Tile information has been saved to Tile Templates.");
+                    new TileTemplates().render(true);
+                }
+            },
+            options: {
+                width: 400
+            }
+        }
+        );
+    }
 }
 
 Hooks.on('init', async () => {
@@ -3553,15 +3660,7 @@ Hooks.on("renderWallConfig", async (app, html, options) => {
 Hooks.on("dropCanvasData", async (canvas, data, options, test) => {
     if (data.type == 'Item' && setting('drop-item')) {
         //Get the Item
-
-        let item;
-
-        if (data.pack) {
-            const pack = game.packs.get(data.pack);
-            item = await pack?.getDocument(data.id);
-        } else {
-            item = game.items.get(data.id);
-        }
+        let item = await fromUuid(data.uuid);
 
         if (!item)
             return ui.notifications.warn("Could not find item");
@@ -3569,7 +3668,7 @@ Hooks.on("dropCanvasData", async (canvas, data, options, test) => {
         //Create Tile
         //change the Tile Image to the Item image
         //Add the actions to Hide the Tile, Disabled the Tile, and Add the Item to Inventory
-        let dest = canvas.grid.getSnappedPosition(data.x - (canvas.scene.dimensions.size / 2), data.y - (canvas.scene.dimensions.size / 2), canvas.background.gridPrecision);
+        let dest = canvas.grid.getSnappedPosition(data.x - (canvas.scene.dimensions.size / 2), data.y - (canvas.scene.dimensions.size / 2), canvas.tiles.gridPrecision);
 
         let td = mergeObject(dest, {
             img: item.img,
@@ -3585,13 +3684,16 @@ Hooks.on("dropCanvasData", async (canvas, data, options, test) => {
                     "minrequired": 0,
                     "chance": 100,
                     "actions": [
-                        { "action": "distance", "data": { "measure": "eq", "distance": { "value": 1, "var": "sq" }, "continue": "within" }, "id": "UugwKEORHARYwcS2" },
-                        { "action": "exists", "data": { "entity": "" }, "id": "Tal2G8WXfo3xmL5U" },
+                        { "action": "distance", "data": { "measure": "eq", "distance": { "value": 1, "var": "sq" }, "continue": "always", "entity": "" }, "id": "UugwKEORHARYwcS2" },
+                        { "action": "exists", "data": { "entity": "", "collection": "tokens", "count": "> 0", "none": "NotCloseEnough" }, "id": "Tal2G8WXfo3xmL5U" },
                         { "action": "first", "id": "dU81VsGaWmAgLAYX" },
                         { "action": "showhide", "data": { "entity": { "id": "tile", "name": "This Tile" }, "hidden": "hide" }, "id": "UnujCziObnW2Axkx" },
                         { "action": "additem", "data": { "entity": "", "item": { "id": item.uuid, "name": "" } }, "id": "IwxJOA8Pi287jBbx" },
                         { "action": "notification", "data": { "text": "{{value.items.0.name}} has been added to {{value.tokens.0.name}}'s inventory", "type": "info", "showto": "token" }, "id": "oNx3QqEi0WpxfkhV" },
-                        { "action": "activate", "data": { "entity": "", "activate": "deactivate" }, "id": "6K7aEZH8SnGv3Gyq" }]
+                        { "action": "activate", "data": { "entity": "", "activate": "deactivate" }, "id": "6K7aEZH8SnGv3Gyq" },
+                        { "action": "anchor", "data": { "tag": "NotCloseEnough", "stop": true }, "id": "9Pi17j10WPrzAFeq" },
+                        { "action": "notification", "data": { "text": "Not close enough to pick up this item", "type": "warning", "showto": "token" }, "id": "Unr31Z6iM2P2U7VC" }
+                    ]
                 }
             }
         });
@@ -3609,6 +3711,8 @@ Hooks.on("renderSettingsConfig", (app, html, data) => {
 Hooks.on("renderTileConfig", (app, html, data) => {
     //Make sure that another module hasn't erased the monks-active-tiles class
     $(app.element).addClass("monks-active-tiles");
+
+    $("<button>").attr("type", "button").attr("title", "Save as Template").css({ "flex": "0 0 34px" }).html('<i class="fas fa-save" style="margin-right: 0px;"></i>').insertBefore($('button[type="submit"]', html)).on("click", MonksActiveTiles.saveTemplate.bind(app));
 });
 
 Hooks.on("canvasReady", () => {
@@ -3663,7 +3767,7 @@ Hooks.on('preUpdateWall', async (document, update, options, userId) => {
     }
 
     let entity = getProperty(update, "flags.monks-active-tiles.entity");
-    if (!!entity) {
+    if (!!entity && typeof entity == "string") {
         setProperty(update, "flags.monks-active-tiles.entity", JSON.parse(entity));
     }
 });
@@ -3704,4 +3808,19 @@ Hooks.on("refreshToken", (token) => {
         token.mesh.visible = true;
         token.visible = true;
     }
-})
+});
+
+Hooks.on("getSceneControlButtons", (controls) => {
+    if (game.user.isGM) {
+        let tileControls = controls.find(control => control.name === "tiles")
+        tileControls.tools.push({
+            name: "templates",
+            title: "MonksActiveTiles.TileTemplates",
+            icon: "fas fa-folder-tree",
+            onClick: async (away) => {
+                new TileTemplates().render(true);
+            },
+            button: true
+        });
+    }
+});

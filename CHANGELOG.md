@@ -1,3 +1,41 @@
+## Version 10.3
+
+Fixed issue with teleport an invalid co-ordinates for the destination.
+
+Fixed an issue with teleporting tokens that don't belong to an actor.
+
+Updated the move action to integrate a bit better with Foundry's move functions.
+
+Fixed issues with restricting a sound to a scene not being respected when it's the GM.
+
+Fixed issue with playing the animation for a tile.
+
+Added the option to open a Journal to a page.  Thank you wickermoon for a good base of code to work with.
+
+Fixed an issue when an image transition was called, when a transition was currently happening.  I've had to block the second one from happening until the first has completed, so you might need to delay that second action to make sure the transition happens.
+
+Added the attribute as a value that can be used with the alter action when using handlebars.
+
+Also discontinuing the use of multiple attributes separated by a ; since batch manager handles it now.
+
+Removed the option of using 'or' or 'and' in the valeu statement for the alter action.  It caused strange issues.
+
+Added integration for the Party Inventory module.
+
+Added Tile Templates.  So you can save your favorite tile configuration, export the data to a file, import from a file.  Drag and drop templates to the canvas.
+
+Fixed issues using tagger and finding tags from all scenes.
+
+Fixed issues with running a Macro when it's passed to the player to run.
+
+Fixed issues opening up a Journal Entry that's from Monks' Enhanced Journal.
+
+Fixed issues with dragging an Item onto the canvas creating a collectable item.
+
+Fixed Macros so that they're v10 compliant.
+
+Add a function to open a specific FQL quest
+
 ## Version 10.2
 
 Fixed issue with show/hide when no animation is called for
