@@ -6120,7 +6120,7 @@ Hooks.on("setupTileActions", (app) => {
                     name: "Continue if",
                     list: "continue",
                     type: "list",
-                    defvalue: 'within'
+                    defvalue: 'always'
                 }
             ],
             values: {
