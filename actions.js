@@ -5998,4 +5998,169 @@ Hooks.on("setupTileActions", (app) => {
             }
         });
     }
+
+    if (game.modules.get("dfreds-convenient-effects")?.active) {
+        app.registerTileGroup('dfreds-convenient-effects', "DFred's Convenient Effects");
+
+        app.registerTileAction('dfreds-convenient-effects', 'dfreds-add', {
+            name: 'Convenient Effect',
+            group: 'dfreds-convenient-effects',
+            ctrls: [
+                {
+                    id: "entity",
+                    name: "MonksActiveTiles.ctrl.select-entity",
+                    type: "select",
+                    subtype: "entity",
+                    options: {
+                        showTile: true,
+                        showToken: true,
+                        showWithin: true,
+                        showPlayers: true,
+                        showPrevious: true,
+                        showTagger: true
+                    },
+                    restrict: (entity) => {
+                        return (entity instanceof Token);
+                    }
+                },
+                {
+                    id: "effect",
+                    name: "Effect",
+                    type: "list",
+                    required: true,
+                    defvalue: "",
+                    list: () => {
+                        return game.dfreds.effects.all.reduce((acc, effect) => {
+                            acc[effect.name] = effect.name;
+                            return acc;
+                        }, {});
+                    },
+                },
+                {
+                    id: "state",
+                    name: "MonksActiveTiles.ctrl.state",
+                    list: "state",
+                    type: "list",
+                    defvalue: 'add'
+                }
+            ],
+            values: {
+                'state': {
+                    'add': "MonksActiveTiles.state.add",
+                    'remove': "MonksActiveTiles.state.remove",
+                    'toggle': "MonksActiveTiles.state.toggle"
+                }
+            },
+            fn: async (args = {}) => {
+
+                const { action } = args;
+                const entities = await MonksActiveTiles.getEntities(args);
+
+                const foundEffect = game.dfreds.effectInterface.findEffectByName(action.data.effect);
+
+                if (entities.length && foundEffect) {
+                    for (let entity of entities) {
+                        await game.dfreds.effectInterface[action.data.state + "Effect"]({
+                            effectName: action.data.effect,
+                            uuid: entity.uuid
+                        });
+                    }
+                }
+
+                return { tokens: entities };
+
+            },
+            content: async (trigger, action) => {
+                return `<span class="action-style">Convenient Effect </span> <span class="details-style">${i18n(trigger.values.state[action.data?.state])}</span> <span class="value-style">&lt;${action.data.effect}&gt;</span>`;
+            }
+        });
+
+        app.registerTileAction('dfreds-convenient-effects', 'dfreds-filter', {
+            name: "Filter by convenient effect",
+            group: 'dfreds-convenient-effects',
+            ctrls: [
+                {
+                    id: "entity",
+                    name: "MonksActiveTiles.ctrl.select-entity",
+                    type: "select",
+                    subtype: "entity",
+                    options: {
+                        showToken: true,
+                        showWithin: true,
+                        showPlayers: true,
+                        showPrevious: true,
+                        showTagger: true
+                    },
+                    restrict: (entity) => {
+                        return (entity instanceof Token);
+                    }
+                },
+                {
+                    id: "effect",
+                    name: "Effect",
+                    type: "list",
+                    required: true,
+                    defvalue: "",
+                    list: () => {
+                        return game.dfreds.effects.all.reduce((acc, effect) => {
+                            acc[effect.name] = effect.name;
+                            return acc;
+                        }, {});
+                    },
+                },
+                {
+                    id: "filter",
+                    name: "Check If They",
+                    list: "filter",
+                    type: "list",
+                    defvalue: 'yes'
+                },
+                {
+                    id: "continue",
+                    name: "Continue if",
+                    list: "continue",
+                    type: "list",
+                    defvalue: 'within'
+                }
+            ],
+            values: {
+                "filter": {
+                    "yes": "Has Effect",
+                    "no": "Doesn't Have Effect",
+                },
+                'continue': {
+                    "always": "Always",
+                    "any": "Any Matches",
+                    "all": "All Matches",
+                }
+            },
+            fn: async (args = {}) => {
+
+                const { action, value } = args;
+
+                const entities = await MonksActiveTiles.getEntities(args);
+
+                const match = action.data?.filter === "yes";
+                const tokens = entities.filter(token => {
+                    return token instanceof TokenDocument
+                        && (match === game.dfreds.effectInterface.hasEffectApplied(action.data.effect, token.uuid));
+                });
+
+                const cont = (action.data?.continue === 'always'
+                    || (action.data?.continue === 'any' && tokens.length > 0)
+                    || (action.data?.continue === 'all' && tokens.length === value["tokens"].length && tokens.length > 0));
+
+                return { continue: cont, tokens: tokens };
+
+            },
+            content: async (trigger, action) => {
+                const entityName = await MonksActiveTiles.entityName(action.data?.entity);
+                let html = `<span class="filter-style">Filter</span> <span class="entity-style">${entityName}</span> that`;
+                html += action.data.filter === "yes" ? " has an effect " : " doesn't have an effect ";
+                html += `named ${action.data.effect}`
+                html += action.data?.continue !== 'always' ? ', Continue if ' + (action.data?.continue === 'any' ? 'Any Matches' : 'All Matches') : '';
+                return html;
+            }
+        });
+    }
 });
