@@ -2016,7 +2016,7 @@ export class MonksActiveTiles {
         for (let scene of game.scenes) {
             for (let tile of scene.tiles) {
                 let triggerData = tile.flags["monks-active-tiles"];
-                if (triggerData && triggerData.actions.length > 0) {
+                if (triggerData && triggerData.actions?.length > 0) {
                     let actions = duplicate(triggerData.actions);
                     let update = false;
                     for (let i = 0; i < actions.length; i++) {
@@ -2240,10 +2240,12 @@ export class MonksActiveTiles {
                             if (tile.soundeffect != undefined) {
                                 if (data.actionid) {
                                     try {
-                                        tile.soundeffect[data.actionid].fade(0, { duration: data.fade * 1000 }).then((sound) => {
-                                            sound.stop();
-                                            delete tile.soundeffect[data.actionid]
-                                        });
+                                        if (tile.soundeffect[data.actionid]) {
+                                            tile.soundeffect[data.actionid].fade(0, { duration: data.fade * 1000 }).then((sound) => {
+                                                sound.stop();
+                                                delete tile.soundeffect[data.actionid];
+                                            });
+                                        }
                                     } catch { }
                                     
                                 } else {
@@ -3315,7 +3317,7 @@ export class MonksActiveTiles {
         </div>
     </div>
 </form>`,
-            yes: (html) => {
+            yes: async (html) => {
                 const form = html[0].querySelector("form");
                 if (form) {
                     const fd = new FormDataExtended(form);
@@ -3330,6 +3332,10 @@ export class MonksActiveTiles {
                     data.img = data.texture.src;
                     data.id = data._id;
                     data.thumbnail = data.img || "modules/monks-active-tiles/img/cube.svg";
+                    if (VideoHelper.hasVideoExtension(data.thumbnail)) {
+                        const t = await ImageHelper.createThumbnail(data.thumbnail, { width: 60, height: 60 });
+                        data.thumbnail = t.thumb;
+                    }
                     templates.push(data);
                     game.settings.set("monks-active-tiles", "tile-templates", templates);
                     ui.notifications.info("Tile information has been saved to Tile Templates.");
@@ -3615,13 +3621,14 @@ Hooks.on("renderPlaylistDirectory", (app, html, user) => {
 
 Hooks.on("renderWallConfig", async (app, html, options) => {
     if (setting("allow-door")) {
-        let entity = app.object.flags['monks-active-tiles']?.entity || "{}";
+        let entity = app.object.flags['monks-active-tiles']?.entity || {};
         if (typeof entity == "string" && entity)
             entity = JSON.parse(entity);
         let tilename = "";
         if (entity.id)
             tilename = await MonksActiveTiles.entityName(entity);
         let triggerData = mergeObject({ tilename: tilename, showtagger: game.modules.get('tagger')?.active }, (app.object.flags['monks-active-tiles'] || {}));
+        triggerData.entity = JSON.stringify(entity);
         let wallHtml = await renderTemplate("modules/monks-active-tiles/templates/wall-config.html", triggerData);
 
         if ($('.sheet-tabs', html).length) {

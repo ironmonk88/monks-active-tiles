@@ -171,6 +171,10 @@ export class TileTemplates extends SidebarDirectory {
                     delete template.img;
                     template.img = template.texture.src;
                     template.thumbnail = template.img || "modules/monks-active-tiles/img/cube.svg";
+                    if (VideoHelper.hasVideoExtension(template.thumbnail)) {
+                        const t = await ImageHelper.createThumbnail(template.thumbnail, { width: 60, height: 60 });
+                        template.thumbnail = t.thumb;
+                    }
 
                     templates.push(template);
                 }
@@ -214,6 +218,9 @@ export class TileTemplates extends SidebarDirectory {
         const doc = isFolder
             ? this.constructor.folders.find(f => f._id == li.dataset.folderId)
             : this.constructor.collection.find(t => t._id == li.dataset.documentId);
+
+        if (!doc)
+            return;
 
         delete doc.x;
         delete doc.y;
@@ -403,7 +410,7 @@ export class TileTemplates extends SidebarDirectory {
                 icon: '<i class="fas fa-folder"></i>',
                 condition: li => {
                     const document = this.constructor.collection.find(t => t._id == li.data("documentId"));
-                    return game.user.isGM && !!document.folder;
+                    return game.user.isGM && !!document?.folder;
                 },
                 callback: li => {
                     const templates = duplicate(this.constructor.collection);
@@ -499,6 +506,10 @@ export class TileTemplates extends SidebarDirectory {
                                         data.img = data.texture.src;
                                         data.id = data._id;
                                         data.thumbnail = data.img || "modules/monks-active-tiles/img/cube.svg";
+                                        if (VideoHelper.hasVideoExtension(data.thumbnail)) {
+                                            const t = await ImageHelper.createThumbnail(data.thumbnail, { width: 60, height: 60 });
+                                            data.thumbnail = t.thumb;
+                                        }
 
                                         // Commit the import as an update to this document
                                         templates.findSplice(t => t._id == li.data("documentId"), data);

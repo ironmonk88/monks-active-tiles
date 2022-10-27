@@ -1,3 +1,33 @@
+## Version 10.4
+
+Fixed issue with creating a token set to hidden, when revealed, the opacity is set to 0.5
+
+Fixed issue with resetting a Roll Table when all items are used
+
+Switched changing the permissions action to require a GM to run.
+
+Fixed issue with permissions action changing permission on an unlinked actor.
+
+Tried to fix issues with transition animation.
+
+Added the option to show the dialog to the GM, not just the triggering player.
+
+Added actions to support DFred's Convenient Effects.
+
+Fixed issue selecting an Actor for the attack action
+
+Fixed issue with the context menu position on the action list.
+
+Fixed issue stopping sound that's already been stopped.
+
+Fixed issue with folders in the Tile Templates
+
+Fixed image issues when a tile in the Tile Templates has an animated image.
+
+Fixed issue with the function that fixed the image cycle.
+
+Fixed issue with the wall config
+
 ## Version 10.3
 
 Fixed issue with teleport an invalid co-ordinates for the destination.

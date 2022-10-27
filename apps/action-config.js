@@ -221,6 +221,9 @@ export class ActionConfig extends FormApplication {
     }
 
     fillList(list, id) {
+        if (!list)
+            return;
+
         return (list instanceof Array
             ? list.map(g => { return $('<optgroup>').attr('label', i18n(g.text)).append(Object.entries(g.groups).map(([k, v]) => { return $('<option>').attr('value', (g.id ? g.id + ":" : '') + k).html(i18n(v)).prop('selected', ((g.id ? g.id + ":" : '') + k) == id) })) })
             : Object.entries(list).map(([k, v]) => { return $('<option>').attr('value', k).html(i18n(v)).prop('selected', k == id) }))
@@ -305,7 +308,9 @@ export class ActionConfig extends FormApplication {
             if (selection.id) {
                 let ctrl = select.parent().data('ctrl');
 
-                let list = await ctrl.list.call(ctrl, { actor: { id: selection.id }});
+                //this, this, action, data
+                //let list = await ctrl.list.call(ctrl, { actor: { id: selection.id } });
+                let list = await ctrl.list.call(this, this, null, { actor: { id: selection.id } });
 
                 select.append(this.fillList(list, ''));
             }

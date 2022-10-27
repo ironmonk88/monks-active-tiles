@@ -980,7 +980,8 @@ export class ActionManager {
                             }
 
                             // Prepare the Token data
-                            const td = await actor.getTokenDocument(ad.data);
+                            const td = await actor.getTokenDocument();
+                            mergeObject(td, ad.data);
 
                             if (!ad.lockpos) {
                                 if (action.data.avoidtokens) {
@@ -2410,7 +2411,7 @@ export class ActionManager {
 
                         const available = rolltable.results.filter(r => !r.drawn);
                         if (!available.length && action?.data?.reset)
-                            await rolltable.reset();
+                            await rolltable.resetResults();
 
                         let results = { continue: true };
                         if (game.modules.get("better-rolltables")?.active) {
@@ -3156,6 +3157,7 @@ export class ActionManager {
             'permissions': {
                 name: "MonksActiveTiles.action.permission",
                 options: { allowDelay: false },
+                requiresGM: true,
                 ctrls: [
                     {
                         id: "entity",
@@ -3216,7 +3218,7 @@ export class ActionManager {
                         (action.data.permission == 'observer' ? CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER :
                             (action.data.permission == 'owner' ? CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER : CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE)));
 
-                    entities = entities.map(e => (e.actor ? e.actor : e));
+                    entities = entities.map(e => (e.actor ? game.actors.get(e.actor.id) : e));
 
                     //MonksActiveTiles.preventCycle = true;   //prevent the cycling of tokens due to permission changes
                     game.settings.set('monks-active-tiles', 'prevent-cycle', true);
@@ -4229,8 +4231,27 @@ export class ActionManager {
                                     }
                                 }
 
-                                const doNextPromise = (data) => {
-                                    return doTransition(data).then(async () => {
+                                const doNextPromise = async (data) => {
+                                    let result = doTransition(data);
+                                    if (result instanceof Promise) {
+                                        return result.then(async () => {
+                                            loop--;
+                                            if (loop > 0) {
+                                                entity.flags["monks-active-tiles"].fileindex = data.position;
+                                                let position = await getPosition();
+                                                data.position = position - 1;
+                                                data.transition = getTransition();
+                                                data.from = data.img;
+                                                data.img = entity._images[data.position];
+                                                data.time = new Date().getTime() + (action.data?.speed * 1000);
+
+                                                return doNextPromise(data);
+                                            } else {
+                                                await entity.update({ texture: { src: data.img }, 'flags.monks-active-tiles.fileindex': data.position });
+                                                //await entity.setFlag('monks-active-tiles', 'fileindex', data.position);
+                                            }
+                                        });
+                                    } else {
                                         loop--;
                                         if (loop > 0) {
                                             entity.flags["monks-active-tiles"].fileindex = data.position;
@@ -4246,7 +4267,7 @@ export class ActionManager {
                                             await entity.update({ texture: { src: data.img }, 'flags.monks-active-tiles.fileindex': data.position });
                                             //await entity.setFlag('monks-active-tiles', 'fileindex', data.position);
                                         }
-                                    })
+                                    }
                                 }
 
                                 if (loop > 0) {
@@ -4481,6 +4502,13 @@ export class ActionManager {
                         subtype: "multiline",
                         required: true
                     },
+                    {
+                        id: "for",
+                        name: "MonksActiveTiles.ctrl.for",
+                        list: "for",
+                        type: "list",
+                        defaultVal: "gm"
+                    },
                     /*{
                         id: "options",
                         name: "MonksActiveTiles.ctrl.options",
@@ -4509,6 +4537,10 @@ export class ActionManager {
                     'dialogtype': {
                         "confirm": 'MonksActiveTiles.dialogtype.confirm',
                         "alert": 'MonksActiveTiles.dialogtype.alert'
+                    },
+                    'for': {
+                        'gm': "MonksActiveTiles.for.gm",
+                        'token': "MonksActiveTiles.for.token"
                     }
                 },
                 fn: async (args = {}) => {
@@ -4517,11 +4549,12 @@ export class ActionManager {
                     let title = action.data.title;
                     let content = action.data.content;
 
-                    if (userid == game.user.id)
+                    if ((action.data.for == 'gm' && game.user.isGM) || (action.data.for != 'gm' && userid == game.user.id))
                         MonksActiveTiles._showDialog(tile, tokens[0], value, action.data.dialogtype, title, content, action.data?.options, action.data.yes, action.data.no).then((results) => { tile.resumeActions(_id, results); });
                     else {
                         MonksActiveTiles.emit("showdialog", {
-                            _id, userid: userid,
+                            _id,
+                            userid: userid,
                             tileid: tile.uuid,
                             tokenid: tokens[0]?.uuid,
                             value,
@@ -4538,7 +4571,7 @@ export class ActionManager {
                 },
                 content: async (trigger, action) => {
                     let msg = encodeURI(action.data.content.length <= 15 ? action.data.content : action.data.content.substr(0, 15) + "...");
-                    return `<span class="action-style">${i18n(trigger.name)}</span>, <span class="value-style">&lt;${i18n(trigger.values.dialogtype[action.data.dialogtype])}&gt;</span> "${msg}"`;
+                    return `<span class="action-style">${i18n(trigger.name)}</span>, for <span class="value-style">&lt;${i18n(trigger.values.for[action.data?.for])}&gt;</span> <span class="detail-style">"${i18n(trigger.values.dialogtype[action.data.dialogtype])}"</span> "${msg}"`;
                 }
             },
             'scrollingtext': {
@@ -4607,6 +4640,9 @@ export class ActionManager {
                     let entities = await MonksActiveTiles.getEntities(args);
 
                     for (let entity of entities) {
+                        if (!entity)
+                            continue;
+
                         //Add a chat message
                         let user = game.users.find(u => u.id == userid);
                         let scene = game.scenes.find(s => s.id == user?.viewedScene);
@@ -4614,7 +4650,7 @@ export class ActionManager {
                         let token = entity?.object;
 
                         let context = {
-                            actor: token.actor.toObject(false),
+                            actor: token.actor?.toObject(false),
                             token: token,
                             tile: tile.toObject(false),
                             user: game.users.get(userid),
@@ -6156,9 +6192,9 @@ Hooks.on("setupTileActions", (app) => {
             content: async (trigger, action) => {
                 const entityName = await MonksActiveTiles.entityName(action.data?.entity);
                 let html = `<span class="filter-style">Filter</span> <span class="entity-style">${entityName}</span> that`;
-                html += action.data.filter === "yes" ? " has an effect " : " doesn't have an effect ";
-                html += `named ${action.data.effect}`
-                html += action.data?.continue !== 'always' ? ', Continue if ' + (action.data?.continue === 'any' ? 'Any Matches' : 'All Matches') : '';
+                html += (action.data.filter === "yes" ? " has " : " doesn't have ");
+                html += `<span class="value-style">&lt;${action.data.effect}&gt;</span>`
+                html += (action.data?.continue !== 'always' ? ', Continue if ' + (action.data?.continue === 'any' ? 'Any Matches' : 'All Matches') : '');
                 return html;
             }
         });

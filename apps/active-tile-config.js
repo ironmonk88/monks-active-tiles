@@ -11,7 +11,7 @@ class ActiveTileContextMenu extends ContextMenu {
         super._setPosition(html, target);
 
         let container = target.closest('.item-list');
-        let y = container.position().top + (target.position().top + container.scrollTop()) - 55;// - $(html).height();
+        let y = container.position().top + target.position().top - 65; //(target.position().top - container.scrollTop());// - 55;// - $(html).height();
 
         html.removeClass("expand-down").css({ "top": `${y}px` }).insertAfter(target.closest('.action-items'));
     }
@@ -381,8 +381,10 @@ export const WithActiveTileConfig = (TileConfig) => {
 
         _stopSound(event) {
             let id = event.currentTarget.closest('.item').dataset.id;
-            this.object.soundeffect[id].stop();
-            delete this.object.soundeffect[id];
+            if (this.object.soundeffect[id]) {
+                this.object.soundeffect[id].stop();
+                delete this.object.soundeffect[id];
+            }
             MonksActiveTiles.emit('stopsound', {
                 tileid: this.object.uuid,
                 type: 'tile',
