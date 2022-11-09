@@ -58,6 +58,15 @@ export let patchFunc = (prop, func, type = "WRAPPER") => {
     }
 }
 
+export let rollDice = async (val) => {
+    if (val && typeof val === "string" && val.indexOf("d") != -1) {
+        let r = new Roll(val);
+        await r.evaluate({ async: true });
+        return r.total;
+    } else
+        return val;
+}
+
 export class MonksActiveTiles {
     static _oldSheetClass;
     //static _oldObjectClass;
@@ -83,7 +92,7 @@ export class MonksActiveTiles {
         return {
             'enter': i18n("MonksActiveTiles.mode.enter"),
             'exit': i18n("MonksActiveTiles.mode.exit"),
-            'both': i18n("MonksActiveTiles.mode.both"),
+            //'both': i18n("MonksActiveTiles.mode.both"),
             'movement': i18n("MonksActiveTiles.mode.movement"),
             'stop': i18n("MonksActiveTiles.mode.stop"),
             'elevation': i18n("MonksActiveTiles.mode.elevation"),
@@ -91,7 +100,7 @@ export class MonksActiveTiles {
             'rightclick': i18n("MonksActiveTiles.mode.rightclick"),
             'dblclick': i18n("MonksActiveTiles.mode.dblclick"),
             'create': i18n("MonksActiveTiles.mode.create"),
-            'hover': i18n("MonksActiveTiles.mode.hover"),
+            //'hover': i18n("MonksActiveTiles.mode.hover"),
             'hoverin': i18n("MonksActiveTiles.mode.hoverin"),
             'hoverout': i18n("MonksActiveTiles.mode.hoverout"),
             'combatstart': i18n("MonksActiveTiles.mode.combatstart"),
@@ -122,11 +131,28 @@ export class MonksActiveTiles {
         return "";
     }
 
+    static getTrigger(val) {
+        if (!val) return [];
+
+        let triggers = val instanceof Array ? val : [val];
+
+        if (triggers.includes("both")) {
+            triggers.push("enter", "exit");
+            triggers.findSplice(t => t == "both");
+        }
+        if (triggers.includes("hover")) {
+            triggers.push("hoverin", "hoverout");
+            triggers.findSplice(t => t == "hover");
+        }
+
+        return triggers;
+    }
+
     static async getEntities(args, defaultType, entry) {
         const { tile, tokens, action, value, userid } = args;
         let id = entry?.id || action.data?.entity?.id;
 
-        if (id != undefined)
+        if (id != undefined && !id.startsWith("tagger"))
             id = id.split("#")[0];
 
         let entities = [];
@@ -850,7 +876,7 @@ export class MonksActiveTiles {
                     }
                 }
 
-                log("Token fade", attributes[0].object.alpha, attributes[0].parent.alpha, attributes[0].from + attributes[0].done, attributes[0].remaining, attributes[0].done, attributes[0].delta, attributes[0].object.visible, attributes[0].parent.visible);
+                //log("Token fade", attributes[0].object.alpha, attributes[0].parent.alpha, attributes[0].from + attributes[0].done, attributes[0].remaining, attributes[0].done, attributes[0].delta, attributes[0].object.visible, attributes[0].parent.visible);
             }
         }).then(() => {
             if (hide)
@@ -1209,6 +1235,9 @@ export class MonksActiveTiles {
         if (entity instanceof TokenDocument) {
             if (result.tokens == undefined) result.tokens = [];
             result.tokens.push(entity);
+        } else if (entity instanceof Actor) {
+            if (result.actors == undefined) result.actors = [];
+            result.actors.push(entity);
         } else if (entity instanceof TileDocument) {
             if (result.tiles == undefined) result.tiles = [];
             result.tiles.push(entity);
@@ -1271,6 +1300,7 @@ export class MonksActiveTiles {
             libWrapper.ignore_conflicts("monks-active-tiles", "monks-enhanced-journal", "JournalDirectory.prototype._onClickDocumentName");
             libWrapper.ignore_conflicts("monks-active-tiles", "monks-enhanced-journal", "Compendium.prototype._onClickEntry");
             libWrapper.ignore_conflicts("monks-active-tiles", "monks-scene-navigation", "SceneDirectory.prototype._onClickDocumentName");
+            libWrapper.ignore_conflicts("monks-active-tiles", "monks-little-details", "TilesLayer.prototype._onDropData");
         }
 
         MonksActiveTiles.SOCKET = "module.monks-active-tiles";
@@ -1373,6 +1403,7 @@ export class MonksActiveTiles {
         let onDropData = async function (wrapper, ...args) {
             const [event, data] = args;
             if (data.data) {
+                // Drop tile from tile browser
                 let tileData = data.data;
                 tileData.x = data.x;
                 tileData.y = data.y;
@@ -1437,11 +1468,8 @@ export class MonksActiveTiles {
                 }
 
                 let triggerData = this.document.flags["monks-active-tiles"];
-                if (triggerData?.usealpha && !this._textureData) {
-                    let oldOverhead = this.document.overhead;
-                    this.document.overhead = true;
-                    this._createTextureData();
-                    this.document.overhead = oldOverhead;
+                if (triggerData?.usealpha && !this._textureBorderPoints) {
+                    this._findTextureBorder();
                 }
 
                 return result;
@@ -1630,11 +1658,14 @@ export class MonksActiveTiles {
             if (!canvas.scene)
                 return;
 
+            if (!(canvas.activeLayer instanceof TokenLayer))
+                return;
+
             for (let tile of canvas.scene.tiles) {
-
                 let triggerData = tile.flags["monks-active-tiles"];
+                let triggers = MonksActiveTiles.getTrigger(triggerData?.trigger);
 
-                if (!triggerData || !triggerData.active || !(triggerData.trigger?.includes("hover") || triggerData.pointer))
+                if (!triggerData || !triggerData.active || !(triggers.includes("hoverin") || triggers.includes("hoverout") || triggerData.pointer))
                     continue;
 
                 //check to see if this trigger is restricted by control type
@@ -1642,24 +1673,27 @@ export class MonksActiveTiles {
                     continue;
 
                 let tokens = [];
-                if (triggerData.trigger?.includes("hover")) {
+                if (triggers.includes("hoverin") || triggers.includes("hoverout")) {
                     tokens = canvas.tokens.controlled.map(t => t.document);
                     //check to see if this trigger is per token, and already triggered
                     if (triggerData.pertoken) {
-                        tokens = tokens.filter(t => !tile.hasTriggered(t.id)); //.uuid
+                        tokens = tokens.filter(t => !tile.hasTriggered(t.id));
                         if (tokens.length === 0)
                             continue;
                     }
+
+                    if (triggerData.usealpha && this._object && !this.object._texturePolygon)
+                        this.object._findTextureBorder();
                 }
 
-                let lastPositionContainsTile = contains(lastPosition, tile);
-                let currentPositionContainsTile = contains(currentPosition, tile);
+                let lastPositionContainsTile = tile.pointWithin(lastPosition);
+                let currentPositionContainsTile = tile.pointWithin(currentPosition);
 
                 if (!lastPositionContainsTile && currentPositionContainsTile && !MonksActiveTiles.hoveredTiles.has(tile)) {
                     MonksActiveTiles.hoveredTiles.add(tile);
                     if (triggerData.pointer)
                         $('#board').css({ cursor: 'pointer' });
-                    if (triggerData.trigger === "hover" || triggerData.trigger === "hoverin") {
+                    if (triggers.includes("hoverin")) {
                         if (setting("prevent-when-paused") && game.paused && !game.user.isGM && triggerData.allowpaused !== true)
                             continue;
 
@@ -1671,7 +1705,7 @@ export class MonksActiveTiles {
                     MonksActiveTiles.hoveredTiles.delete(tile);
                     if (triggerData.pointer && MonksActiveTiles.hoveredTiles.size == 0)
                         $('#board').css({ cursor: '' });
-                    if (triggerData.trigger === "hover" || triggerData.trigger === "hoverout") {
+                    if (triggers.includes("hoverout")) {
                         if (setting("prevent-when-paused") && game.paused && !game.user.isGM && triggerData.allowpaused !== true)
                             continue;
 
@@ -2108,8 +2142,17 @@ export class MonksActiveTiles {
                     //let oldPos = canvas.scene._viewPosition;
                     let offset = { dx: (canvas.scene._viewPosition.x - data.oldpos?.x), dy: (canvas.scene._viewPosition.y - data.oldpos?.y) };
                     let scene = game.scenes.get(data.sceneid);
-                    if (canvas.scene.id != scene.id)
+                    if (canvas.scene.id != scene.id) {
+                        let oldPing = game.user.permissions["PING_CANVAS"];
+                        game.user.permissions["PING_CANVAS"] = false;
                         await scene.view();
+                        window.setTimeout(() => {
+                            if (oldPing == undefined)
+                                delete game.user.permissions["PING_CANVAS"];
+                            else
+                                game.user.permissions["PING_CANVAS"] = oldPing;
+                        }, 500);
+                    }
                     //let scale = oldSize / canvas.scene.dimensions.size;
                     if (data.oldpos && data.newpos) {
                         let changeTo = { x: data.newpos.x + offset.dx, y: data.newpos.y + offset.dy };
@@ -2187,16 +2230,15 @@ export class MonksActiveTiles {
             case 'playvideo': {
                 let tile = await fromUuid(data.tileid);
                 if (tile) {
-                    tile.object.play(true);
-                }
-            } break;
-            case 'stopvideo': {
-                let tile = await fromUuid(data.tileid);
-                if (tile) {
                     const el = tile._object?.sourceElement;
                     if (el?.tagName !== "VIDEO") return;
 
-                    game.video.stop(el);
+                    if (data.play == 'stop')
+                        game.video.stop(el);
+                    else if (data.play == 'pause')
+                        el.pause();
+                    else
+                        el.play();
                 }
             } break;
             case 'playsound': {
@@ -2349,7 +2391,15 @@ export class MonksActiveTiles {
             } break;
             case 'target': {
                 if (data.userid == game.user.id) {
-                    game.user.updateTokenTargets(data.tokens);
+                    if(data.target == "target")
+                        game.user.updateTokenTargets(data.tokens);
+                    else {
+                        data.tokens.forEach(id => {
+                            let token = canvas.tokens.get(id);
+                            if (token)
+                                token.setTarget(data.target !== "clear", { user: game.user, releaseOthers: false, groupSelection: false })
+                        });
+                    }
                 }
             } break;
             case 'scrollingtext': {
@@ -2536,19 +2586,26 @@ export class MonksActiveTiles {
             MonksActiveTiles.controlEntity(sound);
     }
 
-    static getTileSegments(tile, offset = 0) {
-        let tileX1 = tile.x + offset;
-        let tileY1 = tile.y + offset;
-        let tileX2 = tile.x + Math.abs(tile.width) - offset;
-        let tileY2 = tile.y + Math.abs(tile.height) - offset;
+    static getTileSegments(tile, usealpha = false) {
+        let width = Math.abs(tile.width);
+        let height = Math.abs(tile.height);
 
         let segments = [
-            { a: { x: tileX1, y: tileY1 }, b: { x: tileX2, y: tileY1 } },
-            { a: { x: tileX2, y: tileY1 }, b: { x: tileX2, y: tileY2 } },
-            { a: { x: tileX2, y: tileY2 }, b: { x: tileX1, y: tileY2 } },
-            { a: { x: tileX1, y: tileY2 }, b: { x: tileX1, y: tileY1 } }
+            { a: { x: 0, y: 0 }, b: { x: width, y: 0 } },
+            { a: { x: width, y: 0 }, b: { x: width, y: height } },
+            { a: { x: width, y: height }, b: { x: 0, y: height } },
+            { a: { x: 0, y: height }, b: { x: 0, y: 0 } }
         ];
 
+        if (usealpha) {
+            segments = [];
+            for (let i = 0; i < tile.object._textureBorderPoints.length - 2; i += 2) {
+                segments.push({ a: { x: tile.object._textureBorderPoints[i], y: tile.object._textureBorderPoints[i + 1] }, b: { x: tile.object._textureBorderPoints[i + 2], y: tile.object._textureBorderPoints[i + 3] } });
+            }
+            segments.push({ a: { x: tile.object._textureBorderPoints[tile.object._textureBorderPoints.length - 2], y: tile.object._textureBorderPoints[tile.object._textureBorderPoints.length - 1] }, b: { x: tile.object._textureBorderPoints[0], y: tile.object._textureBorderPoints[1] } })
+        } 
+
+        /*
         if (tile.rotation != 0) {
             function rotate(cx, cy, x, y, angle) {
                 var realangle = angle + 90,
@@ -2569,7 +2626,7 @@ export class MonksActiveTiles {
             let pt2 = rotate(cX, cY, tileX2, tileY1, tile.rotation);
             let pt3 = rotate(cX, cY, tileX2, tileY2, tile.rotation);
             let pt4 = rotate(cX, cY, tileX1, tileY2, tile.rotation);
-
+            */
             /*
             let gr = MonksActiveTiles.debugGr;
             if (!gr) {
@@ -2592,21 +2649,36 @@ export class MonksActiveTiles {
                 .drawCircle(pt4.x, pt4.y, 10)
                 .endFill();
                 */
-
+        /*
             segments = [
                 { a: pt1, b: pt2 },
                 { a: pt2, b: pt3 },
                 { a: pt3, b: pt4 },
                 { a: pt4, b: pt1 }
             ];
-        }
+        }*/
 
         return segments;
     }
 
     static setupTile() {
         TileDocument.prototype.pointWithin = function (point) {
-            let pt = point;
+            let triggerData = this.flags["monks-active-tiles"];
+
+            const cX = (Math.abs(this.width) / 2);
+            const cY = (Math.abs(this.height) / 2);
+
+            // normalise the point to center, scale, normalise to the origin, then rotate
+            /*
+            let pt = {
+                x: ((point.x - (this.x - ((this.texture.scaleX - 1) * (this.width / 2)))) / this.texture.scaleX),
+                y: ((point.y - (this.y - ((this.texture.scaleY - 1) * (this.height / 2)))) / this.texture.scaleY)
+            };
+            */
+            let pt = {
+                x: (point.x - (this.x + cX)),
+                y: (point.y - (this.y + cY))
+            };
 
             if (this.rotation != 0) {
                 //rotate the point
@@ -2621,16 +2693,33 @@ export class MonksActiveTiles {
                     return { x: tx, y: ty };
                 }
 
-                const cX = this.x + (Math.abs(this.width) / 2);
-                const cY = this.y + (Math.abs(this.height) / 2);
-
-                pt = rotate(cX, cY, pt.x, pt.y, this.rotation);
+                pt = rotate(0, 0, pt.x, pt.y, this.rotation);
             }
 
-            return !(pt.x <= this.x ||
-                pt.x >= this.x + Math.abs(this.width) ||
-                pt.y <= this.y ||
-                pt.y >= this.y + Math.abs(this.height));
+            pt.x = (pt.x / this.texture.scaleX) + cX;
+            pt.y = (pt.y / this.texture.scaleY) + cY;
+
+            if (triggerData.usealpha && !this.object._texturePolygon)
+                this.object._findTextureBorder();
+
+            /*
+            let gr = MonksActiveTiles.debugGr;
+            if (!gr) {
+                gr = new PIXI.Graphics();
+                MonksActiveTiles.debugGr = gr;
+                canvas.tokens.addChild(gr);
+            }
+
+            gr.lineStyle(2, 0x800080).drawCircle(pt.x + this.x, pt.y + this.y, 4);
+            */
+
+            if (pt.x <= 0 ||
+                pt.x >= Math.abs(this.width) ||
+                pt.y <= 0 ||
+                pt.y >= Math.abs(this.height))
+                return false;
+
+            return triggerData.usealpha ? this._object?._texturePolygon.contains(pt.x, pt.y) : true;
         }
 
         TileDocument.prototype.tokensWithin = function () {
@@ -2646,9 +2735,397 @@ export class MonksActiveTiles {
             });
         }
 
+        Tile.prototype._findTextureBorder_old = function () {
+            let findPoint = function (pixels, start) {
+                let pt;
+                let dest = { x: width - start.x, y: height - start.y };
+
+                //gr.lineStyle(1, 0x00ff00).moveTo(this.x + (start.x * aW), this.y + (start.y * aH)).lineTo(this.x + (dest.x * aW), this.y + (dest.y * aH));
+
+                let hypot = Math.hypot((dest.x - start.x), (dest.y - start.y));
+                let dX = (dest.x - start.x) / hypot;
+                let dY = (dest.y - start.y) / hypot;
+
+                for (let i = 0; i < hypot; i++) {
+                    let check = { x: parseInt(start.x + (dX * i)), y: parseInt(start.y + (dY * i)) };
+                    //gr.beginFill(0x00ff00).drawCircle(this.x + (check.x * aW), this.y + (check.y * aH), 1).endFill();
+                    if (!pt || check.x != pt.x || check.y != pt.y) {
+                        let idx = ((check.y * width) + check.x) * 4;
+                        if (pixels[idx + 3] != 0) {
+                            //gr.lineStyle(1, 0x00ff00).moveTo(this.x + (start.x * aW), this.y + (start.y * aH)).lineTo(this.x + (check.x * aW), this.y + (check.y * aH));
+
+                            return check;
+                        }
+                        pt = check;
+                    }
+                }
+            }
+
+            let addPoint = function (pt) {
+                if (pt) {
+                    const last = points.slice(-2);
+                    const next = [pt.x * aW, pt.y * aH];
+                    if (next.equals(last)) return;
+
+                    points = points.concat(next);
+                }
+            }
+
+            let simplify = function(points, tolerance = 20) {
+                if (points.length <= 2) return points;
+
+                let getSqSegDist = function (p, p1, p2) {
+
+                    var x = p1.x,
+                        y = p1.y,
+                        dx = p2.x - x,
+                        dy = p2.y - y;
+
+                    if (dx !== 0 || dy !== 0) {
+
+                        var t = ((p.x - x) * dx + (p.y - y) * dy) / (dx * dx + dy * dy);
+
+                        if (t > 1) {
+                            x = p2.x;
+                            y = p2.y;
+
+                        } else if (t > 0) {
+                            x += dx * t;
+                            y += dy * t;
+                        }
+                    }
+
+                    dx = p.x - x;
+                    dy = p.y - y;
+
+                    return dx * dx + dy * dy;
+                }
+
+                let simplifyDPStep = function (points, first, last, sqTolerance, simplified) {
+                    var maxSqDist = sqTolerance,
+                        index;
+
+                    for (var i = first + 1; i < last; i++) {
+                        var sqDist = getSqSegDist(
+                            { x: points[i * 2], y: points[(i * 2) + 1] },
+                            { x: points[first * 2], y: points[(first * 2) + 1] },
+                            { x: points[last * 2], y: points[(last * 2) + 1] });
+
+                        if (sqDist > maxSqDist) {
+                            index = i;
+                            maxSqDist = sqDist;
+                        }
+                    }
+
+                    if (maxSqDist > sqTolerance) {
+                        if (index - first > 1) simplifyDPStep(points, first, index, sqTolerance, simplified);
+                        simplified.push(points[index * 2], points[(index * 2) + 1]);
+                        if (last - index > 1) simplifyDPStep(points, index, last, sqTolerance, simplified);
+                    }
+                }
+
+                var last = (points.length / 2) - 1;
+
+                var simplified = points.slice(0, 2);
+                simplifyDPStep(points, 0, last, tolerance, simplified);
+                simplified.concat(points.slice(-2));
+
+                return simplified;
+            }
+
+            const accuracy = 2;
+            let width, height, aW, aH;
+
+            let points = [];
+            if (this.texture == null) {
+                points = [0, 0, this.document.width, 0, this.document.width, this.document.height, 0, this.document.height, 0, 0];
+            } else {
+                const sprite = new PIXI.Sprite(this.texture);
+                sprite.width = width = parseInt(this.texture.baseTexture.realWidth / accuracy);
+                sprite.height = height = parseInt(this.texture.baseTexture.realHeight / accuracy);
+                sprite.anchor.set(0.5, 0.5);
+                sprite.position.set(sprite.width / 2, sprite.height / 2);
+
+                aW = this.document.width / width;
+                aH = this.document.height / height;
+
+                // Create or update the alphaMap render texture
+                const tex = PIXI.RenderTexture.create({ width: sprite.width, height: sprite.height });
+
+                // Render the sprite to the texture and extract its pixels
+                // Destroy sprite and texture when they are no longer needed
+                canvas.app.renderer.render(sprite, tex);
+                sprite.destroy(false);
+                const pixels = canvas.app.renderer.extract.pixels(tex);
+                tex.destroy(true);
+
+                for (let i = 0; i < width; i++) {
+                    addPoint.call(this, findPoint.call(this, pixels, { x: i, y: 0 }));
+                }
+                for (let i = 0; i < height; i++) {
+                    addPoint.call(this, findPoint.call(this, pixels, { x: width - 1, y: i }));
+                }
+                for (let i = width - 1; i > 0; i--) {
+                    addPoint.call(this, findPoint.call(this, pixels, { x: i, y: height - 1 }));
+                }
+                for (let i = height - 1; i > 0; i--) {
+                    addPoint.call(this, findPoint.call(this, pixels, { x: 0, y: i }));
+                }
+
+                points = simplify(points, 40);
+                //points = points.concat(points.slice(0, 2));
+
+                /*
+                for (let i = 0; i < width; i++) {
+                    for (let j = 0; j < height; j++) {
+                        let idx = ((j * width) + i) * 4;
+                        if (pixels[idx + 3] != 0) {
+                            gr.beginFill(0x0000ff).drawCircle(this.x + (i * aW), this.y + (j * aH), 1).endFill();
+                        }
+                    }
+                }
+                */
+            }
+
+            this._textureBorderPoints = points;
+            this._texturePolygon = new PIXI.Polygon(this._textureBorderPoints);
+            if (CONFIG.debug.tiletriggers) {
+                if (this._debugBorder)
+                    this._debugBorder.destroy();
+                this._debugBorder = this.addChild(new PIXI.Graphics());
+                this._debugBorder.lineStyle(2, 0xff0000).drawPolygon(this._texturePolygon);
+            }
+
+            /*
+            let gr = MonksActiveTiles.debugGr;
+            if (!gr) {
+                gr = new PIXI.Graphics();
+                MonksActiveTiles.debugGr = gr;
+                canvas.tokens.addChild(gr);
+                gr.x = this.x;
+                gr.y = this.y;
+                gr.lineStyle(2, 0xff0000).drawPolygon(this._textureBorderPoints);
+            }
+            */
+        }
+
+        Tile.prototype._findTextureBorder = function () {
+            let findStart = function (pixels) {
+                let point;
+                let x = 0;
+                while (!point && x < width) {
+                    point = findPoint(pixels, { x: x, y: 0 }, { value: 'y', adjust: 1, max: height - 1 });
+                    x++;
+                }
+
+                return point;
+            }
+
+            let addPoints = function (pixels, start, delta, last, depth = 0) {
+                //log("Add Points", start, delta, last);
+                let lastPt = { x: last.x, y: last.y };
+                let check;
+                let checkDelta = rotateDelta(delta);
+                for (let i = start[delta.value]; delta.adjust > 0 ? i < delta.max : i > delta.max; i += delta.adjust) {
+                    check = { x: start.x, y: start.y };
+                    check[delta.value] = i;
+                    // y+ switches to -, x- switches to +
+                    let point = findPoint(pixels, check, checkDelta);
+                    if (point) {
+                        //gr.lineStyle(1, 0x00ff00).moveTo(this.x + (check.x * aW), this.y + (check.y * aH)).lineTo(this.x + (point.x * aW), this.y + (point.y * aH));
+                        let diff = lastPt[checkDelta.value] - point[checkDelta.value];
+                        //log("At Point", point);
+                        if (depth < 2 && lastPt && Math.abs(diff) > 10) {
+                            // this line is suspect, let's try and fill in the gaps
+                            let altVal = delta.value == "x" ? "y" : "x";
+                            let dir = (diff > 0 && checkDelta.adjust > 0) || (diff < 0 && checkDelta.adjust < 0) ? "left" : "right";
+                            let suspectDelta = rotateDelta(delta, { direction: dir, max: point[altVal] });
+                            //log("Suspect", dir, lastPt, suspectDelta, point);
+                            let susEnd = addPoints.call(this, pixels, lastPt, suspectDelta, point, depth + 1);
+                            //log("At Point Sus", susEnd, lastPt, point);
+
+                            diff = point[delta.value] - susEnd[delta.value];
+                            if (Math.abs(diff) > 10) {
+                                // this line is suspect, let's try and fill in the gaps
+                                let dir = (diff > 0 && checkDelta.adjust > 0) || (diff < 0 && checkDelta.adjust < 0) ? "left" : "right";
+                                let suspectDelta = rotateDelta(delta, { direction: dir, max: point[delta.value == "x" ? "y" : "x"] });
+                                //log("Suspect 2", dir, susEnd, suspectDelta, point);
+                                point = addPoints.call(this, pixels, susEnd, suspectDelta, point, depth + 1);
+                            } else
+                                point = susEnd;
+                        }
+                        //gr.beginFill(0x00ffff).drawCircle(this.x + (point.x * aW), this.y + (point.y * aH), 2).endFill();
+                        points.push(point.x * aW, point.y * aH);
+                        lastPt = point;
+                    } else
+                        return lastPt;
+                }
+                return lastPt;
+            }
+
+            let findPoint = function (pixels, start, delta) {
+                let check;
+                
+                for (let i = start[delta.value]; delta.adjust > 0 ? i < delta.max : i > delta.max; i += delta.adjust) {
+                    check = { x: start.x, y: start.y };
+                    check[delta.value] = i;
+                    let idx = ((check.y * width) + check.x) * 4;
+                    if (pixels[idx + 3] != 0) {
+                        return check;
+                    }
+                }
+            }
+
+            let rotateDelta = function (delta, { direction = "right", max } = {}) {
+                let value = delta.value == "x" ? "y" : "x";
+                let adjust = (delta.value == "y" ? (direction == "right" ? delta.adjust * -1 : delta.adjust) : (direction == "right" ? delta.adjust : delta.adjust * -1));
+                max = max ?? (adjust == -1 ? 0 : (value == "x" ? width - 1 : height - 1));
+                return { value, adjust, max };
+            }
+
+            let simplify = function (points, tolerance = 20) {
+                if (points.length <= 2) return points;
+
+                let getSqSegDist = function (p, p1, p2) {
+
+                    var x = p1.x,
+                        y = p1.y,
+                        dx = p2.x - x,
+                        dy = p2.y - y;
+
+                    if (dx !== 0 || dy !== 0) {
+
+                        var t = ((p.x - x) * dx + (p.y - y) * dy) / (dx * dx + dy * dy);
+
+                        if (t > 1) {
+                            x = p2.x;
+                            y = p2.y;
+
+                        } else if (t > 0) {
+                            x += dx * t;
+                            y += dy * t;
+                        }
+                    }
+
+                    dx = p.x - x;
+                    dy = p.y - y;
+
+                    return dx * dx + dy * dy;
+                }
+
+                let simplifyDPStep = function (points, first, last, sqTolerance, simplified) {
+                    var maxSqDist = sqTolerance,
+                        index;
+
+                    for (var i = first + 1; i < last; i++) {
+                        var sqDist = getSqSegDist(
+                            { x: points[i * 2], y: points[(i * 2) + 1] },
+                            { x: points[first * 2], y: points[(first * 2) + 1] },
+                            { x: points[last * 2], y: points[(last * 2) + 1] });
+
+                        if (sqDist > maxSqDist) {
+                            index = i;
+                            maxSqDist = sqDist;
+                        }
+                    }
+
+                    if (maxSqDist > sqTolerance) {
+                        if (index - first > 1) simplifyDPStep(points, first, index, sqTolerance, simplified);
+                        simplified.push(points[index * 2], points[(index * 2) + 1]);
+                        if (last - index > 1) simplifyDPStep(points, index, last, sqTolerance, simplified);
+                    }
+                }
+
+                var last = (points.length / 2) - 1;
+
+                var simplified = points.slice(0, 2);
+                simplifyDPStep(points, 0, last, tolerance, simplified);
+                simplified.concat(points.slice(-2));
+
+                return simplified;
+            }
+
+            const accuracy = 2;
+            let width, height, aW, aH;
+
+            /*
+            let gr = MonksActiveTiles.debugGr;
+            if (!gr) {
+                gr = new PIXI.Graphics();
+                MonksActiveTiles.debugGr = gr;
+                canvas.tokens.addChild(gr);
+            }
+            */
+
+            let points = [];
+            if (this.texture == null) {
+                points = [0, 0, this.document.width, 0, this.document.width, this.document.height, 0, this.document.height, 0, 0];
+            } else {
+                const sprite = new PIXI.Sprite(this.texture);
+                sprite.width = width = parseInt(this.texture.baseTexture.realWidth / accuracy);
+                sprite.height = height = parseInt(this.texture.baseTexture.realHeight / accuracy);
+                sprite.anchor.set(0.5, 0.5);
+                sprite.position.set(sprite.width / 2, sprite.height / 2);
+
+                aW = this.document.width / width;
+                aH = this.document.height / height;
+
+                // Create or update the alphaMap render texture
+                const tex = PIXI.RenderTexture.create({ width: sprite.width, height: sprite.height });
+
+                // Render the sprite to the texture and extract its pixels
+                // Destroy sprite and texture when they are no longer needed
+                canvas.app.renderer.render(sprite, tex);
+                sprite.destroy(false);
+                const pixels = canvas.app.renderer.extract.pixels(tex);
+                tex.destroy(true);
+
+                // Find the starting point
+                // Work along the top until the line reaches the other side
+                // Start at the last point, and work down
+
+                let start, point, lastPt;
+                start = lastPt = point = findStart.call(this, pixels);
+                //gr.beginFill(0x0000ff).drawCircle(this.x + (start.x * aW), this.y + (start.y * aH), 4).endFill();
+                let delta = { value: "x", adjust: 1, max: width};
+                for (let i = 0; i < 4; i++) {
+                    let from = { x: i % 2 == 0 ? lastPt.x : i == 1 ? width - 1 : 0, y: i % 2 == 0 ? i == 2 ? height - 1 : 0 : lastPt.y };
+                    point = addPoints.call(this, pixels, from, delta, lastPt);
+                    lastPt = point || lastPt;
+                    //gr.beginFill(0x00ffff).drawCircle(this.x + (lastPt.x * aW), this.y + (lastPt.y * aH), 4).endFill();
+                    delta = rotateDelta(delta, { max: (i == 2 ? start.y : null) });
+                    //log("Last Point", lastPt, delta);
+                }
+
+                points = simplify(points, 40);
+                //points = points.concat(points.slice(0, 2));
+
+                /*
+                for (let i = 0; i < width; i++) {
+                    for (let j = 0; j < height; j++) {
+                        let idx = ((j * width) + i) * 4;
+                        if (pixels[idx + 3] != 0) {
+                            gr.beginFill(0x0000ff).drawCircle(this.x + (i * aW), this.y + (j * aH), 1).endFill();
+                        }
+                    }
+                }
+                */
+            }
+
+            this._textureBorderPoints = points;
+            this._texturePolygon = new PIXI.Polygon(this._textureBorderPoints);
+            if (CONFIG.debug.tiletriggers) {
+                if (this._debugBorder)
+                    this._debugBorder.destroy();
+                this._debugBorder = this.addChild(new PIXI.Graphics());
+                this._debugBorder.lineStyle(2, 0xff0000).drawPolygon(this._texturePolygon);
+            }
+        }
+
         TileDocument.prototype.checkClick = function (pt, clicktype = 'click') {
             let triggerData = this.flags["monks-active-tiles"];
-            if (triggerData && triggerData.active && triggerData.trigger == clicktype) {
+            let triggers = MonksActiveTiles.getTrigger(triggerData?.trigger);
+            if (triggerData && triggerData.active && triggers.includes(clicktype)) {
                 //prevent triggering when game is paused
                 if (setting("prevent-when-paused") && game.paused && !game.user.isGM && triggerData.allowpaused !== true)
                     return;
@@ -2665,21 +3142,62 @@ export class MonksActiveTiles {
                         return;
                 }
 
+                if (triggerData.usealpha && !this.object._texturePolygon)
+                    this.object._findTextureBorder();
+                if (CONFIG.debug.tiletriggers && triggerData.usealpha) {
+                    if (this.object._debugBorder)
+                        this.object._debugBorder.destroy();
+                    this.object._debugBorder = this.object.addChild(new PIXI.Graphics());
+                    this.object._debugBorder.lineStyle(2, 0xff0000).drawPolygon(this.object._texturePolygon);
+                }
+
+                /*
+                let gr = MonksActiveTiles.debugGr;
+                if (!gr) {
+                    gr = new PIXI.Graphics();
+                    MonksActiveTiles.debugGr = gr;
+                    canvas.tokens.addChild(gr);
+                }
+                for (let x = pt.x - 1500; x < pt.x + 1500; x += 10) {
+                    for (let y = pt.y - 1500; y < pt.y + 1500; y += 10) {
+                        let check = this.pointWithin({ x: x, y: y });
+                        gr.beginFill(check ? 0xff0000 : 0x00ff00).drawCircle(x, y, 4).endFill();
+                    }
+                }
+                */
+
                 //check to see if the clicked point is within the Tile
                 if (pt == undefined || this.pointWithin(pt)) {
-                    if (triggerData.usealpha && !this.object.containsPixel(pt.x, pt.y))
-                        return;
-                    //this.preloadScene();
                     return this.trigger({ tokens: tokens, method: clicktype, pt: pt });
                 }
             }
         }
 
-        TileDocument.prototype.checkCollision = function (token, destination, usealpha) {
-            let when = this.getFlag('monks-active-tiles', 'trigger');
+        TileDocument.prototype.getIntersections = function (token, destination) {
+            let triggerData = this.flags["monks-active-tiles"];
 
-            if (["create"].includes(when))
-                return [];
+            if (triggerData.usealpha && !this.object._texturePolygon)
+                this.object._findTextureBorder();
+            if (CONFIG.debug.tiletriggers && triggerData.usealpha) {
+                if (this.object._debugBorder)
+                    this.object._debugBorder.destroy();
+                this.object._debugBorder = this.object.addChild(new PIXI.Graphics());
+                this.object._debugBorder.lineStyle(2, 0xff0000).drawPolygon(this.object._texturePolygon);
+            }
+
+            function rotate(cx, cy, x, y, angle) {
+                var rad = Math.toRadians(angle),
+                    cos = Math.cos(rad),
+                    sin = Math.sin(rad),
+                    run = x - cx,
+                    rise = y - cy,
+                    tx = (cos * run) + (sin * rise) + cx,
+                    ty = (cos * rise) - (sin * run) + cy;
+                return { x: tx, y: ty };
+            }
+
+            const cX = (Math.abs(this.width) / 2);
+            const cY = (Math.abs(this.height) / 2);
 
             const tokenOffsetW = (token.width * token.parent.dimensions.size) / 2;
             const tokenOffsetH = (token.height * token.parent.dimensions.size) / 2;
@@ -2688,142 +3206,144 @@ export class MonksActiveTiles {
             const tokenX2 = destination.x + tokenOffsetW;
             const tokenY2 = destination.y + tokenOffsetH;
 
-            const tokenRay = new Ray({ x: tokenX1, y: tokenY1 }, { x: tokenX2, y: tokenY2 });
+            const tokenRay = new Ray(
+                {
+                    x: tokenX1 - (this.x + cX),
+                    y: tokenY1 - (this.y + cY)
+                },
+                {
+                    x: tokenX2 - (this.x + cX),
+                    y: tokenY2 - (this.y + cY)
+                });
 
-            if (when == 'both') {
-                when = this.pointWithin({ x: tokenRay.A.x, y: tokenRay.A.y }) ? 'exit' : 'enter';
+            if (this.rotation != 0) {
+                //rotate the point
+                tokenRay.A = rotate(0, 0, tokenRay.A.x, tokenRay.A.y, this.rotation);
+                tokenRay.B = rotate(0, 0, tokenRay.B.x, tokenRay.B.y, this.rotation);
             }
 
-            let buffer = (token.parent.dimensions.size / 5) * (when == 'enter' ? 1 : (when == 'exit' ? -1 : 0));
+            tokenRay.A.x = (tokenRay.A.x / this.texture.scaleX) + cX;
+            tokenRay.A.y = (tokenRay.A.y / this.texture.scaleY) + cY;
+            tokenRay.B.x = (tokenRay.B.x / this.texture.scaleX) + cX;
+            tokenRay.B.y = (tokenRay.B.y / this.texture.scaleY) + cY;
 
-            let segments = MonksActiveTiles.getTileSegments(this, buffer);
+            // Check the bounding box first
+            let segments = MonksActiveTiles.getTileSegments(this).filter(s => foundry.utils.lineSegmentIntersects(tokenRay.A, tokenRay.B, s.a, s.b));
+
+            if (triggerData.usealpha) {
+                !(tokenRay.A.x <= 0 || tokenRay.A.x >= Math.abs(this.width) || tokenRay.A.y <= 0 || tokenRay.A.y >= Math.abs(this.height))
+                // only need to check the polygon if there are segments, or if both points are within the rectangle
+                if (segments.length || 
+                    !(tokenRay.A.x <= 0 || tokenRay.A.x >= Math.abs(this.width) || tokenRay.A.y <= 0 || tokenRay.A.y >= Math.abs(this.height)) || 
+                    !(tokenRay.B.x <= 0 || tokenRay.B.x >= Math.abs(this.width) || tokenRay.B.y <= 0 || tokenRay.B.y >= Math.abs(this.height))) {
+                    segments = MonksActiveTiles.getTileSegments(this, true).filter(s => foundry.utils.lineSegmentIntersects(tokenRay.A, tokenRay.B, s.a, s.b));
+                }
+            }
 
             let intersect = segments
-                .filter(s => foundry.utils.lineSegmentIntersects(tokenRay.A, tokenRay.B, s.a, s.b))
-                .map(s => foundry.utils.lineSegmentIntersection(tokenRay.A, tokenRay.B, s.a, s.b));
+                .map(s => {
+                    let point = foundry.utils.lineSegmentIntersection(tokenRay.A, tokenRay.B, s.a, s.b);
+                    let t0 = point.t0;
+                    point = { x: (point.x - cX) * this.texture.scaleX, y: (point.y - cY) * this.texture.scaleY }
+                    point = rotate(0, 0, point.x, point.y, this.rotation * -1);
+                    point = { x: point.x + (this.x + cX), y: point.y + (this.y + cY) }
+                    point.t0 = t0;
+                    return point;
+                });
 
-            /*
-            let gr = MonksActiveTiles.debugGr;
-            if (!gr) {
-                gr = new PIXI.Graphics();
-                MonksActiveTiles.debugGr = gr;
-                canvas.tokens.addChild(gr);
-            }
-
-            for (let seg of segments) {
-                gr.lineStyle(2, 0xff0000).moveTo(seg.a.x, seg.a.y).lineTo(seg.b.x, seg.b.y);
-            }
-            for (let pt of intersect) {
-                gr.beginFill(0x00ff00).drawCircle(pt.x, pt.y, 4).endFill();
-            }
-            */
-
-            if ((when == 'movement' || when == 'elevation') && intersect.length == 0) {
-                //check to see if there's moving within the Tile
-                if (this.pointWithin({ x: tokenRay.A.x, y: tokenRay.A.y }) &&
-                    this.pointWithin({ x: tokenRay.B.x, y: tokenRay.B.y })) {
-                    intersect = [{ x1: tokenRay.A.x, y1: tokenRay.A.y, x2: tokenRay.B.x, y2: tokenRay.B.y }];
+            if (CONFIG.debug.tiletriggers) {
+                let gr = MonksActiveTiles.debugGr;
+                if (!gr) {
+                    gr = new PIXI.Graphics();
+                    MonksActiveTiles.debugGr = gr;
+                    canvas.tokens.addChild(gr);
                 }
-            } else if (usealpha) {
-                //check the spot using alpha
 
-                // walk from the intersection point to the (token end for on enter, or token start for on exit
-                // if the point is in the alpha map, then change the intersection point to this point.
+                for (let pt of intersect) {
+                    gr.lineStyle(2, 0x800080).drawCircle(pt.x, pt.y, 4);
+                }
             }
 
             return intersect;
         }
 
-        TileDocument.prototype.canTrigger = function (token, collision, destination, elevation) {
+        TileDocument.prototype.canTrigger = function (token) {
             let triggerData = this.flags["monks-active-tiles"];
             if (triggerData) {
                 // prevent players from triggering a tile if the game is paused.
                 if (setting("prevent-when-paused") && game.paused && !game.user.isGM && triggerData.allowpaused !== true)
-                    return;
-
-                let when = this.getFlag('monks-active-tiles', 'trigger');
-
-                if (!["enter", "exit", "both", "elevation", "movement", "stop", "create"].includes(when))
-                    return;
-
-                if (when == 'elevation' && elevation == token.elevation)
-                    return;
+                    return false;
 
                 //check to see if this trigger is per token, and already triggered
                 if (triggerData.pertoken && this.hasTriggered(token.id))
-                    return;
+                    return false;
 
                 //check to see if this trigger is restricted by token type
                 if ((triggerData.restriction == 'gm' && token.actor?.hasPlayerOwner) || (triggerData.restriction == 'player' && !token.actor?.hasPlayerOwner))
-                    return;
+                    return false;
 
                 //check to see if this trigger is restricted by control type
                 if ((triggerData.controlled == 'gm' && !game.user.isGM) || (triggerData.controlled == 'player' && game.user.isGM))
-                    return;
+                    return false;
 
                 //If this trigger has a chance of failure, roll the dice
                 if (triggerData.chance != 100) {
                     let chance = (Math.random() * 100);
                     if (chance > triggerData.chance) {
                         log(`trigger failed with ${chance}% out of ${triggerData.chance}%`);
-                        return;
+                        return false;
                     } else
                         log(`trigger passed with ${chance}% out of ${triggerData.chance}%`);
                 }
 
-                //sort by closest
-                let sorted = (collision.length > 1 ? collision.sort((c1, c2) => (c1.t0 > c2.t0) ? 1 : -1) : collision);
+                return true;
+            }
+        }
 
-                //clear out any duplicate corners
-                let filtered = sorted.filter((value, index, self) => {
-                    return self.findIndex(v => v.t0 === value.t0) === index;
-                })
-
+        TileDocument.prototype.getTriggerPoints = function (when, token, collision, source, destination) {
+            let triggerData = this.flags["monks-active-tiles"];
+            if (triggerData) {
                 let tokenMidX = ((token.width * token.parent.dimensions.size) / 2);
                 let tokenMidY = ((token.height * token.parent.dimensions.size) / 2);
                 //is the token currently in the tile
                 let tokenPos = { x: (when == 'stop' ? destination.x : token.x) + tokenMidX, y: (when == 'stop' ? destination.y : token.y) + tokenMidY };
-                let inTile = this.pointWithin(tokenPos); //!(tokenPos.x <= this.object.x || tokenPos.x >= this.object.x + this.object.width || tokenPos.y <= this.object.y || tokenPos.y >= this.object.y + this.object.height);
+                let inTile = this.pointWithin(tokenPos);
 
                 //go through the list, alternating in/out until we find one that satisfies the on enter/on exit setting, and if it does, return the trigger point.
-                let newPos = [];
-                if (when == 'movement' || when == 'elevation') {
-                    if (filtered.length == 2)
-                        newPos.push({ x: filtered[0].x, y: filtered[0].y, x2: filtered[1].x, y2: filtered[1].y, method: 'movement' });
-                    else {
+                if (when == 'movement') {
+                    if (collision.length > 1)
+                        //movement is an enter an exit, so take the start and end points
+                        return { x: collision[0].x, y: collision[0].y, x2: collision[collision.length - 1].x, y2: collision[collision.length - 1].y, method: 'movement' };
+                    else if (collision.length == 1) {
                         if (inTile)
-                            newPos.push({ x: filtered[0].x1, y: filtered[0].y1, x2: filtered[0].x2, y2: filtered[0].y2, method: 'movement' });
+                            // movement is an exit
+                            return { x: source.x + tokenMidX, y: source.y + tokenMidY, x2: collision[0].x, y2: collision[0].y, method: 'movement' };
                         else
-                            newPos.push({ x: filtered[0].x, y: filtered[0].y, x2: destination.x + tokenMidX, y2: destination.y + tokenMidY, method: 'movement' });
+                            // movement is coming into the tile, so start at the entry point, and exit at the destination
+                            return { x: collision[0].x, y: collision[0].y, x2: destination.x + tokenMidX, y2: destination.y + tokenMidY, method: 'movement' };
+                    } else {
+                        // movement is within the tile
+                        return { x: source.x + tokenMidX, y: source.y + tokenMidY, x2: destination.x + tokenMidX, y2: destination.y + tokenMidY, method: 'movement' };
                     }
+                } else if (when == 'elevation' || when == 'create') {
+                    return { x: source.x + tokenMidX, y: source.y + tokenMidY, method: 'elevation' };
                 } else if (when == 'stop') {
                     if (inTile)
-                        newPos.push({ x: destination.x, y: destination.y, method: 'stop' });
-                } else if (when == 'create') {
-                    if (inTile)
-                        newPos.push({ x: collision.x, y: collision.y, method: 'create' });
+                        return { x: destination.x, y: destination.y, method: 'stop' };
                 } else {
-                    let checkPos = function (wh) {
-                        let idx = ((inTile ? 0 : 1) - (wh == 'enter' ? 1 : 0));
-
-                        debug("Can Trigger", collision, sorted, filtered, inTile, wh, idx);
-
-                        if (idx < 0 || idx >= filtered.length)
-                            return;
-
-                        let pos = duplicate(filtered[idx]);
-                        pos.x -= tokenMidX;
-                        pos.y -= tokenMidY;
-                        pos.method = (wh == 'enter' ? "enter" : "exit");
-                        newPos.push(pos);
+                    //let idx = ((inTile ? 0 : 1) - (when == 'enter' ? 1 : 0));
+                    let pos = { method: when };
+                    if (when == 'exit' && collision.length > 1) {
+                        pos.x = collision[collision.length - 1].x;
+                        pos.y = collision[collision.length - 1].y;
+                    } else {
+                        pos.x = collision[0].x;
+                        pos.y = collision[0].y;
                     }
-
-                    checkPos(when == 'both' ? 'enter' : when);
-                    if (when == 'both')
-                        checkPos('exit');
+                    return pos;
                 }
 
-                return newPos;
+                return null;
             }
         }
 
@@ -2855,8 +3375,8 @@ export class MonksActiveTiles {
         }*/
 
         TileDocument.prototype.checkStop = function () {
-            let when = this.getFlag('monks-active-tiles', 'trigger');
-            if (when == 'movement')
+            let triggers = MonksActiveTiles.getTrigger(getProperty(this, "flags.monks-active-tiles.trigger"));
+            if (triggers.includes('movement'))
                 return { stop: false };
             let stopmovement = false;
             let stoppage = this.flags['monks-active-tiles'].actions.filter(a => {
@@ -2896,7 +3416,6 @@ export class MonksActiveTiles {
                         let midTile = { x: this.x + (Math.abs(this.width) / 2), y: this.y + (Math.abs(this.height) / 2) };
                         tokenRay = new Ray({ x: midTile.x, y: midTile.y }, { x: pt.x, y: pt.y });
                     } else {
-                        const midToken = { x: tokens[0].x + ((Math.abs(tokens[0].width) * canvas.grid.w) / 2), y: tokens[0].y + ((Math.abs(tokens[0].height) * canvas.grid.h) / 2) };
                         tokenRay = new Ray({ x: options.src?.x || tokens[0].x, y: options.src?.y || tokens[0].y }, { x: options.original?.x || pt.x, y: options.original?.y || pt.y });
                     }
 
@@ -2968,6 +3487,8 @@ export class MonksActiveTiles {
                 debug("Running action", action);
                 context.index = i;
                 context.action = action;
+                if (resume != undefined)
+                    context.tokens = resume.tokens || context.tokens;
                 let fn = trigger.fn;
                 if (fn) {
                     //If there are batch actiosn to complete and this function is not batchable, then execute the changes
@@ -3051,6 +3572,8 @@ export class MonksActiveTiles {
                                 let cancontinue = await Hooks.call("triggerTile", this, this, context.tokens, context.action, context.userid, context.value);
                                 if (result === false || cancontinue === false || this.getFlag('monks-active-tiles', 'active') === false || this.getFlag('monks-active-tiles', 'continue') === false) {
                                     this.unsetFlag('monks-active-tiles', 'continue');
+                                    if (this._resumeTimer)
+                                        window.clearTimeout(this._resumeTimer);
                                     debug("Stopping actions", result, cancontinue, this.getFlag('monks-active-tiles', 'active'), this.getFlag('monks-active-tiles', 'continue'));
                                     break;
                                 }
@@ -3326,11 +3849,11 @@ export class MonksActiveTiles {
 
                     let templates = setting("tile-templates") || [];
                     let data = this.object.toObject();
+                    data._id = data.id = randomID();
                     data.name = fd.object.name;
                     data.visible = true;
                     delete data.img;
                     data.img = data.texture.src;
-                    data.id = data._id;
                     data.thumbnail = data.img || "modules/monks-active-tiles/img/cube.svg";
                     if (VideoHelper.hasVideoExtension(data.thumbnail)) {
                         const t = await ImageHelper.createThumbnail(data.thumbnail, { width: 60, height: 60 });
@@ -3378,21 +3901,18 @@ Hooks.on('ready', () => {
 
 Hooks.on('createToken', async (document, options, userId) => {
     for (let tile of document.parent.tiles) {
-        if (tile.flags['monks-active-tiles']?.active && tile.flags['monks-active-tiles']?.actions?.length > 0 && tile.flags['monks-active-tiles']?.trigger == 'create') {
+        let triggerData = getProperty(tile, "flags.monks-active-tiles") || {};
+        let triggers = MonksActiveTiles.getTrigger(triggerData?.trigger);
+        if (triggerData.active && triggerData.actions?.length > 0 && triggers.includes('create')) {
             let token = document.object;
 
             if (game.modules.get("levels")?.active && CONFIG.Levels.API && CONFIG.Levels.API.isTokenInRange && !CONFIG.Levels.API.isTokenInRange(token, tile._object))
                 continue;
 
             //check and see if the ray crosses a tile
-            let dest = tile.canTrigger(document, [{ x: document.x, y: document.y }], { x: document.x, y: document.y }, 0);
-            if (dest && dest.length) {
-                let triggerPt = dest[0];
-                let pt = { x: triggerPt.x + ((document.height * document.parent.dimensions.size) / 2), y: triggerPt.y + ((document.height * document.parent.dimensions.size) / 2) };
-
-                //log('Triggering tile', update, stop);
-                let original = { x: document.x, y: document.y };
-                tile.trigger({ tokens: [document], method: 'create', pt: pt, options: { original } });
+            let pt = { x: document.x + ((document.height * document.parent.dimensions.size) / 2), y: document.y + ((document.height * document.parent.dimensions.size) / 2) };
+            if (tile.canTrigger(document) && tile.pointWithin(pt)) {
+                tile.trigger({ tokens: [document], method: 'create', pt: pt });
             }
         }
     }
@@ -3420,25 +3940,197 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
         }
 
         //log('triggering for', token.id);
+        let gr = new PIXI.Graphics();
+        if (MonksActiveTiles.debugGr)
+            canvas.tokens.removeChild(MonksActiveTiles.debugGr);
+        MonksActiveTiles.debugGr = gr;
+        canvas.tokens.addChild(gr);
 
         //Does this cross a tile
         for (let tile of document.parent.tiles) {
-            if (tile.flags['monks-active-tiles']?.active && tile.flags['monks-active-tiles']?.actions?.length > 0) {
+            let triggerData = tile.flags["monks-active-tiles"] || {};
+            let triggers = MonksActiveTiles.getTrigger(triggerData?.trigger);
+            if (triggerData.active && triggerData.actions?.length > 0) {
                 if (game.modules.get("levels")?.active && CONFIG.Levels.API && CONFIG.Levels.API.isTokenInRange && !CONFIG.Levels.API.isTokenInRange(token, tile._object))
                     continue;
 
                 //check and see if the ray crosses a tile
                 let src = { x: document.x, y: document.y };
+                let tokenMidX = ((document.width * document.parent.dimensions.size) / 2);
+                let tokenMidY = ((document.height * document.parent.dimensions.size) / 2);
+                let tokenPos = { x: document.x + tokenMidX, y: document.y + tokenMidY };
+
+                let start = { x: document.x, y: document.y };
                 let dest = { x: update.x || document.x, y: update.y || document.y };
-                let elevation = update.elevation || document.elevation;
-                let collision = tile.checkCollision(document, dest, !!tile.flags['monks-active-tiles']?.usealpha);
 
+                if (!tile.canTrigger(document))
+                    continue;
+
+                // Elevation and Create happen immediate, the others all have a delay
+                let availableTriggers = ["elevation", "enter", "movement", "stop", "exit"].filter(t => triggers.includes(t));
+
+                if (update.elevation == undefined)
+                    availableTriggers.findSplice(t => t == "elevation");
+
+                if (update.x == undefined && update.y == undefined) {
+                    availableTriggers.findSplice(t => t == "enter");
+                    availableTriggers.findSplice(t => t == "movement");
+                    availableTriggers.findSplice(t => t == "exit");
+                    availableTriggers.findSplice(t => t == "stop");
+                }
+
+                if (availableTriggers.length == 0)
+                    continue;
+
+                let collisions;
+                if (availableTriggers.includes('enter') || availableTriggers.includes('exit') || availableTriggers.includes('movement') || availableTriggers.includes('stop')) {
+
+                    let contains = tile.pointWithin(tokenPos);
+                    if (contains) {
+                        availableTriggers.findSplice(t => t == "enter");
+                        availableTriggers.findSplice(t => t == "stop");
+                    }
+
+                    if (availableTriggers.length == 0)
+                        continue;
+
+                    if (availableTriggers.length > 0) {
+                        collisions = tile.getIntersections(document, dest);
+                        if (collisions.length == 0) {
+                            availableTriggers.findSplice(t => t == "enter");
+                            availableTriggers.findSplice(t => t == "exit");
+                            availableTriggers.findSplice(t => t == "stop");
+                            if (!contains)
+                                availableTriggers.findSplice(t => t == "movement");
+                        } else {
+                            //sort by closest
+                            let sorted = (collisions.length > 1 ? collisions.sort((c1, c2) => (c1.t0 > c2.t0) ? 1 : -1) : collisions);
+
+                            //clear out any duplicate corners
+                            collisions = sorted.filter((value, index, self) => {
+                                return self.findIndex(v => v.x === value.x && v.y === value.y) === index;
+                            });
+
+                            if (collisions.length == 1) {
+                                if (contains) {
+                                    availableTriggers.findSplice(t => t == "enter");
+                                    availableTriggers.findSplice(t => t == "stop");
+                                } else
+                                    availableTriggers.findSplice(t => t == "exit");
+                            } else
+                                availableTriggers.findSplice(t => t == "stop");
+                        }
+                        //log("Collisions", collisions);
+                    }
+                }
+
+                if (availableTriggers.length == 0)
+                    continue;
+
+                log("Available triggers", availableTriggers);
+                let doTrigger = async function (idx) {
+                    if (idx >= availableTriggers.length)
+                        return; // We've worked through all the triggers
+
+                    let when = availableTriggers[idx];
+                    let triggerPt = tile.getTriggerPoints(when, document, collisions, start, dest);
+
+                    if (when == "movement") {
+                        if (CONFIG.debug.tiletriggers) {
+                            gr.lineStyle(2, 0x800080)
+                                .moveTo(triggerPt.x, triggerPt.y)
+                                .lineTo(triggerPt.x2, triggerPt.y2);
+                        }
+                    } else if (when == "enter" || when == "exit") {
+                        if (triggerPt == undefined || (triggerPt.x == tokenPos.x && triggerPt.y == tokenPos.y)) {
+                            // move on to the next trigger because being on the line does not trigger an enter or exit.
+                            // or it's an enter or exit, and there's not a coresponding triggering point
+                            return doTrigger(idx + 1);
+                        }
+                    } else if (when == "elevation") {
+                        if (CONFIG.debug.tiletriggers)
+                            gr.beginFill(0x00ffff).drawCircle(triggerPt.x, triggerPt.y, 4).endFill();
+                    }
+
+                    //if it does and the token needs to stop, then modify the end position in update
+                    let endPt = { x: triggerPt.x - tokenMidX, y: triggerPt.y - tokenMidY };
+
+                    let stop = tile.checkStop();
+
+                    //log('Triggering tile', update, stop);
+                    let original = { x: update.x || document.x, y: update.y || document.y };
+                    if (stop.stop) {
+                        //check for snapping to the closest grid spot
+                        if (stop.snap) {
+                            // if it's entering or exiting, then we need to nudge it into the correct square
+                            let snapPoint = Ray.towardsPoint(endPt, dest, document.parent.dimensions.size / 3);
+                            endPt = mergeObject(endPt, canvas.grid.getSnappedPosition(snapPoint.B.x, snapPoint.B.y));
+                        }
+
+                        //if this token needs to be stopped, then we need to adjust the path, and force close the movement animation
+                        delete update.x;
+                        delete update.y;
+
+                        //make sure spamming the arrow keys is prevented
+                        if (stop.coolDown) {
+                            document.caught = true;
+                            $('#board').addClass("cooldown")
+                            window.setTimeout(function () { delete document.caught; $('#board').removeClass("cooldown"); }, 1500);
+                        }
+
+                        //try to disrupt the remaining path if there is one, by setting an update
+                        //MonksActiveTiles._rejectRemaining[document.id] = { x: triggerPt.x, y: triggerPt.y };
+                        //window.setTimeout(function () { delete MonksActiveTiles._rejectRemaining[document.id]; }, 500); //Hopefully half a second is enough to clear any of the remaining animations
+
+                        if (game.modules.get("drag-ruler")?.active) {
+                            let ruler = canvas.controls.getRulerForUser(game.user.id);
+                            if (ruler) ruler.cancelMovement = true;
+                            options.animate = false;
+                            await document.update({ x: endPt.x, y: endPt.y }, { bypass: true });
+                        } else {
+                            update.x = endPt.x;
+                            update.y = endPt.y;
+                            //options.bypass = true;
+                        }
+                    }
+                    
+                    if (when == "elevation") {
+                        // create and elevation fire immediately
+                        tile.trigger({ tokens: [document], method: when, pt: triggerPt, options: { original, src: start } });
+                        doTrigger(idx + 1);
+                    } else {
+                        //calculate how much time until the token reaches the trigger point, and wait to call the trigger
+                        let ray = new Ray({ x: start.x, y: start.y }, { x: triggerPt.x2 ?? triggerPt.x, y: triggerPt.y2 ?? triggerPt.y });  // This isn't exactly accurate, but I want the trigger to happen when the trigger point is crossed, not the final destination
+                        const s = document.parent.dimensions.size;
+                        const speed = s * 6;
+                        const duration = (ray.distance * 1000) / speed;
+
+                        //log('Tile has registered', when, duration, start, triggerPt, document);
+
+                        if (duration <= 0) {
+                            tile.trigger({ tokens: [document], method: when, pt: triggerPt, options: { original, src: start } });
+                            doTrigger(idx + 1);
+                        } else {
+                            // We need to fire when the token gets to the trigger point
+                            window.setTimeout(function () {
+                                //log('Tile is triggering', when, document);
+                                tile.trigger({ tokens: [document], method: triggerPt.method, pt: triggerPt, options: { original, src: start } });
+                                start.x = triggerPt.x2 ?? triggerPt.x;
+                                start.y = triggerPt.y2 ?? triggerPt.y;
+                                if (!(stop.stop && when == "enter")) //If this fires on Enter, and a stop is request then we don't need to run the On Exit code.
+                                    doTrigger(idx + 1);
+                            }, duration);
+                        }
+
+                        //return duration;
+                    }
+                }
+                doTrigger(0);
+
+                /*
                 if (collision.length > 0) {
-                    let tpts = tile.canTrigger(document, collision, dest, elevation);
+                    let tpts = tile.getTriggerPoints(document, collisions, dest);
                     if (tpts) {
-                        //preload any teleports to other scenes
-                        //tile.document.preloadScene();
-
                         let doTrigger = async function (idx) {
                             if (idx >= tpts.length)
                                 return;
@@ -3486,11 +4178,6 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                                 }
                             }
 
-                            //if there's a scene to teleport to, then preload it.
-                            /*let sceneId = tile.document.flags['monks-active-tiles'].actions.find(a => { return a.action.id == 'teleport' })?.sceneId;
-                            if (sceneId && sceneId != canvas.scene.id)
-                                game.scenes.preload(sceneId, true);
-*/
                             //calculate how much time until the token reaches the trigger point, and wait to call the trigger
                             const s = document.parent.dimensions.size;
                             const speed = s * 6;
@@ -3510,6 +4197,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                         doTrigger(0);
                     }
                 }
+                */
             }
         }
     }
@@ -3518,9 +4206,10 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
 Hooks.on("preUpdateCombat", async function (combat, delta) {
     if (combat.started && game.user.isGM && combat.scene) {
         for (let tile of combat.scene.tiles) {
-            let triggerData = tile.flags["monks-active-tiles"];
+            let triggerData = tile.flags["monks-active-tiles"] || {};
+            let triggers = MonksActiveTiles.getTrigger(triggerData?.trigger);
             if (triggerData && triggerData.active && triggerData.actions.length > 0 &&
-                ((delta.turn || delta.round) && triggerData.trigger == 'turnend')) {
+                ((delta.turn || delta.round) && triggers.includes('turnend'))) {
                 let tokens = [combat.combatant.token];
                 tile.trigger({ tokens: tokens, method: 'turnend' });
             }
@@ -3532,13 +4221,20 @@ Hooks.on("updateCombat", async function (combat, delta) {
     if (combat.started && game.user.isGM && combat.scene) {
         for (let tile of combat.scene.tiles) {
             let triggerData = tile.flags["monks-active-tiles"];
-            if (triggerData && triggerData.active && triggerData.actions.length > 0 &&
-                ((delta.round && triggerData.trigger == 'round')
-                    || ((delta.turn || delta.round) && triggerData.trigger == 'turn')
-                    || (delta.round == 1 && combat.turn == 0 && triggerData.trigger == 'combatstart')
-                )) {
-                let tokens = (triggerData.trigger == 'turn' ? [combat.combatant.token] : combat.combatants.map(c => c.token));
-                tile.trigger({ tokens: tokens, method: triggerData.trigger });
+            let triggers = MonksActiveTiles.getTrigger(triggerData?.trigger);
+            if (triggerData && triggerData.active && triggerData.actions.length > 0) {
+                if (delta.round && triggers.includes('round')) {
+                    let tokens = combat.combatants.map(c => c.token);
+                    tile.trigger({ tokens: tokens, method: 'round' });
+                }
+                if ((delta.turn || delta.round) && triggers.includes('turn')) {
+                    let tokens = [combat.combatant.token];
+                    tile.trigger({ tokens: tokens, method: 'trun' });
+                }
+                if (delta.round == 1 && combat.turn == 0 && triggers.includes('combatstart')) {
+                    let tokens = combat.combatants.map(c => c.token);
+                    tile.trigger({ tokens: tokens, method: 'combatstart' });
+                }
             }
         }
     }
@@ -3548,7 +4244,8 @@ Hooks.on("deleteCombat", async function (combat, delta) {
     if (combat.started && game.user.isGM && combat.scene) {
         for (let tile of combat.scene.tiles) {
             let triggerData = tile.flags["monks-active-tiles"];
-            if (triggerData && triggerData.active && triggerData.actions.length > 0 && triggerData.trigger == 'combatend') {
+            let triggers = MonksActiveTiles.getTrigger(triggerData?.trigger);
+            if (triggerData && triggerData.active && triggerData.actions.length > 0 && triggers.includes('combatend')) {
                 let tokens = combat.combatants.map(c => c.token);
                 tile.trigger({ tokens: tokens, method: 'combatend' });
             }
@@ -3727,7 +4424,8 @@ Hooks.on("canvasReady", () => {
     MonksActiveTiles.hoveredTiles = new Set();
     for (let tile of canvas.scene.tiles) {
         let triggerData = tile.flags["monks-active-tiles"];
-        if (triggerData && triggerData.active && triggerData.trigger == "ready") {
+        let triggers = MonksActiveTiles.getTrigger(triggerData?.trigger);
+        if (triggerData && triggerData.active && triggers.includes("ready")) {
             //check to see if this trigger is restricted by control type
             if ((triggerData.controlled == 'gm' && !game.user.isGM) || (triggerData.controlled == 'player' && game.user.isGM))
                 return;
@@ -3747,14 +4445,11 @@ Hooks.on("openJournalEntry", (document, options, userid) => {
 });
 
 Hooks.on('updateTile', async (document, update, options, userId) => {
-    if (update?.texture?.src != undefined) {
+    if (update?.texture?.src != undefined || getProperty(update, "flags.monks-active-tiles.usealpha") != undefined) {
         let triggerData = document.flags["monks-active-tiles"];
         if (triggerData?.usealpha) {
             window.setTimeout(function () {
-                let oldOverhead = document.overhead;
-                document.overhead = true;
-                document.object._createTextureData();
-                document.overhead = oldOverhead;
+                document.object._findTextureBorder();
             }, 500);
         }
     }

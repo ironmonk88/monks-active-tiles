@@ -4,6 +4,16 @@ export class TileTemplates extends SidebarDirectory {
     constructor(options = {}) {
         super(options);
         this._original = {};
+
+        // Fix any folders that have no ids
+        let folders = setting("tile-template-folders") || [];
+        let checkFolders = folders.filter(f => {
+            if (f.folder == "") f.folder = null;
+            if (!folders.find(t => t._id == f.folder)) f.folder = null;
+            return f._id;
+        });
+        if (checkFolders.length != folders.length)
+            game.settings.set("monks-active-tiles", "tile-template-folders", checkFolders);
     }
 
     static get defaultOptions() {
@@ -210,6 +220,67 @@ export class TileTemplates extends SidebarDirectory {
         }
     }
 
+    _onSearchFilter(event, query, rgx, html) {
+        const isSearch = !!query;
+        const documentIds = new Set();
+        const folderIds = new Set();
+        const autoExpandFolderIds = new Set();
+
+        const folders = this.folders;
+
+        // Match documents and folders
+        if (isSearch) {
+
+            // Include folders and their parents
+            function includeFolder(folderId, autoExpand = true) {
+                if (!folderId) return;
+                if (folderIds.has(folderId)) return;
+                folderIds.add(folderId);
+                if (autoExpand) autoExpandFolderIds.add(folderId);
+                let folder = folders.find(f => f._id == folderId);
+                if (folder) includeFolder(folder); // Always autoexpand parent folders
+            }
+
+            // Match documents by name
+            for (let d of this.documents) {
+                if (rgx.test(SearchFilter.cleanQuery(d.name))) {
+                    documentIds.add(d.id);
+                    includeFolder(d.folder);
+                }
+            }
+
+            // Match folders by name
+            for (let f of this.folders) {
+                if (rgx.test(SearchFilter.cleanQuery(f.name))) {
+                    includeFolder(f, false);
+                    for (let d of this.documents.filter(x => x.folder === f)) {
+                        documentIds.add(d.id);
+                    }
+                }
+            }
+        }
+
+        // Toggle each directory item
+        for (let el of html.querySelectorAll(".directory-item")) {
+
+            // Documents
+            if (el.classList.contains("document")) {
+                el.style.display = (!isSearch || documentIds.has(el.dataset.documentId)) ? "flex" : "none";
+            }
+
+            // Folders
+            if (el.classList.contains("folder")) {
+                let match = isSearch && folderIds.has(el.dataset.folderId);
+                el.style.display = (!isSearch || match) ? "flex" : "none";
+
+                if (autoExpandFolderIds.has(el.dataset.folderId)) {
+                    if (isSearch && match) el.classList.remove("collapsed");
+                    else el.classList.toggle("collapsed", !game.folders._expanded[el.dataset.folderId]);
+                }
+            }
+        }
+    }
+
     _onDragStart(event) {
         if (ui.context) ui.context.close({ animate: false });
         const li = event.currentTarget.closest(".directory-item");
@@ -317,7 +388,7 @@ export class TileTemplates extends SidebarDirectory {
         // Determine siblings and perform sort
         
         sortData.siblings = folders.filter(f => {
-            return (f.folder === sortData.parentId) && (f.id !== folder);
+            return (f.folder === sortData.parentId || (f.folder == undefined && sortData.parentId == undefined)) && (f.id !== folder._id);
         });
         sortData.updateData = { folder: sortData.parentId };
 
@@ -335,6 +406,47 @@ export class TileTemplates extends SidebarDirectory {
         this.render(true);
     }
 
+    getSubfolders(folders, folder, recursive = false) {
+        let subfolders = folders.filter(f => f.folder === folder.id);
+        if (recursive && subfolders.length) {
+            for (let f of subfolders) {
+                const children = this.getSubfolders(folders, f, true);
+                subfolders = subfolders.concat(children);
+            }
+        }
+        return subfolders;
+    }
+
+    async deleteFolder(folders, folder, options, userId) {
+        const templates = duplicate(this.constructor.collection || []);
+        const parentFolder = folder.folder;
+        const { deleteSubfolders, deleteContents } = options;
+
+        // Delete or move sub-Folders
+        const deleteFolderIds = [];
+        for (let f of this.getSubfolders(folders, folder)) {
+            if (deleteSubfolders) deleteFolderIds.push(f.id);
+            else f.folder = parentFolder;
+        }
+        if (deleteFolderIds.length) {
+            for (let id of deleteFolderIds)
+                folders.findSplice(f => f._id == id);
+        }
+
+        // Delete or move contained Documents
+        const deleteDocumentIds = [];
+        for (let d of templates) {
+            if (d.folder !== folder._id) continue;
+            if (deleteContents) deleteDocumentIds.push(d._id);
+            else d.folder = parentFolder;
+        }
+        if (deleteDocumentIds.length) {
+            for (let id of deleteDocumentIds)
+                templates.findSplice(t => t._id == id);
+        }
+        await game.settings.set("monks-active-tiles", "tile-templates", templates);
+    }
+
     _getFolderContextOptions() {
         return [
             {
@@ -343,11 +455,19 @@ export class TileTemplates extends SidebarDirectory {
                 condition: game.user.isGM,
                 callback: header => {
                     const li = header.parent()[0];
-                    const folders = this.constructor.folders;
-                    const folder = folders.find(t => t._id == li.dataset.folderId);
+                    const folders = duplicate(this.constructor.folders);
+                    let folder = folders.find(t => t._id == li.dataset.folderId);
                     const options = { top: li.offsetTop, left: window.innerWidth - 310 - FolderConfig.defaultOptions.width };
-                    new FolderConfig(folder, options).render(true);
-                    //+++ need to override the folder save
+                    let fld = new Folder(mergeObject(folder, { type: "JournalEntry" }, { inplace: false }));
+                    let config = new FolderConfig(fld, options).render(true);
+                    config._updateObject = async (event, formData) => {
+                        if (!formData.name?.trim()) formData.name = Folder.implementation.defaultName();
+                        delete formData.type;
+                        if (formData.folder == "") formData.folder = null;
+                        folder = mergeObject(folder, formData);
+                        await game.settings.set("monks-active-tiles", "tile-template-folders", folders);
+                        this.render();
+                    }
                 }
             },
             {
@@ -355,20 +475,20 @@ export class TileTemplates extends SidebarDirectory {
                 icon: '<i class="fas fa-trash"></i>',
                 condition: game.user.isGM,
                 callback: header => {
-                    const li = header.parent();
+                    const li = header.parent()[0];
                     const folders = duplicate(this.constructor.folders);
                     const folder = folders.find(t => t._id == li.dataset.folderId);
                     return Dialog.confirm({
                         title: `${game.i18n.localize("FOLDER.Remove")} ${folder.name}`,
                         content: `<h4>${game.i18n.localize("AreYouSure")}</h4><p>${game.i18n.localize("FOLDER.RemoveWarning")}</p>`,
-                        yes: () => {
-                            //+++folder.delete({ deleteSubfolders: false, deleteContents: false })
+                        yes: async () => {
+                            await this.deleteFolder(folders, folder, { deleteSubfolders: false, deleteContents: false });
                             folders.findSplice(t => t._id == folder._id);
-                            game.settings.set("monks-active-tiles", "tile-template-folders", folders);
+                            await game.settings.set("monks-active-tiles", "tile-template-folders", folders);
                             this.render();
                         },
                         options: {
-                            top: Math.min(li[0].offsetTop, window.innerHeight - 350),
+                            top: Math.min(li.offsetTop, window.innerHeight - 350),
                             left: window.innerWidth - 720,
                             width: 400
                         }
@@ -380,20 +500,20 @@ export class TileTemplates extends SidebarDirectory {
                 icon: '<i class="fas fa-dumpster"></i>',
                 condition: game.user.isGM,
                 callback: header => {
-                    const li = header.parent();
+                    const li = header.parent()[0];
                     const folders = duplicate(this.constructor.folders);
                     const folder = folders.find(t => t._id == li.dataset.folderId);
                     return Dialog.confirm({
                         title: `${game.i18n.localize("FOLDER.Delete")} ${folder.name}`,
                         content: `<h4>${game.i18n.localize("AreYouSure")}</h4><p>${game.i18n.localize("FOLDER.DeleteWarning")}</p>`,
-                        yes: () => {
-                            //+++folder.delete({ deleteSubfolders: true, deleteContents: true })
+                        yes: async () => {
+                            await this.deleteFolder(folders, folder, { deleteSubfolders: true, deleteContents: true })
                             folders.findSplice(t => t._id == folder._id);
-                            game.settings.set("monks-active-tiles", "tile-template-folders", folders);
+                            await game.settings.set("monks-active-tiles", "tile-template-folders", folders);
                             this.render();
                         },
                         options: {
-                            top: Math.min(li[0].offsetTop, window.innerHeight - 350),
+                            top: Math.min(li.offsetTop, window.innerHeight - 350),
                             left: window.innerWidth - 720,
                             width: 400
                         }
@@ -425,14 +545,15 @@ export class TileTemplates extends SidebarDirectory {
                 condition: () => game.user.isGM,
                 callback: li => {
                     const templates = duplicate(this.constructor.collection);
-                    const document = templates.find(t => t._id == li.data("documentId"));
+                    const id = li.data("documentId");
+                    const document = templates.find(t => t._id == id || (t._id == undefined && id == ""));
                     if (!document) return;
                     return Dialog.confirm({
                         title: `${game.i18n.format("DOCUMENT.Delete", { type: "Tile Template" })}: ${document.name}`,
                         content: `<h4>${game.i18n.localize("AreYouSure")}</h4><p>${game.i18n.format("SIDEBAR.DeleteWarning", { type: "Tile Template" })}</p>`,
-                        yes: () => {
-                            templates.findSplice(t => t._id == li.data("documentId"));
-                            game.settings.set("monks-active-tiles", "tile-templates", templates);
+                        yes: async () => {
+                            templates.findSplice(t => t._id == id || (t._id == undefined && id == ""));
+                            await game.settings.set("monks-active-tiles", "tile-templates", templates);
                             new TileTemplates().render(true);
                         },
                         options: {
@@ -449,6 +570,7 @@ export class TileTemplates extends SidebarDirectory {
                 callback: li => {
                     const templates = this.constructor.collection;
                     const document = templates.find(t => t._id == li.data("documentId"));
+                    if (!document) return;
                     const data = deepClone(document);
                     delete data._id;
                     delete data.folder;
@@ -471,6 +593,7 @@ export class TileTemplates extends SidebarDirectory {
                 callback: async (li) => {
                     const templates = duplicate(this.constructor.collection);
                     const document = templates.find(t => t._id == li.data("documentId"));
+                    if (!document) return;
                     new Dialog({
                         title: `Import Data: ${document.name}`,
                         content: await renderTemplate("templates/apps/import-data.html", {

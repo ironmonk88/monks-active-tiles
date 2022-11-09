@@ -44,9 +44,24 @@
     <div class="form-group">
         <label>{{ localize "MonksActiveTiles.When" }}</label>
         <div class="form-fields">
-            <select name="flags.monks-active-tiles.trigger" data-dtype="String">
-                {{ selectOptions triggerModes selected=data.flags.monks-active-tiles.trigger }}
-            </select>
+            <input type="hidden" name="flags.monks-active-tiles.trigger" value="{{triggerValues}}" />
+            <div class="multiple-dropdown-select">
+                <div class="multiple-dropdown flexrow">
+                    <div class="multiple-dropdown-content">
+                        {{#each triggerNames}}
+                        <div class="multiple-dropdown-option flexrow" data-id="{{this.id}}"><span>{{this.name}}</span> <div class="remove-option">&times;</div></div>
+                        {{/each}}
+                    </div>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <ul class="dropdown-list">
+                    {{#each triggers}}
+                    <li class="multiple-dropdown-item{{#if this.selected}} selected{{/if}}" value="{{this.id}}">
+                        {{this.name}}
+                    </li>
+                    {{/each}}
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -57,7 +72,7 @@
         </div>
     </div>
 
-    <div class="form-group usealpha" {{#unless usingAlpha}} style="display: none;" {{/unless}}>
+    <div class="form-group usealpha">
         <label>{{ localize "MonksActiveTiles.UseTransparency" }}</label>
         <div class="form-fields" style="flex: 0 0 50px;">
             <input type="checkbox" name="flags.monks-active-tiles.usealpha" {{ checked data.flags.monks-active-tiles.usealpha }}>

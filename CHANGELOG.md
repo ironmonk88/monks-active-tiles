@@ -1,3 +1,61 @@
+## Version 10.5
+
+Fixed issue where a delay timer would still fire even after the stop all actions was triggered.
+
+Fixed move token action so that it measured from the center of the token, rather than the corner.
+
+Added the option with movetoken to either set the duration, or leave it blank so that it calculates using Foundry's token move speed.
+
+Fixed issue with creating token when finding the correct location.
+
+Added the option to create token at a location determined by a dice roll.
+
+Added the option to create a Note at the location of another note.  And the option to use a location from multiple Tiles, or from a dice roll.
+
+Fixed issue with adding newly created Notes to the current values.
+
+Adding the tagger option to the hurt/heal action
+
+Fixed issue with chat message when the token selected doesn't have an attached actor.
+
+Added the option to use handlebars int he chatmessage's flavor text
+
+Added the option to roll any dice required in the results of a RollTable roll.  So if the result would have been, for example, currency... you can have the result rolled and added as currency rather than just text.
+
+Fixed issue displaying the action, if the rolltable no longer exists.
+
+Fixing issues when animating the Tile image
+
+Fixing issues when open a Journal Entry from a Compendium.
+
+Fixing opening a Journal Entry to a subsection on a Page.
+
+Added the option to add currency when using the add item action.
+
+Fixed issue with a ping appearing when activating a tile that changes the scene via a click.
+
+Added the option to set who the target action is applied to, and to set if adding additional targets or replacing the targets.
+
+Added the option to filter items by quantity in dnd5e.
+
+Fixed padding on button icons on the action config screen.
+
+Added typeahead for auto anchors.
+
+Fixed searching Tile Templates.
+
+Fixed deleting a Folder in the Tile Templates.
+
+Fixed editing a Folde in Tile Templates.
+
+Fixed issue when adding actors to the current values.
+
+
+
+Added the option to select multiple triggers for a Tile.
+
+Added the option to use the Tile's alpha image when using On Enter and On Exit.
+
 ## Version 10.4
 
 Fixed issue with creating a token set to hidden, when revealed, the opacity is set to 0.5

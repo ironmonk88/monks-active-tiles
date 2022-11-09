@@ -134,6 +134,9 @@
     flex: 0 0 28px;
     height: 28px;
     width: 28px;
+    line-height: 25px;
+    font-size: 0.875rem;
+    padding-left: 6px;
 }
 
 .action-sheet button[data-target="data.entity"] i,
@@ -365,4 +368,94 @@
     overflow-y: auto;
     max-height: 500px;
     font-size: var(--font-size-14);
+}
+
+.multiple-dropdown-select {
+    position: relative;
+    max-width: 242px;
+}
+
+.multiple-dropdown {
+    height: calc(var(--form-field-height) + 1px);
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--color-border-light-tertiary);
+    border-radius: 3px;
+    padding: 2px;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.multiple-dropdown > div {
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.multiple-dropdown > i {
+    flex: 0 0 14px;
+    text-align: center;
+    line-height: 19px;
+    font-size: 11px;
+    color: #000;
+}
+
+.multiple-dropdown .multiple-dropdown-option {
+    display: inline-block;
+    background-color: #888;
+    border-radius: 4px;
+    padding: 1px 4px;
+    border: 1px solid #777;
+    margin-right: 2px;
+}
+
+.multiple-dropdown .multiple-dropdown-option .remove-option {
+    cursor: pointer;
+    display: inline-block;
+    font-size: 20px;
+    line-height: 14px;
+}
+
+.multiple-dropdown-select .dropdown-list {
+    display: none;
+    max-height: 200px;
+    overflow-y: auto;
+    margin: 0px 5px;
+    color: black;
+    position: absolute;
+    float: left;
+    left: -1px;
+    top: 100%;
+    background: url(../../../ui/parchment.jpg) repeat;
+    border: 1px solid #808080;
+    width: calc(100% + 2px);
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    z-index: 100;
+}
+
+.multiple-dropdown-select .dropdown-list.open {
+    display: block;
+}
+
+.multiple-dropdown-select .dropdown-list .multiple-dropdown-item {
+    padding: 4px;
+    cursor: pointer;
+    min-height: 25px;
+    width: 100%;
+    overflow-x: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.multiple-dropdown-select .dropdown-list .multiple-dropdown-item.selected {
+    background-color: coral;
+    color: #FFF;
+}
+
+.multiple-dropdown-select .dropdown-list .multiple-dropdown-item:hover {
+    background-color: #1e90ff;
+    color: #FFF;
 }

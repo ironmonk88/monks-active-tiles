@@ -50,7 +50,31 @@ export const WithActiveTileConfig = (TileConfig) => {
 
         getData(options) {
             let data = super.getData(options);
-            data.usingAlpha = ["click", "dblclick", "rightclick"].includes(data.data.flags["monks-active-tiles"]?.trigger);
+            //data.usingAlpha = ["click", "dblclick", "rightclick"].includes(data.data.flags["monks-active-tiles"]?.trigger);
+
+            data.triggerValues = this.object.getFlag("monks-active-tiles", "trigger");
+            data.triggerValues = data.triggerValues instanceof Array ? data.triggerValues : [data.triggerValues];
+            if (data.triggerValues.includes("both")) {
+                data.triggerValues.push("enter", "exit");
+                data.triggerValues.findSplice(t => t == "both");
+            }
+            if (data.triggerValues.includes("hover")) {
+                data.triggerValues.push("hoverin", "hoverout");
+                data.triggerValues.findSplice(t => t == "hover");
+            }
+
+            data.triggerNames = data.triggerValues.map(t => {
+                return Object.keys(MonksActiveTiles.triggerModes).includes(t) ? { id: t, name: MonksActiveTiles.triggerModes[t] } : null;
+            }).filter(t => !!t);
+
+            data.triggers = Object.entries(MonksActiveTiles.triggerModes).map(([k, v]) => {
+                return {
+                    id: k,
+                    name: v,
+                    selected: data.triggerValues.includes(k)
+                }
+            });
+
             data.preventPaused = setting("prevent-when-paused");
             let fileindex = this.object.getFlag("monks-active-tiles", "fileindex");
             data.index = (fileindex != undefined ? fileindex + 1 : '');
@@ -81,29 +105,31 @@ export const WithActiveTileConfig = (TileConfig) => {
             
             tiledata.actions = await Promise.all((this.object.getFlag('monks-active-tiles', 'actions') || [])
                 .map(async (a) => {
-                    let trigger = MonksActiveTiles.triggerActions[a.action];
-                    let content = (trigger == undefined ? 'Unknown' : i18n(trigger.name));
-                    if (trigger?.content) {
-                        try {
-                            content = await trigger.content(trigger, a);
-                        } catch (e) {
-                            error(e);
+                    if (a) {
+                        let trigger = MonksActiveTiles.triggerActions[a.action];
+                        let content = (trigger == undefined ? 'Unknown' : i18n(trigger.name));
+                        if (trigger?.content) {
+                            try {
+                                content = await trigger.content(trigger, a);
+                            } catch (e) {
+                                error(e);
+                            }
                         }
-                    }
-                    content += (a.delay > 0 ? ' after ' + a.delay + ' seconds' : '');
+                        content += (a.delay > 0 ? ' after ' + a.delay + ' seconds' : '');
 
-                    let deactivated = "";
-                    if (a.action == "activate" && a.data?.activate == "deactivate" && (a.data?.entity?.id == this.object.id || a.data?.entity == ""))
-                        deactivated = "on";
-                    if (a.action == "anchor")
-                        deactivated = "off";
-                    return {
-                        id: a.id,
-                        content: content,
-                        disabled: trigger?.visible === false,
-                        deactivated: deactivated
-                    };
-                }));
+                        let deactivated = "";
+                        if (a.action == "activate" && a.data?.activate == "deactivate" && (a.data?.entity?.id == this.object.id || a.data?.entity == ""))
+                            deactivated = "on";
+                        if (a.action == "anchor")
+                            deactivated = "off";
+                        return {
+                            id: a.id,
+                            content: content,
+                            disabled: trigger?.visible === false,
+                            deactivated: deactivated
+                        };
+                    }
+                }).filter(a => !!a));
 
             let disabled = false;
             for (let a of tiledata.actions) {
@@ -216,6 +242,8 @@ export const WithActiveTileConfig = (TileConfig) => {
             if (data["flags.monks-active-tiles.fileindex"] != '')
                 data["flags.monks-active-tiles.fileindex"] = data["flags.monks-active-tiles.fileindex"] - 1;
 
+            data["flags.monks-active-tiles.trigger"] = data["flags.monks-active-tiles.trigger"].split(",");
+
             return data;
         }
 
@@ -232,26 +260,6 @@ export const WithActiveTileConfig = (TileConfig) => {
                     await this.object.setFlag("monks-active-tiles", "fileindex", fileindex);
                 }
             }
-
-            //if any of the actions are to cycle the image, then make sure the image lines up with the img at
-            /*
-            for (let action of (this.object.getFlag('monks-active-tiles', 'actions') || [])) {
-                if (action.action == 'imagecycle') {
-                    let actfiles = (action.data?.files || []);
-
-                    this.object._cycleimages = this.object._cycleimages || {};
-                    let files = this.object._cycleimages[action.id] = await MonksActiveTiles.getTileFiles(actfiles);
-
-                    let imgat = Math.clamped((action.data?.imgat || 1) - 1, 0, files.length - 1);
-                    
-                    if (this.object._cycleimages[action.id].length > 0) {
-                        let entities = await MonksActiveTiles.getEntities({ tile: this.object, action: action }, 'tiles');
-                        for (let entity of entities) {
-                            await entity.update({ img: files[imgat] });
-                        }
-                    }
-                }
-            }*/
         }
 
         activateListeners(html) {
@@ -273,10 +281,12 @@ export const WithActiveTileConfig = (TileConfig) => {
             $('.record-history', html).click(this.checkRecordHistory.bind(this));
             $('.per-token', html).click(this.checkPerToken.bind(this));
 
+            /*
             $('select[name="flags.monks-active-tiles.trigger"]', html).change(function () {
                 $('.usealpha', html).toggle(["click", "dblclick", "rightclick"].includes($(this).val()));
                 that.setPosition();
             });
+            */
 
             //$('div[data-tab="triggers"] .item-list li.item', html).hover(this._onActionHoverIn.bind(this), this._onActionHoverOut.bind(this));
             $('.browse-files', html).on("click", this.browseFiles.bind(this));
@@ -285,6 +295,50 @@ export const WithActiveTileConfig = (TileConfig) => {
             $('.file-list .edit-file', html).on("click", this.browseFiles.bind(this));
             $('.file-list .delete-file', html).on("click", this.removeFile.bind(this));
             $('.file-list .item', html).on("dblclick", this.selectFile.bind(this));
+
+            $('.multiple-dropdown-select', html).click((event) => { $('.multiple-dropdown-select .dropdown-list', this.element).toggleClass('open'); event.preventDefault(); event.stopPropagation(); });
+            $(html).click(() => { $('.multiple-dropdown-select .dropdown-list', this.element).removeClass('open'); });
+            $('.multiple-dropdown-select .remove-option', html).on("click", this.removeTrigger.bind(this));
+            $('.multiple-dropdown-select .multiple-dropdown-item', html).on("click", this.selectTrigger.bind(this));
+        }
+
+        selectTrigger(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            // if this item is already in the list, then remove it, otherwise add it
+
+            let id = $(event.currentTarget).attr("value");
+            let triggers = $('input[name="flags.monks-active-tiles.trigger"]', this.element).val().split(",");
+            if (triggers.includes(id)) {
+                // remove trigger
+                triggers.findSplice(t => t === id);
+                $(`.multiple-dropdown-item.selected[value="${id}"]`, this.element).removeClass("selected");
+                $(`.multiple-dropdown-option[data-id="${id}"]`, this.element).remove();
+            } else {
+                // add trigger
+                triggers.push(id);
+                $(`.multiple-dropdown-item[value="${id}"]`, this.element).addClass("selected");
+                $('.multiple-dropdown-content', this.element).append(
+                    $("<div>").addClass("multiple-dropdown-option flexrow").attr("data-id", id)
+                        .append($("<span>").html(MonksActiveTiles.triggerModes[id]))
+                        .append($("<div>").addClass("remove-option").html("&times;").on("click", this.removeTrigger.bind(this)))
+                );
+            }
+            $('input[name="flags.monks-active-tiles.trigger"]', this.element).val(triggers.join(","));
+            $('.multiple-dropdown-select .dropdown-list', this.element).removeClass('open');
+        }
+
+        removeTrigger(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            // remove trigger from the list
+            let li = event.currentTarget.closest(".multiple-dropdown-option");
+            let id = li.dataset.id;
+            let triggers = $('input[name="flags.monks-active-tiles.trigger"]', this.element).val().split(",");
+            triggers.findSplice(t => t === id);
+            $('input[name="flags.monks-active-tiles.trigger"]', this.element).val(triggers.join(","));
+            li.remove();
+            $(`.multiple-dropdown-item.selected[value="${id}"]`, this.element).removeClass("selected");
         }
 
         browseFiles(event) {
