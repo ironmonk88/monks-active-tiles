@@ -483,7 +483,7 @@ export class ActionManager {
                         type: "number",
                         min: 0,
                         step: 0.05,
-                        defvalue: 5
+                        defvalue: ''
                     },
                     {
                         id: "trigger",
@@ -503,15 +503,15 @@ export class ActionManager {
                         let promises = [];
                         let batch = new BatchManager();
                         for (let entity of entities) {
+                            if (!entity)
+                                continue;
+
                             let object = entity.object;
 
-                            //if (!hasOriginal)
-                            //    value.original = { x: entity.x, y: entity.y };
+                            let midX = ((entity.width * entity.parent.dimensions.size) / 2);
+                            let midY = ((entity.height * entity.parent.dimensions.size) / 2);
 
-                            let tokenMidX = ((tokens[0].width * tokens[0].parent.dimensions.size) / 2);
-                            let tokenMidY = ((tokens[0].height * tokens[0].parent.dimensions.size) / 2);
-
-                            let dests = await MonksActiveTiles.getLocation.call(tile, action.data.location, value, { pt: { x: pt.x - tokenMidX, y: pt.y - tokenMidY } });
+                            let dests = await MonksActiveTiles.getLocation.call(tile, action.data.location, value, { pt: { x: pt.x - midX, y: pt.y - midY } });
                             let dest = dests[Math.floor(Math.random() * dests.length)];
 
                             let entDest = duplicate(dest);

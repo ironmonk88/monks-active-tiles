@@ -1,3 +1,9 @@
+## Version 10.6
+
+Fixed issue with moving a token
+
+Fixed issue with delay action
+
 ## Version 10.5
 
 Fixed issue where a delay timer would still fire even after the stop all actions was triggered.
@@ -50,7 +56,7 @@ Fixed editing a Folde in Tile Templates.
 
 Fixed issue when adding actors to the current values.
 
-
+Fixed issue with hover in and hover out overwriting Tile changes.
 
 Added the option to select multiple triggers for a Tile.
 
