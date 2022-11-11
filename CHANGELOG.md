@@ -1,3 +1,9 @@
+## Version 10.7
+
+Fixing issue with filter by distance
+
+Still fixing issues with the delay action.
+
 ## Version 10.6
 
 Fixed issue with moving a token

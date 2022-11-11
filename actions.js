@@ -4933,7 +4933,9 @@ export class ActionManager {
                         if (!(t instanceof TokenDocument))
                             return false;
 
-                        const midToken = { x: t.x + ((Math.abs(t.width) * canvas.grid.w) / 2), y: t.y + ((Math.abs(t.height) * canvas.grid.h) / 2) };
+                        const hW = ((Math.abs(t.width) * t.parent.dimensions.size) / 2);
+                        const hH = ((Math.abs(t.height) * t.parent.dimensions.size) / 2);
+                        const midToken = { x: t.x + hW, y: t.y + hH };
 
                         if (action.data.measure == 'lt') {
                             return tile.pointWithin(midToken);
@@ -4942,24 +4944,41 @@ export class ActionManager {
                             if (action.data.distance.var == 'sq')
                                 distance = (t.parent.grid.size * distance);
 
-                            //need to find a ray between the center of the tile and the token
-                            //find out where it crosses the edge of the Tile
-                            //take the distance from that point to the center of the token, minus the tokens radius.
+                            let dest = { x: midTile.x - hW, y: midTile.y - hH };
+                            let collisions = tile.getIntersections(t, dest);
 
-                            const tokenRay = new Ray({ x: midToken.x, y: midToken.y }, { x: midTile.x, y: midTile.y });
-
-                            let segments = MonksActiveTiles.getTileSegments(tile);
-                            let intersect = segments.filter(s => foundry.utils.lineSegmentIntersects(tokenRay.A, tokenRay.B, s.a, s.b))
-                                .map(s => foundry.utils.lineSegmentIntersection(tokenRay.A, tokenRay.B, s.a, s.b));
-
-                            if (intersect.length == 0) {
+                            if (collisions.length == 0) {
                                 //it's within the tile
                                 return action.data.measure == 'lte';
                             } else {
-                                const dist = Math.hypot(intersect[0].x - midToken.x, intersect[0].y - midToken.y) - ((Math.abs(t.width) * canvas.grid.w) / 2);
+                                let sorted = (collisions.length > 1 ? collisions.sort((c1, c2) => (c1.t0 > c2.t0) ? 1 : -1) : collisions);
+
+                                //clear out any duplicate corners
+                                collisions = sorted.filter((value, index, self) => {
+                                    return self.findIndex(v => v.x === value.x && v.y === value.y) === index;
+                                });
+
+                                /*
+                                let gr = new PIXI.Graphics();
+                                if (MonksActiveTiles.debugGr)
+                                    canvas.tokens.removeChild(MonksActiveTiles.debugGr);
+                                MonksActiveTiles.debugGr = gr;
+                                canvas.tokens.addChild(gr);
+
+                                gr.beginFill(0x800080)
+                                    .lineStyle(2, 0x800080)
+                                    .moveTo(midToken.x, midToken.y)
+                                    .lineTo(collisions[0].x, collisions[0].y)
+                                    .drawCircle(midTile.x, midTile.y, 4)
+                                    .drawCircle(midToken.x, midToken.y, 4)
+                                    .drawCircle(collisions[0].x, collisions[0].y, 4)
+                                    .endFill();
+                                    */
+
+                                const dist = Math.hypot(collisions[0].x - midToken.x, collisions[0].y - midToken.y) - ((Math.abs(t.width) * t.parent.dimensions.size) / 2);
                                 debug('token within', dist);
 
-                                return (action.data.measure == 'gt' ? dist > distance : dist < distance && dist > -(Math.abs(t.width) * canvas.grid.w));
+                                return (action.data.measure == 'gt' ? dist > distance : dist < distance && dist > -(Math.abs(t.width) * t.parent.dimensions.size));
                             }
                         }
                     });

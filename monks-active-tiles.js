@@ -3572,8 +3572,8 @@ export class MonksActiveTiles {
                                 let cancontinue = await Hooks.call("triggerTile", this, this, context.tokens, context.action, context.userid, context.value);
                                 if (result === false || cancontinue === false || this.getFlag('monks-active-tiles', 'active') === false || this.getFlag('monks-active-tiles', 'continue') === false) {
                                     this.unsetFlag('monks-active-tiles', 'continue');
-                                    if (this._resumeTimer && !pausing)
-                                        window.clearTimeout(this._resumeTimer);
+                                    //if (this._resumeTimer && !pausing)
+                                    //    window.clearTimeout(this._resumeTimer);
                                     debug("Stopping actions", result, cancontinue, this.getFlag('monks-active-tiles', 'active'), this.getFlag('monks-active-tiles', 'continue'));
                                     break;
                                 }
