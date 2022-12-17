@@ -16,7 +16,7 @@ You can specify the chance that a tile will be triggered, so if the trap only ha
 
 ## Wiki
 
-A very large thank you to Crowguard for creating a wiki for Active Tiles.  Since it contains a lot of options, and changes constantly.
+A very large thank you to Crowguard for creating a wiki for Active Tiles.  Since it contains a lot of options, and changes constantly.  Please visit the site to learn more about how to use Active Tiles and all the actions available.
 http://crowguide.wikidot.com/monk-s-active-tile-triggers
 
 ## Bug Reporting
