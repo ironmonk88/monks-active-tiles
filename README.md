@@ -12,31 +12,14 @@ When a Tile is drawn on the scene, another tab will be added, called triggers.
 
 You can set the triggering to be active or not.  If the tile is inactive, then nothing happens when a token walks over it.
 Triggering of the tile can also be set to be triggered by everyone, or restricted to GM only tokens, or player only tokens.
-The trigger can fire when a token enters to tile, or when they next leave the tile.
 You can specify the chance that a tile will be triggered, so if the trap only has a 50% of working at any given time this is an option.
 
-You can then add multiple actions for Foundry to take when a tile is triggered.
-Current options allow you to: 
-* Pause the Game, 
-* Stop the Triggering token, 
-* Teleport the token, 
-* Show/Hide tokens or tiles.
-* Activate/Deactivate a Tile or Light Source or Sound, 
-* Alter a Wall, Token, or Tile (true and false will be converted to boolean, numbers will set the attribute to that value, and '+ 10' or '- 10' will increase or decrease the value),
-* Play a Sound,
-* Change a door state (this is a short form of alter),
-* Show a notification,
-* Add a chat message,
-* Excute a Macro,
-* Roll on a Roll Table.
-* Add an effect to a Token
-* Move a Token
-* Reset the Fog of War
+## Wiki
 
-Monk's Tokenbar also adds the option to request a roll and to change the Token's movement state.
+A very large thank you to Crowguard for creating a wiki for Active Tiles.  Since it contains a lot of options, and changes constantly.
+http://crowguide.wikidot.com/monk-s-active-tile-triggers
 
 ## Bug Reporting
-I'm sure there are lots of issues with it.  It's very much a work in progress.
 Please feel free to contact me on discord if you have any questions or concerns. ironmonk88#4075
 I also have a Discord site called Monk's Discord Server that I use to keep people up to date with changes.
 
