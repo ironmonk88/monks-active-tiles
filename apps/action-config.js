@@ -741,10 +741,18 @@ export class ActionConfig extends FormApplication {
             let val = data[ctrl.id] != undefined ? (data[ctrl.id].value != undefined ? data[ctrl.id].value : data[ctrl.id]) : ctrl.defvalue;
 
             switch (ctrl.type) {
+                case 'line':
+                    field = $('<hr>');
+                    break;
                 case 'filepicker':
                     field
                         .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': game.i18n.localize("FILES.BrowseTooltip") }).addClass('file-picker').html('<i class="fas fa-file-import fa-sm"></i>').click(this._activateFilePicker.bind(this)))
                         .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'text', name: id, placeholder: (ctrl.subtype == 'audio' ? 'path/audio.mp3' : 'File Path') }).val(data[ctrl.id]));
+                    break;
+                case 'colorpicker':
+                    field
+                        .append($('<input>').addClass("color").attr({ type: "text", name: id, "data-dtype": "String" }).css({ flex: "0 0 100px" }).val(val).on("blur", function () { $(this).next().val($(this).val()) }))
+                        .append($('<input>').attr({ type: "color", "data-edit": id }).css({ flex: "0 0 100px" }).val(val));
                     break;
                 case 'filelist':
                     {
@@ -801,6 +809,7 @@ export class ActionConfig extends FormApplication {
                             .append($('<span>').dblclick(this.editLocationId.bind(this)).addClass('display-value').html(await MonksActiveTiles.locationName(data[ctrl.id]) || `<span class="placeholder-style">${i18n(ctrl.placeholder) || 'Please select a location'}</style>`)) //(data[ctrl.id] ? (data[ctrl.id].name ? data[ctrl.id].name : 'x:' + data[ctrl.id].x + ', y:' + data[ctrl.id].y) + (scene ? ', scene:' + scene.name : '') : '')
                             .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectlocation") }).addClass('location-picker').html('<i class="fas fa-crosshairs fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'position', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.setposition") }).toggle(ctrl.subtype == 'position').addClass('location-picker').html('<i class="fas fa-crop-alt fa-sm"></i>').click(this.selectPosition.bind(this)))
+                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'tile', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetile") }).toggle(options.showTile).addClass('entity-picker').html('<i class="fas fa-cubes fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'token', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetoken") }).toggle(options.showToken).addClass('entity-picker').html('<i class="fas fa-user-alt fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').css({"padding-left":"5px"}).attr({ 'type': 'button', 'data-type': 'players', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useplayerlocation") }).toggle(options.showPlayers).addClass('location-picker').html('<i class="fas fa-users fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'previous', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usepreviouslocation") }).toggle(options.showPrevious).addClass('location-picker').html('<i class="fas fa-history fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
@@ -866,75 +875,79 @@ export class ActionConfig extends FormApplication {
                     break;
             }
 
-            const div = $('<div>')
-                .addClass('form-group')
-                .toggle(ctrl.conditional == undefined || (typeof ctrl.conditional == 'function' ? ctrl.conditional.call(this, this) : ctrl.conditional))
-                .append($('<label>').html(i18n(ctrl.name) + (!!ctrl.required ? '<span class="req-field" title="This is a required field">*</span>' : '')))
-                .append(field);
+            if (ctrl.type == "line") {
+                $('.action-controls', this.element).append(field);
+            } else {
+                const div = $('<div>')
+                    .addClass('form-group')
+                    .toggle(ctrl.conditional == undefined || (typeof ctrl.conditional == 'function' ? ctrl.conditional.call(this, this) : ctrl.conditional))
+                    .append($('<label>').html(i18n(ctrl.name) + (!!ctrl.required ? '<span class="req-field" title="This is a required field">*</span>' : '')))
+                    .append(field);
 
-            if (typeof ctrl.conditional == 'function')
-                div.data('conditional', ctrl.conditional);
-            if (typeof ctrl.check == 'function')
-                div.addClass('check').data('check', ctrl.check);
+                if (typeof ctrl.conditional == 'function')
+                    div.data('conditional', ctrl.conditional);
+                if (typeof ctrl.check == 'function')
+                    div.addClass('check').data('check', ctrl.check);
 
-            if (ctrl.variation) {
-                let list = (action.values && action.values[ctrl.variation]);
+                if (ctrl.variation) {
+                    let list = (action.values && action.values[ctrl.variation]);
 
-                let select = $('<select>').addClass('variant').attr({ name:'data.' + ctrl.id + '.var', 'data-dtype': 'String' });
-                field.append(select);
-                if (list != undefined) {
-                    select.append(this.fillList(list, (data[ctrl.id]?.var)));
-                }
-            }
-
-            if (loadingid != this.loadingid)
-                break;
-
-            div.appendTo($('.action-controls', this.element));
-
-            if (ctrl.help && setting("show-help"))
-                $('.action-controls', this.element).append($('<p>').addClass("notes").html(ctrl.help));
-
-            if ((ctrl.id == "attribute" && ctrl.id == 'attribute') || (ctrl.id == "tag" && command == "anchor")) {
-                this.attributes = this.tokenAttr;
-
-                var substringMatcher = function () {
-                    return function findMatches(q, cb) {
-                        var matches, substrRegex;
-
-                        q = q.replace(/[^a-zA-Z.]/gi, '');
-                        if (q == "")
-                            return;
-
-                        // an array that will be populated with substring matches
-                        matches = [];
-
-                        // regex used to determine if a string contains the substring `q`
-                        substrRegex = new RegExp(q, 'i');
-
-                        // iterate through the pool of strings and for any string that
-                        // contains the substring `q`, add it to the `matches` array
-                        let values = ctrl.id == 'attribute' ? that.attributes : that.autoanchors;
-                        $.each(values, function (i, str) {
-                            if (substrRegex.test(str)) {
-                                matches.push(str);
-                            }
-                        });
-
-                        cb(matches);
-                    };
-                };
-
-                $('input[name="data.attribute"],input[name="data.tag"]', field).typeahead(
-                    {
-                        minLength: 1,
-                        hint: true,
-                        highlight: true
-                    },
-                    {
-                        source: substringMatcher()
+                    let select = $('<select>').addClass('variant').attr({ name: 'data.' + ctrl.id + '.var', 'data-dtype': 'String' });
+                    field.append(select);
+                    if (list != undefined) {
+                        select.append(this.fillList(list, (data[ctrl.id]?.var)));
                     }
-                );
+                }
+
+                if (loadingid != this.loadingid)
+                    break;
+
+                div.appendTo($('.action-controls', this.element));
+
+                if (ctrl.help && setting("show-help"))
+                    $('.action-controls', this.element).append($('<p>').addClass("notes").html(ctrl.help));
+
+                if ((ctrl.id == "attribute" && ctrl.id == 'attribute') || (ctrl.id == "tag" && command == "anchor")) {
+                    this.attributes = this.tokenAttr;
+
+                    var substringMatcher = function () {
+                        return function findMatches(q, cb) {
+                            var matches, substrRegex;
+
+                            q = q.replace(/[^a-zA-Z.]/gi, '');
+                            if (q == "")
+                                return;
+
+                            // an array that will be populated with substring matches
+                            matches = [];
+
+                            // regex used to determine if a string contains the substring `q`
+                            substrRegex = new RegExp(q, 'i');
+
+                            // iterate through the pool of strings and for any string that
+                            // contains the substring `q`, add it to the `matches` array
+                            let values = ctrl.id == 'attribute' ? that.attributes : that.autoanchors;
+                            $.each(values, function (i, str) {
+                                if (substrRegex.test(str)) {
+                                    matches.push(str);
+                                }
+                            });
+
+                            cb(matches);
+                        };
+                    };
+
+                    $('input[name="data.attribute"],input[name="data.tag"]', field).typeahead(
+                        {
+                            minLength: 1,
+                            hint: true,
+                            highlight: true
+                        },
+                        {
+                            source: substringMatcher()
+                        }
+                    );
+                }
             }
         }
 

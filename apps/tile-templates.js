@@ -1,4 +1,5 @@
 import { MonksActiveTiles, log, error, setting, i18n, makeid } from '../monks-active-tiles.js';
+import { TemplateConfig } from '../apps/template-config.js';
 
 export class TileTemplates extends SidebarDirectory {
     constructor(options = {}) {
@@ -40,7 +41,59 @@ export class TileTemplates extends SidebarDirectory {
     }
 
     static get collection() {
-        return setting("tile-templates") || [];
+        let data = setting("tile-templates") || [];
+        data.documentName = TileDocument.documentName;
+        data.documentClass = {
+            metadata: {
+                label: "Tiles"
+            },
+            deleteDocuments: async (ids) => {
+                let templates = duplicate(setting("tile-templates") || []);
+                for (let id of ids)
+                    templates.findSplice(t => t._id == id);
+                await game.settings.set("monks-active-tiles", "tile-templates", templates);
+                new TileTemplates().render(true);
+            },
+            createDocuments: async (items) => {
+                let templates = duplicate(setting("tile-templates") || []);
+                for (let data of items) {
+                    let _data = duplicate(data);
+                    let doc = new TileDocument(_data);
+                    let template = doc.toObject();
+                    template._id = template.id = randomID();
+                    template.name = data.name;
+                    template.visible = true;
+                    template.folder = data.folder;
+                    delete template.img;
+                    template.img = template.texture.src;
+                    template.thumbnail = template.img || "modules/monks-active-tiles/img/cube.svg";
+                    if (VideoHelper.hasVideoExtension(template.thumbnail)) {
+                        const t = await ImageHelper.createThumbnail(template.thumbnail, { width: 60, height: 60 });
+                        template.thumbnail = t.thumb;
+                    }
+
+                    templates.push(template);
+                }
+                await game.settings.set("monks-active-tiles", "tile-templates", templates);
+                new TileTemplates().render(true);
+            }
+        }
+        data.get = (id) => {
+            let tile = data.find(t => t._id === id);
+            tile.canUserModify = () => { return true; };
+            tile.toObject = () => { return duplicate(tile); };
+            tile.toCompendium = () => {
+                let data = deepClone(tile);
+                delete data._id;
+                delete data.folder;
+                delete data.sort;
+                delete data.ownership;
+                return data;
+            };
+            tile.isOwner = true;
+            return tile;
+        }
+        return data;
     }
 
     static get folders() {
@@ -117,14 +170,28 @@ export class TileTemplates extends SidebarDirectory {
         let folder = $(event.currentTarget.parentElement);
     }*/
 
+    async updateTile(data) {
+        let templates = duplicate(TileTemplates.collection);
+
+        if (!data.id)
+            return;
+
+        let template = templates.find(t => t._id == data.id);
+        if (!template)
+            return;
+
+        mergeObject(template, data);
+
+        await game.settings.set("monks-active-tiles", "tile-templates", templates);
+        this.render(true);
+    }
+
     _onClickDocumentName(event) {
         let li = event.currentTarget.closest("li");
         let templates = this.constructor.collection;
         const document = templates.find(t => t._id == li.dataset.documentId);
-        const options = { width: 320, left: window.innerWidth - 630, top: li.offsetTop };
-        return TileTemplates.createDialog(document, options).then(() => {
-            this.render(true);
-        });
+
+        new TemplateConfig(document, this).render(true);
     }
 
     async _onCreateDocument(event) {
@@ -154,7 +221,7 @@ export class TileTemplates extends SidebarDirectory {
         });
 
         // Render the confirmation dialog window
-        return Dialog.prompt({
+        return await Dialog.prompt({
             title: title,
             content: html,
             label: title,
@@ -197,6 +264,8 @@ export class TileTemplates extends SidebarDirectory {
     }
 
     _onCreateFolder(event) {
+        event.stopPropagation();
+        event.preventDefault();
         let folder = {
             testUserPermission: () => { return game.user.isGM },
             apps: {},
@@ -205,6 +274,7 @@ export class TileTemplates extends SidebarDirectory {
         };
         folder.toObject = () => { return folder; };
         const button = event.currentTarget;
+        folder.folder = button.dataset.parentFolder || null;
         const options = { top: button.offsetTop, left: window.innerWidth - 310 - FolderConfig.defaultOptions.width, editable: true };
         let fc = new FolderConfig(folder, options).render(true, { editable: true });
         fc._updateObject = async (event, formData) => {
@@ -213,7 +283,7 @@ export class TileTemplates extends SidebarDirectory {
             formData._id = randomID();
             formData.id = formData._id;
             formData.visible = true;
-            formData.folder = null;
+            formData.folder = formData.folder == "" ? null : formData.folder;
             folders.push(formData);
             game.settings.set("monks-active-tiles", "tile-template-folders", folders);
             this.render(true);
@@ -592,7 +662,8 @@ export class TileTemplates extends SidebarDirectory {
                 condition: li => game.user.isGM,
                 callback: async (li) => {
                     const templates = duplicate(this.constructor.collection);
-                    const document = templates.find(t => t._id == li.data("documentId"));
+                    const replaceId = li.data("documentId");
+                    const document = templates.find(t => t._id == replaceId);
                     if (!document) return;
                     new Dialog({
                         title: `Import Data: ${document.name}`,
@@ -608,37 +679,47 @@ export class TileTemplates extends SidebarDirectory {
                                     const form = html.find("form")[0];
                                     if (!form.data.files.length) return ui.notifications.error("You did not upload a data file!");
                                     readTextFromFile(form.data.files[0]).then(async (json) => {
-                                        const doc = new TileDocument(JSON.parse(json), { strict: true });
+                                        let importData = JSON.parse(json);
+                                        let docs = importData instanceof Array ? importData : [importData];
+                                        for (let docData of docs) {
+                                            let name = docData.name;
+                                            const doc = new TileDocument(docData, { strict: true });
 
-                                        // Treat JSON import using the same workflows that are used when importing from a compendium pack
-                                        const data = doc.toObject();
-                                        delete data._id;
-                                        delete data.folder;
-                                        delete data.sort;
-                                        delete data.ownership;
+                                            // Treat JSON import using the same workflows that are used when importing from a compendium pack
+                                            const data = doc.toObject();
+                                            delete data.folder;
+                                            delete data.sort;
+                                            delete data.ownership;
+                                            data.name = name;
 
-                                        // Preserve certain fields from the destination document
-                                        const preserve = Object.fromEntries(["_id", "sort", "ownership", "name"].map(k => {
-                                            return [k, foundry.utils.getProperty(document, k)];
-                                        }));
-                                        preserve.folder = document.folder?.id;
-                                        foundry.utils.mergeObject(data, preserve);
+                                            // Preserve certain fields from the destination document
+                                            const preserve = Object.fromEntries(["_id", "sort", "ownership"].map(k => {
+                                                return [k, foundry.utils.getProperty(document, k)];
+                                            }));
+                                            preserve.folder = document.folder?.id;
+                                            foundry.utils.mergeObject(data, preserve);
 
-                                        data.visible = true;
-                                        delete data.img;
-                                        data.img = data.texture.src;
-                                        data.id = data._id;
-                                        data.thumbnail = data.img || "modules/monks-active-tiles/img/cube.svg";
-                                        if (VideoHelper.hasVideoExtension(data.thumbnail)) {
-                                            const t = await ImageHelper.createThumbnail(data.thumbnail, { width: 60, height: 60 });
-                                            data.thumbnail = t.thumb;
+                                            if (importData instanceof Array)
+                                                data._id = randomID();
+
+                                            data.visible = true;
+                                            delete data.img;
+                                            data.img = data.texture.src;
+                                            data.id = data._id;
+                                            data.thumbnail = data.img || "modules/monks-active-tiles/img/cube.svg";
+                                            if (VideoHelper.hasVideoExtension(data.thumbnail)) {
+                                                const t = await ImageHelper.createThumbnail(data.thumbnail, { width: 60, height: 60 });
+                                                data.thumbnail = t.thumb;
+                                            }
+
+                                            // Commit the import as an update to this document
+                                            if (importData instanceof Array)
+                                                templates.push(data);
+                                            else
+                                                templates.findSplice(t => t._id == replaceId, data);
+                                            ui.notifications.info(game.i18n.format("DOCUMENT.Imported", { document: TileDocument.documentName, name: data.name }));
                                         }
-
-                                        // Commit the import as an update to this document
-                                        templates.findSplice(t => t._id == li.data("documentId"), data);
                                         await game.settings.set("monks-active-tiles", "tile-templates", templates);
-                                        ui.notifications.info(game.i18n.format("DOCUMENT.Imported", { document: TileDocument.documentName, name: data.name }));
-
                                         new TileTemplates().render(true);
                                     });
                                 }

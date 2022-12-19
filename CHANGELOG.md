@@ -1,3 +1,67 @@
+## Version 10.8
+
+Fixed issue with pan canvas when detecting if the co-ordinates are strings.
+
+Fixed issue with who gets to see the pan canvas effect.
+
+Added the option to choose how teleport and move token positions the tokens when teleporting or creating a token in an area (eg.  Tile) you can have it pick a spot randomly within the area, in the center, or relative to how the token entered the Tile that triggered the teleport.
+
+Added the option to specify the teleport wash for individual teleports.
+
+Fixed issue with teleport when detecting if the co-ordinates are strings.
+
+Clarified the action being taken with toggling visibility or activation.  As they both used the same text.
+
+Added the option to create the currently active player tokens when using the Create Token action.
+
+Removed the option to alter multiple values by separating them via a semi-colon.  Since MATT now batches together similar actions, this is no longer needed and makes things confusing.
+
+Allowed users to filter arrays when using the filter by attribute action.
+
+Fixed issue with who gets to hear the play sound action.
+
+Fixed issue with changing PF2E conditions.
+
+Added the option to toggle playing a Tile animation.
+
+Fixed issue with who gets shown a journal entry.
+
+Fixed issues when opening a Journal Entry that the player doesn't have permissions to view.
+
+Added consumable type to items that can be used for an attack.
+
+Added the option to go to a landing when triggering another Tile.
+
+Fixed warning message when transitioning images with no effect.
+
+Added the option to add horizontal lines to the action config.  And added the option to add a colorpicker.
+
+Moved the action to append text to a Journal to MATT instead of MEJ.  And added the option to add a timestamp using `{{timestamp}}`
+
+Added a filter by condition.
+
+Fixed issue with DFred's Convenient Effects when toggling an effect.
+
+Fixed issue with editing a Tile Template opening multiple dialogs.
+
+Fixed issue with Tile Templates, deleting, and creating documents.
+
+Fixed issue with creating documents within folders.
+
+Fixed the cube image used in Tile Templates.
+
+Added trigger based on rotating a Token.
+
+Added door trigger, so if your Tile contains a door, and the door changes, it will trigger the Tile.
+
+Fixed warning message with DF Scene Enhanced
+
+Fixed bug when trying to fix older Tiles.
+
+Switched to using ambient volume settings instead of interface volume.
+
+Allowed Tile Templates to be able to use Multiple Document Selection to delete.
+
 ## Version 10.7
 
 Fixing issue with filter by distance

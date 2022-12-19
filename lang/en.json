@@ -9,6 +9,7 @@
   "MonksActiveTiles.PlayerTokens": "Player Tokens",
   "MonksActiveTiles.CurrentLocation": "Current Location",
   "MonksActiveTiles.WithinTile": "Tokens within Tile",
+  "MonksActiveTiles.WithinWall": "Tiles under Door",
   "MonksActiveTiles.CurrentCollection": "Current {collection}",
   "MonksActiveTiles.Origin": "Original Destination",
   "MonksActiveTiles.Controlled": "Controlled Tokens",
@@ -110,6 +111,7 @@
   "MonksActiveTiles.filter.first": "Position in the list",
   "MonksActiveTiles.filter.attribute": "Filter by attributes",
   "MonksActiveTiles.filter.inventory": "Filter by items in inventory",
+  "MonksActiveTiles.filter.condition": "Filter by condition",
 
   "MonksActiveTiles.logic.anchor": "Landing",
   "MonksActiveTiles.logic.goto": "Jump to Landing",
@@ -217,6 +219,10 @@
   "MonksActiveTiles.ctrl.loops": "Loops",
   "MonksActiveTiles.ctrl.rotation": "Rotation",
   "MonksActiveTiles.ctrl.rolldice": "Roll Dice if required",
+  "MonksActiveTiles.ctrl.positioning": "Positioning",
+  "MonksActiveTiles.ctrl.waitresponse": "Wait for Response",
+  "MonksActiveTiles.ctrl.landing": "Landing",
+  "MonksActiveTiles.ctrl.washcolour": "Wash Colour",
 
   "MonksActiveTiles.mode.enter": "Enter",
   "MonksActiveTiles.mode.exit": "Exit",
@@ -236,8 +242,10 @@
   "MonksActiveTiles.mode.combatstart": "Combat Start",
   "MonksActiveTiles.mode.combatend": "Combat End",
   "MonksActiveTiles.mode.canvasready": "Scene Change",
-  "MonksActiveTiles.mode.elevation": "Elevation Change",
+  "MonksActiveTiles.mode.elevation": "Elevation",
+  "MonksActiveTiles.mode.rotation": "Rotation",
   "MonksActiveTiles.mode.create": "Token Create",
+  "MonksActiveTiles.mode.door": "Door Trigger",
 
   "MonksActiveTiles.restrict.all": "Allow All Tokens",
   "MonksActiveTiles.restrict.player": "Only Player Tokens",
@@ -284,6 +292,7 @@
   "MonksActiveTiles.animate.start": "Start",
   "MonksActiveTiles.animate.pause": "Pause",
   "MonksActiveTiles.animate.stop": "Stop",
+  "MonksActiveTiles.animate.toggle": "Toggle",
 
   "MonksActiveTiles.pause.pause": "Pause",
   "MonksActiveTiles.pause.unpause": "Unpause",
@@ -300,6 +309,7 @@
   "MonksActiveTiles.attack.action": "Action",
   "MonksActiveTiles.attack.weapon": "Weapon",
   "MonksActiveTiles.attack.melee": "Melee",
+  "MonksActiveTiles.attack.consumable": "Consumable",
 
   "MonksActiveTiles.rollmode.public": "Public Roll",
   "MonksActiveTiles.rollmode.private": "Private GM Roll",
@@ -323,6 +333,10 @@
   "MonksActiveTiles.target.appendtarget": "Add Additional Targets",
   "MonksActiveTiles.target.overwritetarget": "Switch Targets",
   "MonksActiveTiles.target.clear": "Clear All Targets",
+
+  "MonksActiveTiles.position.random": "Random Within",
+  "MonksActiveTiles.position.center": "Center",
+  "MonksActiveTiles.position.relative": "Relative to Entry",
 
   "MonksActiveTiles.transition.none": "None",
   "MonksActiveTiles.transition.fade": "Fade",
