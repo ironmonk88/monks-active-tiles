@@ -459,3 +459,17 @@
     background-color: #1e90ff;
     color: #FFF;
 }
+
+a.tile-trigger-link {
+    background: #DDD;
+    padding: 1px 4px;
+    border: 1px solid #4b4a44;
+    border-radius: 2px;
+    white-space: nowrap;
+    word-break: break-all;
+}
+
+a.tile-trigger-link i {
+    color: #7a7971;
+    margin-right: 2px;
+}

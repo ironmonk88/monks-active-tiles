@@ -1294,6 +1294,8 @@ export class MonksActiveTiles {
             }
         }
 
+        CONFIG.TextEditor.enrichers.push({ id: 'MonksActiveTileTrigger', pattern: new RegExp(`@(Tile)\\[([^\\]]+)\\](?:{([^}]+)})?`, 'g'), enricher: MonksActiveTiles._createTileLink });
+
         //let otherGroups = {};
         //await Hooks.call("setupTileGroups", otherGroups);
         //MonksActiveTiles.triggerGroups = Object.assign(MonksActiveTiles.triggerGroups, otherGroups);
@@ -1571,7 +1573,7 @@ export class MonksActiveTiles {
                                     const [docName, docId] = parts.slice(0, 2);
                                     parts = parts.slice(2);
                                     const collection = CONFIG[docName].collection.instance;
-                                    entry = collection.get(docId);
+                                    let entry = collection.get(docId);
 
                                     while (entry && (parts.length > 1)) {
                                         const [embeddedName, embeddedId] = parts.slice(0, 2);
@@ -2115,6 +2117,50 @@ export class MonksActiveTiles {
                     }
                 }
             }
+        }
+    }
+
+    static _createTileLink(match, { async = false, relativeTo } = {}) {
+        let [type, target, name] = match.slice(1, 5);
+        const data = {
+            cls: ["tile-trigger-link"],
+            icon: 'fas fa-cube',
+            dataset: {},
+            name: name
+        };
+
+        data.dataset = { uuid: target };
+        const constructAnchor = () => {
+            const a = document.createElement("a");
+            a.classList.add(...data.cls);
+            a.draggable = true;
+            for (let [k, v] of Object.entries(data.dataset)) {
+                a.dataset[k] = v;
+            }
+            a.innerHTML = `<i class="${data.icon}"></i>${data.name}`;
+            return a;
+        };
+
+        return constructAnchor()
+    }
+
+    static async _onClickTileLink(event) {
+        event.preventDefault();
+        const a = event.currentTarget;
+        let uuid = a.dataset.uuid;
+
+        if (!uuid.startsWith("Scene"))
+            uuid = `Scene.${canvas.scene.id}.${uuid}`;
+
+        let tile = await fromUuid(uuid);
+        if (tile) {
+            let tokens = canvas.tokens.controlled.map(t => t.document);
+            //check to see if this trigger is per token, and already triggered
+            let triggerData = tile.flags["monks-active-tiles"];
+            if (triggerData.pertoken)
+                tokens = tokens.filter(t => !tile.hasTriggered(t.id));
+
+            tile.trigger({ tokens: tokens, method: "manual", options: { journal: [this.object]} });
         }
     }
 
@@ -4611,3 +4657,11 @@ Hooks.on("getSceneControlButtons", (controls) => {
 Hooks.once("MultipleDocumentSelection.ready", (dirs) => {
     dirs.push(TileTemplates);
 })
+
+Hooks.on("renderJournalSheet", (sheet, html, data) => {
+    $("a.tile-trigger-link", html).click(MonksActiveTiles._onClickTileLink.bind(sheet));
+});
+
+Hooks.on("renderJournalPageSheet", (sheet, html, data) => {
+    $("a.tile-trigger-link", html).click(MonksActiveTiles._onClickTileLink.bind(sheet));
+});

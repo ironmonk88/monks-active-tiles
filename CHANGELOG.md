@@ -1,3 +1,15 @@
+## Version 10.9
+
+Fixing issues with opening a Journal
+
+Making sure the journal name is required when creating a new journal entry
+
+Fixed issue with triggering a Tile from a door.
+
+Clarified the tool tip when selecting a tile with a door.
+
+Added the ability to trigger a Tile from a Journal Entry link. Using the format `@Tile[Tile.JkCzb5wPecQet5IL]{Tile Trigger}` you can also add `Scene` with its identifier in front of the Tile id if you want to trigger a tile from a different scene.  Otherwise it will attempt to find the Tile on the current scene.
+
 ## Version 10.8
 
 Fixed issue with pan canvas when detecting if the co-ordinates are strings.

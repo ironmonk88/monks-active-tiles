@@ -372,6 +372,7 @@
   "MonksActiveTiles.msg.useplayers": "Use player tokens",
   "MonksActiveTiles.msg.useplayersjournal": "Use player journal",
   "MonksActiveTiles.msg.usewithin": "Use tokens within triggering tile",
+  "MonksActiveTiles.msg.usewithinwall": "Trigger Tile underneath this door",
   "MonksActiveTiles.msg.useprevious": "Use this actions current collection",
   "MonksActiveTiles.msg.usepreviouslocation": "Use this actions current location",
   "MonksActiveTiles.msg.usecontrolled": "Use Tokens currently controlled",

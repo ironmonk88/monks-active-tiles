@@ -3084,7 +3084,7 @@ export class ActionManager {
                                 }
                             }
 
-                            if (action.data?.enhanced !== true || !game.modules.get("monks-enhanced-journal")?.active || !game.MonksEnhancedJournal.openJournalEntry(entity, { tempOwnership: !data.permission }))
+                            if (action.data?.enhanced !== true || !game.modules.get("monks-enhanced-journal")?.active || !game.MonksEnhancedJournal.openJournalEntry(entity, { tempOwnership: !action.data.permission }))
                                 entity.sheet.render(true, { force: !action.data.permission, pageId: action.data.page, anchor: action.data.subsection?.slugify() });
                         }
                     }
@@ -3412,10 +3412,12 @@ export class ActionManager {
                     //MonksActiveTiles.preventCycle = true;   //prevent the cycling of tokens due to permission changes
                     game.settings.set('monks-active-tiles', 'prevent-cycle', true);
                     for (let entity of entities) {
+                        if (!entity)
+                            continue;
                         let lvl = level;
                         if (entity instanceof Scene)
                             lvl = CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER;
-                        const perms = entity.ownership || entity?.actor?.ownership;
+                        const perms = entity.ownership || entity.actor?.ownership;
                         if (action.data.changefor == 'trigger') {
                             let user = game.users.get(userid);
                             if (!user.isGM) {
@@ -5040,7 +5042,7 @@ export class ActionManager {
                         id: "createname",
                         name: "New Page name",
                         type: "text",
-                        required: false,
+                        required: true,
                         conditional: (app) => {
                             return $('input[name="data.create"]', app.element).prop('checked');
                         }
@@ -6536,7 +6538,6 @@ Hooks.on("setupTileActions", (app) => {
                     type: "select",
                     subtype: "entity",
                     options: {
-                        showTile: true,
                         showToken: true,
                         showWithin: true,
                         showPlayers: true,
