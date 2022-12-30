@@ -9,6 +9,7 @@
   "MonksActiveTiles.PlayerTokens": "Player Tokens",
   "MonksActiveTiles.CurrentLocation": "Current Location",
   "MonksActiveTiles.WithinTile": "Tokens within Tile",
+  "MonksActiveTiles.WithinNote": "Tiles under Note",
   "MonksActiveTiles.WithinWall": "Tiles under Door",
   "MonksActiveTiles.CurrentCollection": "Current {collection}",
   "MonksActiveTiles.Origin": "Original Destination",
@@ -278,6 +279,14 @@
   "MonksActiveTiles.audiotype.all": "Ambient Sounds",
   "MonksActiveTiles.audiotype.tile": "Tile Sounds",
 
+  "MonksActiveTiles.label.OnLeftClick": "On Left Click",
+  "MonksActiveTiles.label.OnRightClick": "On Right Click",
+  "MonksActiveTiles.label.OnOpenDoor": "On Open Door",
+  "MonksActiveTiles.label.OnCloseDoor": "On Close Door",
+  "MonksActiveTiles.label.OnLockDoor": "On Lock Door",
+  "MonksActiveTiles.label.OnCheckLock": "On Check Lock",
+  "MonksActiveTiles.label.OnSecretDoor": "On Secret Door",
+
   "MonksActiveTiles.state.open": "Open",
   "MonksActiveTiles.state.closed": "Closed",
   "MonksActiveTiles.state.locked": "Locked",
@@ -389,6 +398,8 @@
   "MonksActiveTiles.use-core-macro.hint": "Core macro execution doesn't pass all the information available so Active Tiles handles executing macros.  Turn this back on if it's causing issues.'",
   "MonksActiveTiles.drop-item.name": "Drop Item on Canvas",
   "MonksActiveTiles.drop-item.hint": "Allow items dropped on the canvas to be created as Active Tiles",
+  "MonksActiveTiles.allow-note.name": "Note Triggers",
+  "MonksActiveTiles.allow-note.hint": "Allow Notes to trigger Tiles",
   "MonksActiveTiles.allow-door.name": "Door Triggers",
   "MonksActiveTiles.allow-door.hint": "Allow Doors to trigger Tiles",
   "MonksActiveTiles.teleport-wash.name": "Show Teleport Wash",
@@ -401,6 +412,8 @@
   "MonksActiveTiles.show-help.hint": "Show helpful action hints for fields that have complex values",
   "MonksActiveTiles.prevent-when-paused.name": "Prevent when paused",
   "MonksActiveTiles.prevent-when-paused.hint": "Prevent players from triggering Tiles when the game is paused.",
+  "MonksActiveTiles.allow-note-passthrough.name": "Allow Note Click-through",
+  "MonksActiveTiles.allow-note-passthrough.hint": "Allow Tiles underneath a note to still be triggered if the note is clicked on",
   "MonksActiveTiles.allow-door-passthrough.name": "Allow Door Click-through",
   "MonksActiveTiles.allow-door-passthrough.hint": "Allow Tiles underneath a door to still be triggered if the door is clicked on"
 }

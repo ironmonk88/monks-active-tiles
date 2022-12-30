@@ -185,7 +185,7 @@ export class MonksActiveTiles {
             let deftype = (defaultType || 'tokens');
             entities = (deftype == 'tiles' && id != 'previous' ? [tile] : value[deftype]);
             entities = (entities instanceof Array ? entities : (entities ? [entities] : []));
-            
+
             let collection = canvas[deftype == "tiles" ? "background" : deftype];
             if (collection) {
                 for (let i = 0; i < entities.length; i++) {
@@ -222,7 +222,7 @@ export class MonksActiveTiles {
         else if (id) {
             entities = (id.includes('Terrain') ? MonksActiveTiles.getTerrain(id) : await fromUuid(id));
             entities = [entities];
-        } 
+        }
 
         return entities;
     }
@@ -946,7 +946,7 @@ export class MonksActiveTiles {
 
         if (!t._textures[from])
             t._textures[from] = await loadTexture(from);
-        
+
         if (!t._textures[to])
             t._textures[to] = await loadTexture(to);
 
@@ -1084,10 +1084,10 @@ export class MonksActiveTiles {
                 let radSumSq = ((Math.abs(tkn.width) * scene.dimensions.size) / 2) + ptWidth;
 
                 let result = (distSq < radSumSq - 5);
-                
+
                 //log('check', count, dist, tkn.name, distSq, radSumSq, checkpt, tkn, result);
                 //gr.lineStyle(2, 0x808080).drawCircle(tokenX + debugoffset.x, tokenY + debugoffset.y, ((tkn.width * scene.dimensions.size) / 2));
-                
+
 
                 return result;
             })
@@ -1190,7 +1190,7 @@ export class MonksActiveTiles {
             gr.beginFill(collide ? 0xff0000 : (tcollide ? 0xffff00 : 0x00ff00)).drawCircle(checkspot.x + debugoffset.x, checkspot.y + debugoffset.y, 4).endFill();
 
             log('checkspot', checkspot, dist, collide, tcollide, outside);*/
-            
+
             if (count > 50) {
                 //if we've exceeded the maximum spots to check then set it to the original spot
                 spot = pos;
@@ -1524,6 +1524,114 @@ export class MonksActiveTiles {
                 return oldCycleTokens.call(this, ...args);
         }
 
+       let noteControl =  async function (wrapped, ...args) {
+
+          const allowNote = setting("allow-note");
+          const allowNotePassthrough = setting("allow-note-passthrough");
+          const preventWhenPaused = setting("prevent-when-paused");
+
+          // CHECK IF YOU ARE NOT ON NOTE LAYER
+          const noteLayer = canvas.layers.find((layer) => layer.name === "NotesLayer");
+          if (noteLayer.active || !allowNote) {
+            return wrapped(...args);
+          }
+
+          if (allowNotePassthrough) {
+            await new Promise((resolve) => { resolve(); });
+          }
+
+          const isRightClick = args[0].type === "rightdown";
+          const isLeftClick = args[0].type === "leftdown";
+
+          let triggerNote = function (wall) {
+            if (note && allowNote) {
+              //check if this is associated with a Tile
+              if (note.flags["monks-active-tiles"]?.entity) {
+                // if (!!note.flags["monks-active-tiles"][note._notechange]) {
+                if (
+                  (isLeftClick && note.flags["monks-active-tiles"].leftclick) ||
+                  (isRightClick && note.flags["monks-active-tiles"].rightclick)
+                ) {
+                  let entity = note.flags["monks-active-tiles"]?.entity;
+                  if (typeof entity == "string") entity = JSON.parse(entity || "{}");
+                  if (entity.id) {
+                    let notes = [note];
+
+                    let doc;
+                    if (entity.id.startsWith("tagger")) {
+                      if (game.modules.get("tagger")?.active) {
+                        let tag = entity.id.substring(7);
+                        doc = Tagger.getByTag(tag)[0];
+                      }
+                    } else {
+                      let parts = entity.id.split(".");
+
+                      const [docName, docId] = parts.slice(0, 2);
+                      parts = parts.slice(2);
+                      const collection = CONFIG[docName].collection.instance;
+                      doc = collection.get(docId);
+
+                      while (doc && parts.length > 1) {
+                        const [embeddedName, embeddedId] = parts.slice(0, 2);
+                        doc = doc.getEmbeddedDocument(embeddedName, embeddedId);
+                        parts = parts.slice(2);
+                      }
+                    }
+
+                    if (doc) {
+                      let triggerData = doc.flags["monks-active-tiles"];
+                      if (triggerData && triggerData.active) {
+                        if (
+                          preventWhenPaused &&
+                          game.paused &&
+                          !game.user.isGM &&
+                          triggerData.allowpaused !== true
+                        )
+                          return;
+
+                        //check to see if this trigger is restricted by control type
+                        if (
+                          (triggerData.controlled == "gm" && !game.user.isGM) ||
+                          (triggerData.controlled == "player" && game.user.isGM)
+                        )
+                          return;
+
+                        let tokens = canvas.tokens.controlled.map((t) => t.document);
+                        //check to see if this trigger is per token, and already triggered
+                        if (triggerData.pertoken) {
+                          tokens = tokens.filter((t) => !doc.hasTriggered(t.id)); //.uuid
+                          if (tokens.length == 0) return;
+                        }
+
+                        return doc.trigger({
+                          tokens: tokens,
+                          method: "note",
+                          options: {
+                            notes: notes,
+                            change: note._notechange,
+                          },
+                        });
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          };
+
+          let result = wrapped(...args);
+          if (result instanceof Promise) {
+            return result.then((note) => {
+              triggerNote(note);
+              delete note._notechange;
+            });
+          } else {
+            triggerNote(this.document);
+            delete this.document._notechange;
+            return result;
+          }
+        }
+
         let doorControl = async function (wrapped, ...args) {
             if (setting("allow-door-passthrough")) {
                 await new Promise((resolve) => { resolve(); });
@@ -1644,6 +1752,24 @@ export class MonksActiveTiles {
             const oldDoorControl = DoorControl.prototype._onMouseDown;
             DoorControl.prototype._onMouseDown = function (event) {
                 return doorControl.call(this, oldDoorControl.bind(this), ...arguments);
+            }
+        }
+
+        if (game.modules.get("lib-wrapper")?.active) {
+          libWrapper.register("monks-active-tiles", "Note.prototype._onClickLeft", noteControl, "WRAPPER");
+        } else {
+            const oldNoteControl = Note.prototype._onClickLeft;
+            Note.prototype._onClickLeft = function (event) {
+                return noteControl.call(this, oldNoteControl.bind(this), ...arguments);
+            }
+        }
+
+        if (game.modules.get("lib-wrapper")?.active) {
+          libWrapper.register("monks-active-tiles", "Note.prototype._onClickRight", noteControl, "WRAPPER");
+        } else {
+            const oldNoteControl = Note.prototype._onClickRight;
+            Note.prototype._onClickRight = function (event) {
+                return noteControl.call(this, oldNoteControl.bind(this), ...arguments);
             }
         }
 
@@ -2368,7 +2494,7 @@ export class MonksActiveTiles {
                                             });
                                         }
                                     } catch { }
-                                    
+
                                 } else {
                                     for (let [key, sound] of Object.entries(tile.soundeffect)) {
                                         try {
@@ -2521,7 +2647,7 @@ export class MonksActiveTiles {
             } break;
             case 'slotmachine': {
                 if (!game.user.isGM) {
-                    
+
                     if (data.cmd == "prep") {
                         let tile = await fromUuid(data.tileid);
                         tile._cycleimages = tile._cycleimages || {};
@@ -2698,7 +2824,7 @@ export class MonksActiveTiles {
                 segments.push({ a: { x: tile.object._textureBorderPoints[i], y: tile.object._textureBorderPoints[i + 1] }, b: { x: tile.object._textureBorderPoints[i + 2], y: tile.object._textureBorderPoints[i + 3] } });
             }
             segments.push({ a: { x: tile.object._textureBorderPoints[tile.object._textureBorderPoints.length - 2], y: tile.object._textureBorderPoints[tile.object._textureBorderPoints.length - 1] }, b: { x: tile.object._textureBorderPoints[0], y: tile.object._textureBorderPoints[1] } })
-        } 
+        }
 
         /*
         if (tile.rotation != 0) {
@@ -3063,7 +3189,7 @@ export class MonksActiveTiles {
 
             let findPoint = function (pixels, start, delta) {
                 let check;
-                
+
                 for (let i = start[delta.value]; delta.adjust > 0 ? i < delta.max : i > delta.max; i += delta.adjust) {
                     check = { x: start.x, y: start.y };
                     check[delta.value] = i;
@@ -3335,8 +3461,8 @@ export class MonksActiveTiles {
             if (triggerData.usealpha) {
                 !(tokenRay.A.x <= 0 || tokenRay.A.x >= Math.abs(this.width) || tokenRay.A.y <= 0 || tokenRay.A.y >= Math.abs(this.height))
                 // only need to check the polygon if there are segments, or if both points are within the rectangle
-                if (segments.length || 
-                    !(tokenRay.A.x <= 0 || tokenRay.A.x >= Math.abs(this.width) || tokenRay.A.y <= 0 || tokenRay.A.y >= Math.abs(this.height)) || 
+                if (segments.length ||
+                    !(tokenRay.A.x <= 0 || tokenRay.A.x >= Math.abs(this.width) || tokenRay.A.y <= 0 || tokenRay.A.y >= Math.abs(this.height)) ||
                     !(tokenRay.B.x <= 0 || tokenRay.B.x >= Math.abs(this.width) || tokenRay.B.y <= 0 || tokenRay.B.y >= Math.abs(this.height))) {
                     segments = MonksActiveTiles.getTileSegments(this, true).filter(s => foundry.utils.lineSegmentIntersects(tokenRay.A, tokenRay.B, s.a, s.b));
                 }
@@ -4036,7 +4162,7 @@ Hooks.on('createToken', async (document, options, userId) => {
     }
 });
 
-Hooks.on('preUpdateToken', async (document, update, options, userId) => { 
+Hooks.on('preUpdateToken', async (document, update, options, userId) => {
     //log('preupdate token', document, update, options, MonksActiveTiles._rejectRemaining);
 
     /*
@@ -4216,7 +4342,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                             //options.bypass = true;
                         }
                     }
-                    
+
                     if (when == "elevation" || when == "rotation") {
                         // rotation and elevation fire immediately
                         tile.trigger({ tokens: [document], method: when, pt: triggerPt, options: { original, elevation, rotation, src: start } });
@@ -4438,6 +4564,55 @@ Hooks.on('controlTerrain', (terrain, control) => {
 Hooks.on("renderPlaylistDirectory", (app, html, user) => {
     $('li.sound', html).click(MonksActiveTiles.selectPlaylistSound.bind(this));
 });
+
+Hooks.on("renderNoteConfig", async (app, html, noteData) => {
+  if (setting("allow-note")) {
+    let entity = app.object.flags['monks-active-tiles']?.entity || {};
+    if (typeof entity == "string" && entity)
+        entity = JSON.parse(entity);
+    let tilename = "";
+    if (entity.id)
+        tilename = entity.id == "within" ? i18n("MonksActiveTiles.WithinNote") : await MonksActiveTiles.entityName(entity);
+    let triggerData = mergeObject({ tilename: tilename, showtagger: game.modules.get('tagger')?.active }, (app.object.flags['monks-active-tiles'] || {}));
+    triggerData.entity = JSON.stringify(entity);
+    let noteHtml = await renderTemplate("modules/monks-active-tiles/templates/note-config.html", triggerData);
+
+    if ($('.sheet-tabs', html).length) {
+        $('.sheet-tabs', html).append($('<a>').addClass("item").attr("data-tab", "triggers").html('<i class="fas fa-running"></i> Triggers'));
+        $('<div>').addClass("tab action-sheet").attr('data-tab', 'triggers').html(noteHtml).insertAfter($('.tab:last', html));
+    } else {
+        let root = $('form', html);
+        if (root.length == 0)
+            root = html;
+        let basictab = $('<div>').addClass("tab").attr('data-tab', 'basic');
+        $('> *:not(button)', root).each(function () {
+            basictab.append(this);
+        });
+
+        $(root).prepend($('<div>').addClass("tab action-sheet").attr('data-tab', 'triggers').html(noteHtml)).prepend(basictab).prepend(
+            $('<nav>')
+                .addClass("sheet-tabs tabs")
+                .append($('<a>').addClass("item active").attr("data-tab", "basic").html('<i class="fas fa-university"></i> Basic'))
+                .append($('<a>').addClass("item").attr("data-tab", "triggers").html('<i class="fas fa-running"></i> Triggers'))
+        );
+    }
+
+    $('button[data-type="entity"]', html).on("click", ActionConfig.selectEntity.bind(app));
+    $('button[data-type="tagger"]', html).on("click", ActionConfig.addTag.bind(app));
+    $('button[data-type="within"]', html).on("click", (event) => {
+        let btn = $(event.currentTarget);
+        $('input[name="' + btn.attr('data-target') + '"]', app.element).val('{"id":"within","name":"' + i18n("MonksActiveTiles.WithinNote") + '"}').next().html(i18n("MonksActiveTiles.WithinNote"));
+    });
+
+    app.options.tabs = [{ navSelector: ".tabs", contentSelector: "form", initial: "basic" }];
+    app.options.height = "auto";
+    app._tabs = app._createTabHandlers();
+    const el = html[0];
+    app._tabs.forEach(t => t.bind(el));
+
+    app.setPosition();
+  }
+}
 
 Hooks.on("renderWallConfig", async (app, html, options) => {
     if (setting("allow-door")) {
