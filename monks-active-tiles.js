@@ -2132,11 +2132,6 @@ export class MonksActiveTiles {
             return wrapped(...args);
         }
 
-        let rightClick = async function (wrapped, ...args) {
-            MonksActiveTiles.controlEntity(this);
-            return wrapped(...args);
-        }
-
         let leftClickOnTokenLayer = async function (wrapped, ...args) {
             if(setting("allow-note")) {
                 const notes = retrievePlaceablesWithXY(this,canvas?.notes?.placeables);
@@ -2197,15 +2192,6 @@ export class MonksActiveTiles {
             const oldOnClickLeft = Note.prototype._onClickLeft;
             Note.prototype._onClickLeft = function (event) {
                 return leftClick.call(this, oldOnClickLeft.bind(this), ...arguments);
-            }
-        }
-
-        if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "Note.prototype._onClickRight", rightClick, "WRAPPER");
-        } else {
-            const oldOnClickRight = Note.prototype._onClickRight;
-            Note.prototype._onClickRight = function (event) {
-                return rightClick.call(this, oldOnClickRight.bind(this), ...arguments);
             }
         }
 
