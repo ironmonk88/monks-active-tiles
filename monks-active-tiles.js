@@ -1524,112 +1524,140 @@ export class MonksActiveTiles {
                 return oldCycleTokens.call(this, ...args);
         }
 
-       let noteControl =  async function (wrapped, ...args) {
+        let noteControl =  async function (entity, wrapped, ...args) {
 
-          const allowNote = setting("allow-note");
-          const allowNotePassthrough = setting("allow-note-passthrough");
-          const preventWhenPaused = setting("prevent-when-paused");
+            const allowNote = setting("allow-note");
+            const allowNotePassthrough = setting("allow-note-passthrough");
+            const preventWhenPaused = setting("prevent-when-paused");
 
-          // CHECK IF YOU ARE NOT ON NOTE LAYER
-          const noteLayer = canvas.layers.find((layer) => layer.name === "NotesLayer");
-          if (noteLayer.active || !allowNote) {
-            return wrapped(...args);
-          }
-
-          if (allowNotePassthrough) {
-            await new Promise((resolve) => { resolve(); });
-          }
-
-          const isRightClick = args[0].type === "rightdown";
-          const isLeftClick = args[0].type === "leftdown";
-
-          let triggerNote = function (wall) {
-            if (note && allowNote) {
-              //check if this is associated with a Tile
-              if (note.flags["monks-active-tiles"]?.entity) {
-                // if (!!note.flags["monks-active-tiles"][note._notechange]) {
-                if (
-                  (isLeftClick && note.flags["monks-active-tiles"].leftclick) ||
-                  (isRightClick && note.flags["monks-active-tiles"].rightclick)
-                ) {
-                  let entity = note.flags["monks-active-tiles"]?.entity;
-                  if (typeof entity == "string") entity = JSON.parse(entity || "{}");
-                  if (entity.id) {
-                    let notes = [note];
-
-                    let doc;
-                    if (entity.id.startsWith("tagger")) {
-                      if (game.modules.get("tagger")?.active) {
-                        let tag = entity.id.substring(7);
-                        doc = Tagger.getByTag(tag)[0];
-                      }
-                    } else {
-                      let parts = entity.id.split(".");
-
-                      const [docName, docId] = parts.slice(0, 2);
-                      parts = parts.slice(2);
-                      const collection = CONFIG[docName].collection.instance;
-                      doc = collection.get(docId);
-
-                      while (doc && parts.length > 1) {
-                        const [embeddedName, embeddedId] = parts.slice(0, 2);
-                        doc = doc.getEmbeddedDocument(embeddedName, embeddedId);
-                        parts = parts.slice(2);
-                      }
-                    }
-
-                    if (doc) {
-                      let triggerData = doc.flags["monks-active-tiles"];
-                      if (triggerData && triggerData.active) {
-                        if (
-                          preventWhenPaused &&
-                          game.paused &&
-                          !game.user.isGM &&
-                          triggerData.allowpaused !== true
-                        )
-                          return;
-
-                        //check to see if this trigger is restricted by control type
-                        if (
-                          (triggerData.controlled == "gm" && !game.user.isGM) ||
-                          (triggerData.controlled == "player" && game.user.isGM)
-                        )
-                          return;
-
-                        let tokens = canvas.tokens.controlled.map((t) => t.document);
-                        //check to see if this trigger is per token, and already triggered
-                        if (triggerData.pertoken) {
-                          tokens = tokens.filter((t) => !doc.hasTriggered(t.id)); //.uuid
-                          if (tokens.length == 0) return;
-                        }
-
-                        return doc.trigger({
-                          tokens: tokens,
-                          method: "note",
-                          options: {
-                            notes: notes,
-                            change: note._notechange,
-                          },
-                        });
-                      }
-                    }
-                  }
+            // CHECK IF YOU ARE NOT ON NOTE LAYER
+            const noteLayer = canvas.layers.find((layer) => layer.name === "NotesLayer");
+            const activeLayer = canvas.layers.find((layer) => layer.active === true);
+            //   if (noteLayer.active || !allowNote) {
+            //     if(wrapped) {
+            //         return wrapped(...args);
+            //     } else {
+            //         return;
+            //     }
+            //   }
+            if (!allowNote) {
+                if(wrapped) {
+                    return wrapped(...args);
+                } else {
+                    return;
                 }
-              }
             }
-          };
+            try{
+                if(!noteLayer && !activeLayer) {
+                    noteLayer.active = true;
+                }
 
-          let result = wrapped(...args);
-          if (result instanceof Promise) {
-            return result.then((note) => {
-              triggerNote(note);
-              delete note._notechange;
-            });
-          } else {
-            triggerNote(this.document);
-            delete this.document._notechange;
-            return result;
-          }
+                if (allowNotePassthrough) {
+                    await new Promise((resolve) => { resolve(); });
+                }
+
+                const isRightClick = args[0].type === "rightdown";
+                const isLeftClick = args[0].type === "leftdown" || args[0].type === "mousedown";
+
+                let triggerNote = function (note) {
+                    if (note && allowNote) {
+                        //check if this is associated with a Tile
+                        if (note.flags["monks-active-tiles"]?.entity) {
+                            // if (!!note.flags["monks-active-tiles"][note._notechange]) {
+                            if (
+                            (isLeftClick && note.flags["monks-active-tiles"].leftclick) ||
+                            (isRightClick && note.flags["monks-active-tiles"].rightclick)
+                            ) {
+                                let entity = note.flags["monks-active-tiles"]?.entity;
+                                if (typeof entity == "string") {
+                                    entity = JSON.parse(entity || "{}");
+                                }
+                                if (entity.id) {
+                                    let notes = [note];
+
+                                    let doc;
+                                    if (entity.id.startsWith("tagger")) {
+                                        if (game.modules.get("tagger")?.active) {
+                                            let tag = entity.id.substring(7);
+                                            doc = Tagger.getByTag(tag)[0];
+                                        }
+                                    } else {
+                                        let parts = entity.id.split(".");
+
+                                        const [docName, docId] = parts.slice(0, 2);
+                                        parts = parts.slice(2);
+                                        const collection = CONFIG[docName].collection.instance;
+                                        doc = collection.get(docId);
+
+                                        while (doc && parts.length > 1) {
+                                            const [embeddedName, embeddedId] = parts.slice(0, 2);
+                                            doc = doc.getEmbeddedDocument(embeddedName, embeddedId);
+                                            parts = parts.slice(2);
+                                        }
+                                    }
+
+                                    if (doc) {
+                                        let triggerData = doc.flags["monks-active-tiles"];
+                                        if (triggerData && triggerData.active) {
+                                            if (
+                                            preventWhenPaused &&
+                                            game.paused &&
+                                            !game.user.isGM &&
+                                            triggerData.allowpaused !== true
+                                            )
+                                            return;
+
+                                            //check to see if this trigger is restricted by control type
+                                            if (
+                                            (triggerData.controlled == "gm" && !game.user.isGM) ||
+                                            (triggerData.controlled == "player" && game.user.isGM)
+                                            )
+                                            return;
+
+                                            let tokens = canvas.tokens.controlled.map((t) => t.document);
+                                            //check to see if this trigger is per token, and already triggered
+                                            if (triggerData.pertoken) {
+                                            tokens = tokens.filter((t) => !doc.hasTriggered(t.id)); //.uuid
+                                            if (tokens.length == 0) return;
+                                            }
+
+                                            return doc.trigger({
+                                                tokens: tokens,
+                                                method: "note",
+                                                options: {
+                                                    notes: notes,
+                                                    change: note._notechange,
+                                                },
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+                if(wrapped) {
+                    let result = wrapped(...args);
+                    if (result instanceof Promise) {
+                        return result.then((note) => {
+                        triggerNote(note);
+                        delete note._notechange;
+                        });
+                    } else {
+                        triggerNote(entity.document);
+                        delete entity.document._notechange;
+                        return result;
+                    }
+                } else {
+                    triggerNote(entity.document);
+                    delete entity.document._notechange;
+                    return;
+                }
+            } finally {
+                if(!noteLayer && !activeLayer) {
+                    noteLayer.active = false;
+                }
+            }
         }
 
         let doorControl = async function (wrapped, ...args) {
@@ -1752,24 +1780,6 @@ export class MonksActiveTiles {
             const oldDoorControl = DoorControl.prototype._onMouseDown;
             DoorControl.prototype._onMouseDown = function (event) {
                 return doorControl.call(this, oldDoorControl.bind(this), ...arguments);
-            }
-        }
-
-        if (game.modules.get("lib-wrapper")?.active) {
-          libWrapper.register("monks-active-tiles", "Note.prototype._onClickLeft", noteControl, "WRAPPER");
-        } else {
-            const oldNoteControl = Note.prototype._onClickLeft;
-            Note.prototype._onClickLeft = function (event) {
-                return noteControl.call(this, oldNoteControl.bind(this), ...arguments);
-            }
-        }
-
-        if (game.modules.get("lib-wrapper")?.active) {
-          libWrapper.register("monks-active-tiles", "Note.prototype._onClickRight", noteControl, "WRAPPER");
-        } else {
-            const oldNoteControl = Note.prototype._onClickRight;
-            Note.prototype._onClickRight = function (event) {
-                return noteControl.call(this, oldNoteControl.bind(this), ...arguments);
             }
         }
 
@@ -2046,6 +2056,13 @@ export class MonksActiveTiles {
 
         let leftClick = async function (wrapped, ...args) {
             MonksActiveTiles.controlEntity(this);
+            noteControl(this, wrapped, ...args);
+            return wrapped(...args);
+        }
+
+        let rightClick = async function (wrapped, ...args) {
+            MonksActiveTiles.controlEntity(this);
+            noteControl(this, wrapped, ...args);
             return wrapped(...args);
         }
 
@@ -2075,6 +2092,86 @@ export class MonksActiveTiles {
                 return leftClick.call(this, oldOnClickLeft.bind(this), ...arguments);
             }
         }
+
+        if (game.modules.get("lib-wrapper")?.active) {
+            libWrapper.register("monks-active-tiles", "Note.prototype._onClickRight", rightClick, "WRAPPER");
+        } else {
+            const oldOnClickRight = Note.prototype._onClickRight;
+            Note.prototype._onClickRight = function (event) {
+                return rightClick.call(this, oldOnClickRight.bind(this), ...arguments);
+            }
+        }
+
+        canvas?.stage?.on("mousedown", async (event) => {
+            const position = canvas.app?.renderer.plugins.interaction.mouse.getLocalPosition(canvas.app.stage);
+            if (!canvas?.notes?.placeables) {
+                return [];
+            }
+            const getPlaceableWidth = function (placeable) {
+                let w = placeable.w || placeable.width;
+                if (placeable?.object) {
+                    w = placeable?.object?.w || placeable?.object?.width || w;
+                }
+                return w;
+            };
+            
+            const getPlaceableHeight = function (placeable) {
+                let h = placeable.h || placeable.height;
+                if (placeable?.object) {
+                    h = placeable?.object?.h || placeable?.object?.height || h;
+                }
+                return h;
+            };
+            const getCenter = function (placeableObject, grid = {}) {
+                const data = placeableObject.document ? placeableObject.document : placeableObject;
+                const placeableObjectDocument = placeableObject.document?.documentName ? placeableObject.document : placeableObject;
+                //getCenter(type, data, grid = {}){
+                let isGridSpace = false;
+                //@ts-ignore
+                if (placeableObjectDocument.documentName === TileDocument.documentName) {
+                    isGridSpace = false;
+                    //@ts-ignore
+                } else if (placeableObjectDocument.documentName === DrawingDocument.documentName) {
+                    isGridSpace = false;
+                } else {
+                    isGridSpace = true;
+                }
+                grid = mergeObject({ w: canvas.grid?.w, h: canvas.grid?.h }, grid);
+                //@ts-ignore
+                const [x, y] = [data.x, data.y];
+                let center = { x: x, y: y };
+                //Tokens, Tiles
+                if ("width" in data && "height" in data) {
+                    let [width, height] = [data.width, data.height];
+                    if (isGridSpace) {
+                        [width, height] = [width * grid.w, height * grid.h];
+                    }
+                    center = { x: x + Math.abs(width) / 2, y: y + Math.abs(height) / 2 };
+                }
+                //Walls
+                if ("c" in data) {
+                    //@ts-ignore
+                    center = { x: (data.c[0] + data.c[2]) / 2, y: (data.c[1] + data.c[3]) / 2 };
+                }
+                return center;
+            };
+            const placeableContains = function(placeable, position) {
+                // const x = getPlaceableX(placeable);
+                // const y = getPlaceableY(placeable);
+            
+                const center = getCenter(placeable);
+                const x = center.x;
+                const y = center.y;
+            
+                const w = getPlaceableWidth(placeable) || 0;
+                const h = getPlaceableHeight(placeable) || 0;
+                return Number.between(position.x, x, x + w) && Number.between(position.y, y, y + h);
+            }
+            const clickNotes = canvas?.notes?.placeables.filter((placeable) => placeableContains(placeable, position)) || [];
+            for(const note of clickNotes) {
+                noteControl(note,undefined,undefined);
+            }
+        });
 
         if (!game.modules.get("drag-ruler")?.active && !game.modules.get("libruler")?.active) {
             /*
@@ -4612,7 +4709,7 @@ Hooks.on("renderNoteConfig", async (app, html, noteData) => {
 
     app.setPosition();
   }
-}
+})
 
 Hooks.on("renderWallConfig", async (app, html, options) => {
     if (setting("allow-door")) {
