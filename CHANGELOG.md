@@ -1,3 +1,9 @@
+## Version 10.10
+
+Fixed issue with the alter action when multiple entities have been selected.  This is the one that's been affecting using tagger.
+
+Added the option to select a specific token when reseting a tile history.
+
 ## Version 10.9
 
 Fixing issues with opening a Journal
