@@ -1386,12 +1386,13 @@ export class ActionManager {
                     let result = { entities: entities };
 
                     let attr = action.data.attribute.trim();
-                    let val = action.data.value.trim();
+                    let _val = action.data.value.trim();
 
-                    if (entities && entities.length > 0 && attr != "" && val != undefined) {
+                    if (entities && entities.length > 0 && attr != "" && _val != undefined) {
                         for (let entity of entities) {
                             if (entity) {
                                 let base = entity;
+                                let val = duplicate(_val);
 
                                 let update = {};
 
@@ -1436,7 +1437,7 @@ export class ActionManager {
                                         change: change
                                     };
 
-                                    if (val.includes("{{")) {
+                                    if (typeof val == "string" && val.includes("{{")) {
                                         const compiled = Handlebars.compile(val);
                                         val = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
                                     }
@@ -1444,7 +1445,7 @@ export class ActionManager {
                                     const rgx = /\[\[(\/[a-zA-Z]+\s)?(.*?)([\]]{2,3})(?:{([^}]+)})?/gi;
                                     val = await MonksActiveTiles.inlineRoll(val, rgx, action.data.chatMessage, action.data.rollmode, entity);
 
-                                    if (val.startsWith('+ ') || val.startsWith('- ')) {
+                                    if (typeof val == "string" && (val.startsWith('+ ') || val.startsWith('- '))) {
                                         try {
                                             if (prop instanceof Array) {
                                                 let add = val.startsWith('+ ');
@@ -3925,16 +3926,31 @@ export class ActionManager {
                         options: { showTile: true, showTagger: true },
                         restrict: (entity) => { return (entity instanceof Tile); },
                         defaultType: 'tiles'
+                    },
+                    {
+                        id: "token",
+                        name: "MonksActiveTiles.ctrl.select-entity",
+                        type: "select",
+                        subtype: "entity",
+                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        restrict: (entity) => { return (entity instanceof Token); },
                     }
                 ],
                 fn: async (args = {}) => {
-                    const { tile, tokens, action, userid, value } = args;
+                    const { action } = args;
                     let entities = await MonksActiveTiles.getEntities(args, 'tiles');
+                    let tokens = await MonksActiveTiles.getEntities(args, 'tokens', action.data?.token);
 
                     if (entities && entities.length > 0) {
                         for (let entity of entities) {
-                            if (entity instanceof TileDocument)
-                                await entity.resetHistory();
+                            if (entity instanceof TileDocument) {
+                                if (tokens && tokens.length > 0) {
+                                    for(let token of tokens)
+                                        await entity.resetHistory(token.id);
+                                } else if (!action.data?.token) {
+                                    await entity.resetHistory();
+                                }
+                            }
                         }
                     }
                 },
