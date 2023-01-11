@@ -179,7 +179,15 @@ export class MonksActiveTiles {
             entities = tile.tokensWithin();
         }
         else if (id == 'controlled') {
-            entities = canvas.tokens.controlled.map(t => t.document);
+            if (defaultType == "playlists") {
+                game.playlists.forEach(async (p) => {
+                    p.sounds.forEach(async (s) => {
+                        if (s.playing)
+                            entities.push(s);
+                    });
+                });
+            } else
+                entities = canvas.tokens.controlled.map(t => t.document);
         }
         else if (id == undefined || id == '' || id == 'previous') {
             let deftype = (defaultType || 'tokens');
@@ -238,7 +246,7 @@ export class MonksActiveTiles {
         else if (entity?.id == 'within')
             name = i18n("MonksActiveTiles.WithinTile");
         else if (entity?.id == 'controlled')
-            name = i18n("MonksActiveTiles.Controlled");
+            name = defaultType == "playlists" ? i18n("MonksActiveTiles.CurrentlyPlaying") : i18n("MonksActiveTiles.Controlled");
         else if (entity?.id == undefined || entity?.id == '' || entity?.id == 'previous')
             name = game.i18n.format("MonksActiveTiles.CurrentCollection", { collection: (defaultType || "tokens")}); //(defaultType == 'tokens' || defaultType == undefined ? i18n("MonksActiveTiles.PreviousData") : 'Current ' + defaultType );
         else if (entity?.id.startsWith('tagger'))
@@ -283,11 +291,11 @@ export class MonksActiveTiles {
                 if (scene) {
                     let token = scene.tokens.find(t => t.actor.id == user.character.id);
                     if (token) {
-                        return {
+                        return [{
                             x: token.x + ((Math.abs(token.width) * scene.dimensions.size) / 2),
                             y: token.y + ((Math.abs(token.height) * scene.dimensions.size) / 2),
                             scene: scene.id
-                        };
+                        }];
                     }
                 }
             }
@@ -368,6 +376,8 @@ export class MonksActiveTiles {
                 name = "Player's Token";
             else if (location?.id == 'token')
                 name = "Triggering Token";
+            else if (location?.id == 'tile')
+                name = "This Tile";
             else if (location?.id == 'origin')
                 name = i18n("MonksActiveTiles.Origin");
             else if (location?.id.startsWith('tagger'))
@@ -1546,7 +1556,22 @@ export class MonksActiveTiles {
                                 if (entity.id.startsWith("tagger")) {
                                     if (game.modules.get('tagger')?.active) {
                                         let tag = entity.id.substring(7);
-                                        docs = Tagger.getByTag(tag);
+
+                                        let options = {};
+                                        if (!entity.match || entity.match == "any")
+                                            options.matchAny = true;
+                                        if (entity.match == "exact")
+                                            options.matchExactly = true;
+
+                                        if (entity.scene == "_all")
+                                            options.allScenes = true;
+                                        else if (entity.scene !== "_active" && entity.scene)
+                                            options.sceneId = entity.scene;
+
+                                        docs = Tagger.getByTag(tag, options);
+
+                                        if (entity.scene == "_all")
+                                            docs = [].concat(...Object.values(docs));
                                     }
                                 } else if (entity.id == "within") {
                                     // Find the tile under this door
@@ -2382,6 +2407,13 @@ export class MonksActiveTiles {
                             }
                         }
                     }
+                }
+            } break;
+            case 'showimage': {
+                if ((data.userid == undefined || data.userid.find(u => u == game.user.id) != undefined)) {
+                    new ImagePopout(data.src, {
+                        title: data.caption
+                    }).render(true);
                 }
             } break;
             case 'pan': {
@@ -3803,7 +3835,8 @@ export class MonksActiveTiles {
                 this.flags["monks-active-tiles"].history = {};
                 await this.update({ [`flags.monks-active-tiles.-=history`]: null }, { render: false });
             } else {
-                delete this.flags["monks-active-tiles"].history[tokenid];
+                if (this.flags["monks-active-tiles"].history != undefined)
+                    delete this.flags["monks-active-tiles"].history[tokenid];
                 let key = `flags.monks-active-tiles.history.-=${tokenid}`;
                 let updates = {};
                 updates[key] = null;

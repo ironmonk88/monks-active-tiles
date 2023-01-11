@@ -1,3 +1,39 @@
+## Version 10.11
+
+Fixed issue with teleporting into a Tile using Random within, and Relative to entry.
+
+Fixed default value for a handful of actions.
+
+Update the stop sound action to remove playlist, because playlist now handles it.
+
+Updated the playlist action to allow stopping the currently playing track, or to use the playlists from previous values.
+
+Updated the playlist to allow it to pause a playlist.
+
+Added a show image action, that will allow you to pop out an image from a file.
+
+Fixed issue with PF2E conditions when trying to increase by multiple numbers if the condition doesn't previously exist.
+
+Updated add item to use the character sheet so that it can increase the quantities in piles.
+
+Updated Reset History action to reflect that it's a token that needs selecting.
+
+Fixed Reset History when no token is selected.
+
+Fixed Scrolling Text action to work correctly for who it's been selected to show for.
+
+Fixed issues when setting attributes for the triggered Tile.
+
+Added support for handlebars in the Tagger alter tag action.
+
+Fixed issue with DFred's Convenient Effects when trying to add or remove.
+
+Fixed issue with getting location of player tokens.
+
+Fixed issue when triggering a Tile using a Wall, when selecting the Tile using tagger.
+
+Fixed issue reseting the history for a Token, if the token didn't have a history yet.
+
 ## Version 10.10
 
 Fixed issue with the alter action when multiple entities have been selected.  This is the one that's been affecting using tagger.

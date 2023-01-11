@@ -13,6 +13,7 @@
   "MonksActiveTiles.CurrentCollection": "Current {collection}",
   "MonksActiveTiles.Origin": "Original Destination",
   "MonksActiveTiles.Controlled": "Controlled Tokens",
+  "MonksActiveTiles.CurrentlyPlaying": "Currently Playing",
   "MonksActiveTiles.TileHistory": "Tile History",
   "MonksActiveTiles.ResetHistory": "Reset History",
   "MonksActiveTiles.SelectTile": "Select Tile",
@@ -54,7 +55,7 @@
 
   "MonksActiveTiles.group.actions": "Actions",
   "MonksActiveTiles.group.filters": "Filters",
-  "MonksActiveTiles.group.logic": "Logic",
+  "MonksActiveTiles.group.logic": "Action Flow",
 
   "MonksActiveTiles.action.pause": "Pause Game",
   "MonksActiveTiles.action.stopmovement": "Stop Token Movement",
@@ -103,6 +104,7 @@
   "MonksActiveTiles.action.tileimage": "Switch Tile Image",
   "MonksActiveTiles.action.runbatch": "Run All Batch Actions",
   "MonksActiveTiles.action.rotation": "Rotation",
+  "MonksActiveTiles.action.showimage": "Show Image",
 
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
   "MonksActiveTiles.filter.exists": "Check entity count",
@@ -123,6 +125,7 @@
   "MonksActiveTiles.ctrl.select-entity": "Select Entity",
   "MonksActiveTiles.ctrl.select-actor": "Select Actor",
   "MonksActiveTiles.ctrl.select-tile": "Select Tile",
+  "MonksActiveTiles.ctrl.select-token": "Select Token",
   "MonksActiveTiles.ctrl.state": "State",
   "MonksActiveTiles.ctrl.attribute": "Attribute",
   "MonksActiveTiles.ctrl.value": "Value",
@@ -223,6 +226,8 @@
   "MonksActiveTiles.ctrl.waitresponse": "Wait for Response",
   "MonksActiveTiles.ctrl.landing": "Landing",
   "MonksActiveTiles.ctrl.washcolour": "Wash Colour",
+  "MonksActiveTiles.ctrl.imagefile": "Image File",
+  "MonksActiveTiles.ctrl.caption": "Caption",
 
   "MonksActiveTiles.mode.enter": "Enter",
   "MonksActiveTiles.mode.exit": "Exit",
@@ -382,6 +387,7 @@
   "MonksActiveTiles.msg.usetagger": "Use Tagger",
   "MonksActiveTiles.msg.itempiles": "The drop items feature of Active Tiles conflicts with Item Piles, the setting has been disabled.",
   "MonksActiveTiles.msg.useplayerlocation": "Use players token location",
+  "MonksActiveTiles.msg.currentlyplaying": "Currently Playing",
 
   "MonksActiveTiles.allow-player.name": "Allow players",
   "MonksActiveTiles.allow-player.hint": "Allow players to activate Tiles if there is no GM present.",
