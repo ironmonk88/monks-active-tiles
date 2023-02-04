@@ -167,12 +167,14 @@ export class MonksActiveTiles {
                     entities[i] = await fromUuid(entities[i]);
             }
         }
-        else if (id == 'players') {
-            entities = action.action == "create" ?
-                game.users.map(u => !u.isGM && u.character).filter(t => !!t)
-                : tile.parent.tokens.filter(t => {
-                return t.actor != undefined && t.actor?.hasPlayerOwner && t.actor?.type != 'npc';
-            });
+        else if (id && id.startsWith('players')) {
+            if (action.action == "create") {
+                entities = game.users.map(u => !u.isGM && (u.active || !id.endsWith('active')) && u.character).filter(t => !!t);
+            } else {
+                entities = tile.parent.tokens.filter(t => {
+                    return t.actor != undefined && t.actor?.hasPlayerOwner && t.actor?.type != 'npc';
+                });
+            }
         }
         else if (id == 'within') {
             //find all tokens with this Tile
@@ -486,7 +488,6 @@ export class MonksActiveTiles {
             pt: pt,
             actionId: mainargs._id,
             change: change
-
         };
         let args = action.data.args;
 
@@ -537,7 +538,8 @@ export class MonksActiveTiles {
                 pt: pt,
                 args: args,
                 tokens: context.tokens.map(t => t.uuid),
-                _id: mainargs._id
+                _id: mainargs._id,
+                change: change
             });
 
             return { pause: true };
@@ -1284,6 +1286,9 @@ export class MonksActiveTiles {
         } else if (entity instanceof RollTable) {
             if (result.rolltables == undefined) result.rolltables = [];
             result.rolltables.push(entity);
+        } else if (entity instanceof Playlist) {
+            if (result.playlists == undefined) result.playlists = [];
+            result.playlists.push(entity);
         }
     }
 
@@ -1644,12 +1649,16 @@ export class MonksActiveTiles {
             let result = wrapped(...args);
             if (result instanceof Promise) {
                 return result.then((wall) => {
-                    triggerDoor(wall);
-                    delete wall._wallchange;
+                    if (wall) {
+                        triggerDoor(wall);
+                        delete wall._wallchange;
+                    }
                 });
             } else {
-                triggerDoor(this.wall.document);
-                delete this.wall.document._wallchange;
+                if (this.wall) {
+                    triggerDoor(this.wall.document);
+                    delete this.wall.document._wallchange;
+                }
                 return result;
             }
         }
@@ -1721,11 +1730,13 @@ export class MonksActiveTiles {
             if (!(canvas.activeLayer instanceof TokenLayer))
                 return;
 
+            let hasPointer = $('#board').css('cursor') == "pointer"
+
             for (let tile of canvas.scene.tiles) {
                 let triggerData = tile.flags["monks-active-tiles"];
                 let triggers = MonksActiveTiles.getTrigger(triggerData?.trigger);
 
-                if (!triggerData || !triggerData.active || !(triggers.includes("hoverin") || triggers.includes("hoverout") || triggerData.pointer))
+                if (!triggerData || (!triggerData.active && !hasPointer) || !(triggers.includes("hoverin") || triggers.includes("hoverout") || triggerData.pointer))
                     continue;
 
                 //check to see if this trigger is restricted by control type
@@ -2175,10 +2186,10 @@ export class MonksActiveTiles {
         let uuid = a.dataset.uuid;
 
         if (!uuid.startsWith("Scene"))
-            uuid = `Scene.${canvas.scene.id}.${uuid}`;
+            uuid = `Scene.${canvas.scene.id}.${!uuid.startsWith("Tile") ? "Tile." : ""}${uuid}`;
 
         let tile = await fromUuid(uuid);
-        if (tile) {
+        if (tile && tile instanceof TileDocument) {
             let tokens = canvas.tokens.controlled.map(t => t.document);
             //check to see if this trigger is per token, and already triggered
             let triggerData = tile.flags["monks-active-tiles"];
@@ -2282,11 +2293,14 @@ export class MonksActiveTiles {
                         tokens[i] = await fromUuid(tokens[i])
                     }
 
+                    let user = game.users.get(data.userid);
+
                     let context = {
                         actor: token?.actor,
                         token: token?.object,
+                        character: user?.character,
                         tile: tile.object,
-                        user: game.users.get(data.userid),
+                        user: user,
                         args: data.args,
                         canvas: canvas,
                         scene: canvas.scene,
@@ -2296,6 +2310,7 @@ export class MonksActiveTiles {
                         method: data.method,
                         pt: data.pt,
                         actionId: data._id,
+                        change: data.change
                     };
 
                     let results = (macro.type == 'script' ? MonksActiveTiles._execute.call(macro, context) : macro.execute(args));
@@ -4242,10 +4257,14 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                             let ruler = canvas.controls.getRulerForUser(game.user.id);
                             if (ruler) ruler.cancelMovement = true;
                             options.animate = false;
-                            await document.update({ x: endPt.x, y: endPt.y }, { bypass: true });
+                            let updateDate = {};
+                            if (endPt.x || endPt.x == 0) updateDate.x = endPt.x;
+                            if (endPt.y || endPt.y == 0) updateDate.y = endPt.y;
+                            if (updateDate.x != undefined || updateData.y != undefined)
+                                await document.update(updateDate, { bypass: true });
                         } else {
-                            update.x = endPt.x;
-                            update.y = endPt.y;
+                            if (endPt.x || endPt.x == 0) update.x = endPt.x;
+                            if (endPt.y || endPt.y == 0) update.y = endPt.y;
                             //options.bypass = true;
                         }
                     }
@@ -4385,7 +4404,7 @@ Hooks.on("updateCombat", async function (combat, delta) {
                 }
                 if ((delta.turn || delta.round) && triggers.includes('turn')) {
                     let tokens = [combat.combatant.token];
-                    tile.trigger({ tokens: tokens, method: 'trun' });
+                    tile.trigger({ tokens: tokens, method: 'turn' });
                 }
                 if (delta.round == 1 && combat.turn == 0 && triggers.includes('combatstart')) {
                     let tokens = combat.combatants.map(c => c.token);
@@ -4492,7 +4511,7 @@ Hooks.on("renderWallConfig", async (app, html, options) => {
             if (root.length == 0)
                 root = html;
             let basictab = $('<div>').addClass("tab").attr('data-tab', 'basic');
-            $('> *:not(button)', root).each(function () {
+            $('> *:not(button):not(footer)', root).each(function () {
                 basictab.append(this);
             });
 
@@ -4532,12 +4551,13 @@ Hooks.on("dropCanvasData", async (canvas, data, options, test) => {
         //Create Tile
         //change the Tile Image to the Item image
         //Add the actions to Hide the Tile, Disabled the Tile, and Add the Item to Inventory
-        let dest = canvas.grid.getSnappedPosition(data.x - (canvas.scene.dimensions.size / 2), data.y - (canvas.scene.dimensions.size / 2), canvas.tiles.gridPrecision);
+        let size = canvas.scene.dimensions.size * setting("drop-item-size");
+        let dest = { x: data.x - (size / 2), y: data.y - (size / 2) };
 
         let td = mergeObject(dest, {
             img: item.img,
-            width: canvas.scene.dimensions.size,
-            height: canvas.scene.dimensions.size,
+            width: size,
+            height: size,
             flags: {
                 'monks-active-tiles': {
                     "active": true,
@@ -4692,9 +4712,9 @@ Hooks.once("MultipleDocumentSelection.ready", (dirs) => {
 })
 
 Hooks.on("renderJournalSheet", (sheet, html, data) => {
-    $("a.tile-trigger-link", html).click(MonksActiveTiles._onClickTileLink.bind(sheet));
+    $("a.tile-trigger-link", html).unbind("click").click(MonksActiveTiles._onClickTileLink.bind(sheet));
 });
 
 Hooks.on("renderJournalPageSheet", (sheet, html, data) => {
-    $("a.tile-trigger-link", html).click(MonksActiveTiles._onClickTileLink.bind(sheet));
+    $("a.tile-trigger-link", html).unbind("click").click(MonksActiveTiles._onClickTileLink.bind(sheet));
 });

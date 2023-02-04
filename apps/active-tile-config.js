@@ -1,6 +1,7 @@
 import { MonksActiveTiles, log, error, setting, i18n, makeid } from '../monks-active-tiles.js';
 import { ActionConfig } from "../apps/action-config.js";
 import { TileHistory } from './tile-history.js';
+import { TileVariables } from './tile-variables.js';
 
 class ActiveTileContextMenu extends ContextMenu {
     constructor(...args) {
@@ -276,6 +277,9 @@ export const WithActiveTileConfig = (TileConfig) => {
             $('.action-stop', html).click(this._stopSound.bind(this));
             $('.view-history', html).click(function () {
                 new TileHistory(that.object).render(true);
+            });
+            $('.view-variables', html).click(function () {
+                new TileVariables(that.object).render(true);
             });
 
             $('.record-history', html).click(this.checkRecordHistory.bind(this));

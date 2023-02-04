@@ -14,6 +14,8 @@
   "MonksActiveTiles.Origin": "Original Destination",
   "MonksActiveTiles.Controlled": "Controlled Tokens",
   "MonksActiveTiles.CurrentlyPlaying": "Currently Playing",
+  "MonksActiveTiles.TileVariables": "Tile Variables",
+  "MonksActiveTiles.ClearVariables": "Clear Variables",
   "MonksActiveTiles.TileHistory": "Tile History",
   "MonksActiveTiles.ResetHistory": "Reset History",
   "MonksActiveTiles.SelectTile": "Select Tile",
@@ -76,7 +78,7 @@
   "MonksActiveTiles.action.activeeffect": "Active Effect",
   "MonksActiveTiles.action.movement": "Move",
   "MonksActiveTiles.action.createtoken": "Create Token",
-  "MonksActiveTiles.action.playanimation": "Play Animation",
+  "MonksActiveTiles.action.playanimation": "Tile Animation",
   "MonksActiveTiles.action.openjournal": "Open a Journal",
   "MonksActiveTiles.action.openactor": "Open an Actor Sheet",
   "MonksActiveTiles.action.additem": "Add Item",
@@ -114,6 +116,7 @@
   "MonksActiveTiles.filter.attribute": "Filter by attributes",
   "MonksActiveTiles.filter.inventory": "Filter by items in inventory",
   "MonksActiveTiles.filter.condition": "Filter by condition",
+  "MonksActiveTiles.filter.random": "Random Number",
 
   "MonksActiveTiles.logic.anchor": "Landing",
   "MonksActiveTiles.logic.goto": "Jump to Landing",
@@ -228,6 +231,9 @@
   "MonksActiveTiles.ctrl.washcolour": "Wash Colour",
   "MonksActiveTiles.ctrl.imagefile": "Image File",
   "MonksActiveTiles.ctrl.caption": "Caption",
+  "MonksActiveTiles.ctrl.activetoken": "Only use active player tokens",
+  "MonksActiveTiles.ctrl.randomnumber": "Random Percent",
+  "MonksActiveTiles.ctrl.fail": "Goto landing on fail",
 
   "MonksActiveTiles.mode.enter": "Enter",
   "MonksActiveTiles.mode.exit": "Exit",
@@ -408,5 +414,7 @@
   "MonksActiveTiles.prevent-when-paused.name": "Prevent when paused",
   "MonksActiveTiles.prevent-when-paused.hint": "Prevent players from triggering Tiles when the game is paused.",
   "MonksActiveTiles.allow-door-passthrough.name": "Allow Door Click-through",
-  "MonksActiveTiles.allow-door-passthrough.hint": "Allow Tiles underneath a door to still be triggered if the door is clicked on"
+  "MonksActiveTiles.allow-door-passthrough.hint": "Allow Tiles underneath a door to still be triggered if the door is clicked on",
+  "MonksLittleDetails.drop-item-size.name": "Drop Item Size",
+  "MonksLittleDetails.drop-item-size.hint": "Set the size of the item dropped"
 }

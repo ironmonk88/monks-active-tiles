@@ -1,3 +1,55 @@
+## Version 10.12
+
+Fixed issues with teleporting multiple tokens
+
+Fixed issues with teleporting a token, using relative whent he token hasn't entered a tile.
+
+Added the option to create player tokens, only using the currently active players.
+
+Fixed issues with creating tokens from a journal entry.
+
+Updated hurt/heal to work in PF2E.
+
+Fixed issues with the stop sound display text.
+
+Fixed issues with opening the actor sheet.
+
+Fixed issues with adding items to PF2E.
+
+Fixed issues with the attack action in PF2E.
+
+Fixed change scene display text when using the previous scene value.
+
+Added the option to select video files for the scene background.
+
+Added the option, when using the Filter by distance, to measure the distance from the edge of the Tile, or the center of the Tile.
+
+Added the option to use handlebar notation for the attribute name in the alter action.
+
+Fixed issue with filter by item count when checking for quantity = 0.
+
+Added an action to jump to landings based on a random number.
+
+Added error checking when triggering a tile using a wall.
+
+Fixed issue where a tile that triggered a cursor change, wouldn't revert once disabled.
+
+Fixed issue when activating a Tile from a Journal Link, if the Journal Link is improperly formed, or the link doesn't point to a Tile.
+
+Fixed issue where clicking the Tile link in a Journal Entry would trigger the Tile twice.
+
+Added user and character to data passed to the Macro when running the macro as a player.
+
+Fixed issue with auto anchor using the combat turn start.
+
+Updated the Tile config tab updates to ignore footers when making changes.
+
+Added the option to control the size of the item when dropped on the canvas.  And fixed where the item is dropped to line up with the mouse better.
+
+Added the option to use playlist as a current object.
+
+Added another action to set variable data on the Tile.  You can use the value in the variable anywhere you can use handlebar notation.
+
 ## Version 10.11
 
 Fixed issue with teleporting into a Tile using Random within, and Relative to entry.

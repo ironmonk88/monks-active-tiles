@@ -747,7 +747,7 @@ export class ActionConfig extends FormApplication {
                 case 'filepicker':
                     field
                         .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': game.i18n.localize("FILES.BrowseTooltip") }).addClass('file-picker').html('<i class="fas fa-file-import fa-sm"></i>').click(this._activateFilePicker.bind(this)))
-                        .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'text', name: id, placeholder: (ctrl.subtype == 'audio' ? 'path/audio.mp3' : (ctrl.subtype == 'image' ? 'path/image.png' : 'File Path')) }).val(data[ctrl.id]));
+                        .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'text', name: id, placeholder: (ctrl.subtype == 'audio' ? 'path/audio.mp3' : (ctrl.subtype == 'image' || ctrl.subtype == 'imagevideo' ? 'path/image.png' : 'File Path')) }).val(data[ctrl.id]));
                     break;
                 case 'colorpicker':
                     field
