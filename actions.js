@@ -408,6 +408,11 @@ export class ActionManager {
                             let scene = game.scenes.get(dest.scene);
                             let newtoken = (tokendoc.actor?.id && tokendoc.actorLink ? scene.tokens.find(t => { return t.actor?.id == tokendoc.actor?.id }) : null);
 
+                            // -flo- ludifu
+                            // recalculate tokenWidth and tokenHeight for the new scene. This is required because the new scene may have different dimensions.
+                            tokenWidth = ((scene.dimensions.size * Math.abs(tokendoc.width)) / 2);
+                            tokenHeight = ((scene.dimensions.size * Math.abs(tokendoc.height)) / 2);
+
                             //find a vacant spot
                             if (action.data.avoidtokens)
                                 newPos = MonksActiveTiles.findVacantSpot(newPos, tokendoc, scene, newTokens, dest, action.data.remotesnap);
@@ -416,6 +421,13 @@ export class ActionManager {
                             newPos.y -= tokenHeight;
 
                             if (action.data.remotesnap) {
+                                // -flo- ludifu
+                                // use dimension of the new scene instead of tokendoc.parent (old scene). Reuqired because the new scene's dimensions may be different from the old one's.
+                                newPos.x = newPos.x.toNearest(scene.dimensions.size);
+                                newPos.x = newPos.x.toNearest(scene.dimensions.size);
+                                //newPos.y = newPos.y.toNearest(tokendoc.parent.dimensions.size);
+                                //newPos.y = newPos.y.toNearest(tokendoc.parent.dimensions.size);
+
                                 newPos.x = newPos.x.toNearest(tokendoc.parent.dimensions.size);
                                 newPos.y = newPos.y.toNearest(tokendoc.parent.dimensions.size);
                             }
