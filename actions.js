@@ -427,9 +427,6 @@ export class ActionManager {
                                 newPos.x = newPos.x.toNearest(scene.dimensions.size);
                                 //newPos.y = newPos.y.toNearest(tokendoc.parent.dimensions.size);
                                 //newPos.y = newPos.y.toNearest(tokendoc.parent.dimensions.size);
-
-                                newPos.x = newPos.x.toNearest(tokendoc.parent.dimensions.size);
-                                newPos.y = newPos.y.toNearest(tokendoc.parent.dimensions.size);
                             }
 
                             let td = mergeObject(await tokendoc.toObject(), { x: newPos.x, y: newPos.y, 'flags.monks-active-tiles.teleporting': true, 'flags.monks-active-tiles.current': true });
