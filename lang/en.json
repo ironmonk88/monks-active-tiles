@@ -160,7 +160,7 @@
   "MonksActiveTiles.ctrl.animatepan": "Animate Canvas Pan",
   "MonksActiveTiles.ctrl.deletesource": "Delete Source Token",
   "MonksActiveTiles.ctrl.avoidtokens": "Avoid other tokens at Destination",
-  "MonksActiveTiles.ctrl.rollattack": "Display as Roll Message",
+  "MonksActiveTiles.ctrl.rollattack": "Roll as Attack",
   "MonksActiveTiles.ctrl.volume": "Volume",
   "MonksActiveTiles.ctrl.incharacter": "In Character",
   "MonksActiveTiles.ctrl.speaker": "Speaker",
@@ -234,6 +234,8 @@
   "MonksActiveTiles.ctrl.activetoken": "Only use active player tokens",
   "MonksActiveTiles.ctrl.randomnumber": "Random Percent",
   "MonksActiveTiles.ctrl.fail": "Goto landing on fail",
+  "MonksActiveTiles.ctrl.showdice": "Show Dice",
+  "MonksActiveTiles.ctrl.allowdisabled": "Allow Disabled",
 
   "MonksActiveTiles.mode.enter": "Enter",
   "MonksActiveTiles.mode.exit": "Exit",
@@ -343,11 +345,16 @@
 
   "MonksActiveTiles.target.appendtarget": "Add Additional Targets",
   "MonksActiveTiles.target.overwritetarget": "Switch Targets",
+  "MonksActiveTiles.target.removetarget": "Remove Target",
   "MonksActiveTiles.target.clear": "Clear All Targets",
 
   "MonksActiveTiles.position.random": "Random Within",
   "MonksActiveTiles.position.center": "Center",
   "MonksActiveTiles.position.relative": "Relative to Entry",
+
+  "MonksActiveTiles.msgtype.MessageAndBubble": "Chat Message and Token Bubble",
+  "MonksActiveTiles.msgtype.MessageOnly": "Chat Message Only",
+  "MonksActiveTiles.msgtype.ChatBubble": "Token Bubble Only",
 
   "MonksActiveTiles.transition.none": "None",
   "MonksActiveTiles.transition.fade": "Fade",

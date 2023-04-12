@@ -1,3 +1,107 @@
+## Version 10.14
+
+Changed all internal random rolls to return both the value and the roll so additional details can be passed to the actions.
+
+Fixed issues with finding teleport and move locations.
+
+Fixed issues with teleporting to a scene that has a different scale.
+
+Fixed issues with the movement actions crossing the triggering Tile after being triggered.
+
+Fixed issue where Terrain was no longer an option for the Alter action and Attribute filter.
+
+Added collection option when using the alter action.
+
+Fixed issue with alter when the attribute is dynamic.
+
+Restricting Hurt/Heal to only apply to Tokens.
+
+Added the option to show dice when rolling for Hurt/Heal.
+
+Added flavor to the Hurt/Heal message to indicate what character it applied to.
+
+Fixed issue with playing sounds when the current sound list is unexpectedly empty.
+
+Fixed issue with playing sounds when the sound file doesn't actually exist.
+
+Allow the volume to be blank when playing a playlist so that it doesn't change the current volume levels.
+
+Added Tagger support for chat message speaker.
+
+Added the option with Chat Message to display them as a Chat Message, Chat Bubble, or both.
+
+Added error checking with opening a journal entry to make sure it is a journal entry being opened.
+
+Added error checking when opening an Actor to make sure it is an Actor being opened.
+
+Added Tagger support for the attack action.
+
+Tried to clear up what the checkbox does with the Attack action.
+
+Fixed issue when trying to use the attack action to attack multiple characters.
+
+Added the option to check if a Tile is deactivated when calling it via the Trigger action.
+
+Fixed issues when displaying the scene name in the Scene change action.
+
+Fixed the Start combat action to only start the combat once all characters have been added, and to automatically roll initiative.
+
+Fixed the display name for the combat action to show when it's removing characters from the combat.
+
+Fixed issues with the elevation action so you can use the equals operator and added error catching so it exits gracefully if there's an issue.
+
+Added the Measured Template type to objects that can be selected for the Delete action.
+
+Added the option to remove targets from the Target action rather than clearing all targets.
+
+Fixed issues with the actor and tile data being sent to the Scrolling Text and Set Value action.
+
+Added Previous and Tagger option for the entity to Add/Remove values from.
+
+Added the option to use handlebars for the Check entity count filter.
+
+Added Tiles to the attriute filter.
+
+Fixed issues with the attribute filter when the property is a Set instead fo an array.
+
+Added Wall as a type of entity that can be selected to alter a Tagger tag.
+
+Fixed issues with DFreds Convenient effect list.
+
+Added error checking when getting a dynamic list from actions.
+
+Added error checking to only clear out old data from actions that have data.
+
+Updated the tile sounds to only show sounds that have a sound source.
+
+Fixed issues with Multiple Document Selection and the Tile Directory.
+
+Fixed issues with Tile Templates not returning a tiles uuid properly.
+
+Fixed issues with moving multiple tiles within the Tile Directory.
+
+Fixed issues with the trigger dropdown in the Call of Cthulu system.
+
+Fixed issues with resuming a paused play list.
+
+Added error checking when getting a tagger reference that references a scene that doesn't exist.
+
+Added the event property to the values passed to a Macro.
+
+Fixed issue with the double click action releasing tokens before the actual action ran.
+
+Fixed issue with triggering a wall when it's checking if the door is locked while using the Arms Reach module.
+
+Fixing issue with finding a point within a tile when the tile object doesn't exist.
+
+Fixed point within so that edge cases aren't triggered incorrectly.
+
+Added error checkign to make sure that a texture polygon exists before trying to reference it.
+
+Fixed issues with finding tokens within a tile.
+
+Fixed issue where elevation and rotation changes were triggering outside of the Tile.
+
 ## Version 10.12
 
 Fixed issues with teleporting multiple tokens

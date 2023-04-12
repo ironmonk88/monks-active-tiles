@@ -142,7 +142,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                     disabled = true;
             }
 
-            tiledata.sounds = Object.entries(this.object.soundeffect || {}).map(([k, v]) => {
+            tiledata.sounds = Object.entries(this.object.soundeffect || {}).filter(([k, v]) => !!v.src).map(([k, v]) => {
                 let filename = v.src.split('\\').pop().split('/').pop();
                 return {
                     id: k,
@@ -300,7 +300,11 @@ export const WithActiveTileConfig = (TileConfig) => {
             $('.file-list .delete-file', html).on("click", this.removeFile.bind(this));
             $('.file-list .item', html).on("dblclick", this.selectFile.bind(this));
 
-            $('.multiple-dropdown-select', html).click((event) => { $('.multiple-dropdown-select .dropdown-list', this.element).toggleClass('open'); event.preventDefault(); event.stopPropagation(); });
+            $('.multiple-dropdown-select', html).click((event) => {
+                $('.multiple-dropdown-select .dropdown-list', this.element).toggleClass('open');
+                event.preventDefault();
+                event.stopPropagation();
+            });
             $(html).click(() => { $('.multiple-dropdown-select .dropdown-list', this.element).removeClass('open'); });
             $('.multiple-dropdown-select .remove-option', html).on("click", this.removeTrigger.bind(this));
             $('.multiple-dropdown-select .multiple-dropdown-item', html).on("click", this.selectTrigger.bind(this));

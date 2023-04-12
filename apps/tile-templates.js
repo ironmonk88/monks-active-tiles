@@ -91,6 +91,13 @@ export class TileTemplates extends SidebarDirectory {
                 return data;
             };
             tile.isOwner = true;
+            if (!tile.uuid) {
+                Object.defineProperty(tile, 'uuid', {
+                    get: function () {
+                        return `Tile.${tile._id}`;
+                    }
+                });
+            }
             return tile;
         }
         return data;
@@ -375,11 +382,12 @@ export class TileTemplates extends SidebarDirectory {
         // Determine the closest Folder
         const closestFolder = target ? target.closest(".folder") : null;
         if (closestFolder) closestFolder.classList.remove("droptarget");
-        let folder = closestFolder ? this.constructor.folders.find(f => f._id == closestFolder.dataset.folderId) : null;
+        let folder = closestFolder ? this.constructor.folders.find(f => f._id == closestFolder.dataset.folderId)?._id : null;
 
         // Obtain the dropped Document
         const collection = duplicate(this.constructor.collection);
         let document = data.data;
+        if (!document) document = this.constructor.collection.get(data.uuid.replace("Tile.", "")); // Should technically be fromUuid
         if (!document) return;
 
         // Sort relative to another Document
@@ -396,8 +404,8 @@ export class TileTemplates extends SidebarDirectory {
         else sortData.target = null;
 
         // Determine siblings and perform sort
-        sortData.siblings = collection.filter(doc => (doc._id !== document._id) && (doc.folder === folder?.id));
-        sortData.updateData = { folder: folder?._id || null };
+        sortData.siblings = collection.filter(doc => (doc._id !== document._id) && (doc.folder === folder));
+        sortData.updateData = { folder: folder || null };
 
         let { updateData = {}, ...sortOptions } = sortData;
 
@@ -405,7 +413,7 @@ export class TileTemplates extends SidebarDirectory {
         for (let s of sorting) {
             let doc = collection.find(d => d._id == s.target.id);
             foundry.utils.mergeObject(doc, s.update);
-            doc.folder = folder?._id || null;
+            doc.folder = folder || null;
         }
 
         await game.settings.set("monks-active-tiles", "tile-templates", collection);

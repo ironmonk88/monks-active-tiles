@@ -259,9 +259,15 @@ export class ActionConfig extends FormApplication {
         if (!list)
             return;
 
-        return (list instanceof Array
-            ? list.map(g => { return $('<optgroup>').attr('label', i18n(g.text)).append(Object.entries(g.groups).map(([k, v]) => { return $('<option>').attr('value', (g.id ? g.id + ":" : '') + k).html(i18n(v)).prop('selected', ((g.id ? g.id + ":" : '') + k) == id) })) })
-            : Object.entries(list).map(([k, v]) => { return $('<option>').attr('value', k).html(i18n(v)).prop('selected', k == id) }))
+        if (list instanceof Array) {
+            if (list.length > 0 && list[0].groups) {
+                return list.map(g => { return $('<optgroup>').attr('label', i18n(g.text)).append(Object.entries(g.groups).map(([k, v]) => { return $('<option>').attr('value', (g.id ? g.id + ":" : '') + k).html(i18n(v)).prop('selected', ((g.id ? g.id + ":" : '') + k) == id) })) })
+            } else {
+                return list.map((v) => { return $('<option>').attr('value', v).html(i18n(v)).prop('selected', v == id) });
+            }
+        } else {
+            return Object.entries(list).map(([k, v]) => { return $('<option>').attr('value', k).html(i18n(v)).prop('selected', k == id) });
+        }
     }
 
     static async selectEntity(event) {
@@ -345,7 +351,7 @@ export class ActionConfig extends FormApplication {
 
                 //this, this, action, data
                 //let list = await ctrl.list.call(ctrl, { actor: { id: selection.id } });
-                let list = await ctrl.list.call(this, this, null, { actor: { id: selection.id } });
+                let list = await ctrl.list.call(this, this, null, { actor: { id: selection.id } }) || [];
 
                 select.append(this.fillList(list, ''));
             }
@@ -639,6 +645,10 @@ export class ActionConfig extends FormApplication {
         if (data.delay == undefined)
             delete data.delay;
 
+        $('input.range-value', this.element).each(function () {
+            if ($(this).val() == "") setProperty(data, $(this).prev().attr("name"), "");
+        });
+
         return flattenObject(data);
     }
 
@@ -691,10 +701,12 @@ export class ActionConfig extends FormApplication {
             let action = actions.find(a => a.id == this.object.id);
             if (action) {
                 //clear out these before saving the new information so we don't get data bleed through
-                if (action.data.location) action.data.location = {};
-                if (action.data.entity) action.data.entity = {};
-                if (action.data.item) action.data.item = {};
-                if (action.data.actor) action.data.actor = {};
+                if (action.data) {
+                    if (action.data.location) action.data.location = {};
+                    if (action.data.entity) action.data.entity = {};
+                    if (action.data.item) action.data.item = {};
+                    if (action.data.actor) action.data.actor = {};
+                }
                 mergeObject(action, formData);
                 this.options.parent.object.flags["monks-active-tiles"].actions = actions;
                 //update the text for this row
@@ -863,7 +875,7 @@ export class ActionConfig extends FormApplication {
                     break;
                 case 'slider':
                     field.append($('<input>').attr({ type: 'range', name: id, min: ctrl.min || 0, max: ctrl.max || 1.0, step: ctrl.step || 0.1 }).val(val != undefined ? val : 1.0))
-                        .append($('<span>').addClass('range-value').html(val != undefined ? val : 1.0));
+                        .append($('<input>').attr("type", "text").addClass('range-value').val(val != undefined ? val : '').on('blur', function () { $(this).prev().val($(this).val()) }));
                     break
                 case 'checkbox':
                     {

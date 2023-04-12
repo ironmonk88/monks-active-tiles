@@ -473,3 +473,7 @@ a.tile-trigger-link i {
     color: #7a7971;
     margin-right: 2px;
 }
+
+body.system-CoC7 .multiple-dropdown .multiple-dropdown-option {
+    width: unset;
+}
