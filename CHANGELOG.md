@@ -1,3 +1,13 @@
+## Version 10.15
+
+Fixing issue with players clicking to activate tiles.
+
+Fixed issues with multiple tokens being the speaker for chat message, only speaking from one of them.
+
+Fixed Polyglot display issue in Pathfinder 2E.
+
+Fixed error when showing chatmessage with polyglot.
+
 ## Version 10.14
 
 Changed all internal random rolls to return both the value and the roll so additional details can be passed to the actions.

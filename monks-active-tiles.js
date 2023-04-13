@@ -3673,6 +3673,7 @@ export class MonksActiveTiles {
                 if (options.walls) {
                     options.walls = options.walls.map(w => (w?.document?.uuid || w?.uuid));
                 }
+                delete options.event;
                 MonksActiveTiles.emit('trigger', { tileid: this.uuid, tokens: tokenData, method: method, pt: pt, options: options } );
             }
         }
@@ -4478,7 +4479,8 @@ Hooks.on("deleteCombat", async function (combat, delta) {
 
 Hooks.on('preCreateChatMessage', async (document, data, options, userId) => {
     if (document.getFlag('monks-active-tiles', 'language')) {
-        document.update({ "flags.polyglot.language": document.getFlag('monks-active-tiles', 'language') });
+        setProperty(data, "flags.polyglot.language", document.getFlag('monks-active-tiles', 'language'));
+        //document.update({ "flags.polyglot.language": document.getFlag('monks-active-tiles', 'language') });
     }
 });
 

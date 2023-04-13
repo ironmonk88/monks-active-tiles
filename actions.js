@@ -2466,15 +2466,15 @@ export class ActionManager {
                     let entities = await MonksActiveTiles.getEntities(args);
                     if (entities.length == 0)
                         entities = [null];
-                    if (action.data.for !== 'token')
-                        entities = [entities[0]];
+                    //if (action.data.for !== 'token')
+                    //    entities = [entities[0]];
 
                     for (let entity of entities) {
                         //Add a chat message
                         let user = game.users.find(u => u.id == userid);
                         let scene = game.scenes.find(s => s.id == user?.viewedScene);
 
-                        let tkn = (entity?.object || tokens[0]?.object);
+                        let tkn = (entity?._object || tokens[0]?._object);
 
                         const speaker = { scene: scene?.id, actor: tkn?.actor?.id || user?.character?.id, token: tkn?.id, alias: tkn?.name || user?.name };
 
@@ -2508,7 +2508,7 @@ export class ActionManager {
                             ui.chat.processMessage(content);
                         } else if (action.data.chatbubble == "bubble") {
                             if (tkn instanceof Token) {
-                                canvas.hud.bubbles.say(tkn, content);
+                                await canvas.hud.bubbles.say(tkn, content);
                             }
                         } else {
                             let messageData = {
@@ -2534,14 +2534,14 @@ export class ActionManager {
                             if (action.data.language != '' && game.modules.get("polyglot")?.active)
                                 mergeObject(messageData, { flags: { 'monks-active-tiles': { language: action.data.language } }, lang: action.data.language });
 
-                            ChatMessage.create(messageData, { chatBubble: action.data.chatbubble == "true" });
+                            await ChatMessage.create(messageData, { chatBubble: action.data.chatbubble == "true" });
                         }
                     }
                 },
                 content: async (trigger, action) => {
                     let syslang = CONFIG[game.system.id.toUpperCase()]?.languages || {};
                     let msg = (action.data.text.length <= 15 ? action.data.text : action.data.text.substr(0, 15) + "...");
-                    return `<span class="action-style">${i18n(trigger.name)}</span> for <span class="value-style">&lt;${i18n(trigger.values.for[action.data?.for])}&gt;</span>${(action.data.language != '' && game.modules.get("polyglot")?.active ? ` in <span class="details-style">"${syslang[action.data.language]}"</span>` : '')}${(action.data?.incharacter ? ' <i class="fas fa-user" title="In Character"></i>' : '')}${(action.data?.chatbubble ? ' <i class="fas fa-comment" title="Chat Bubble"></i>' : '')} "${msg}"`;
+                    return `<span class="action-style">${i18n(trigger.name)}</span> for <span class="value-style">&lt;${i18n(trigger.values.for[action.data?.for])}&gt;</span>${(action.data.language != '' && game.modules.get("polyglot")?.active ? ` in <span class="details-style">"${i18n(syslang[action.data.language])}"</span>` : '')}${(action.data?.incharacter ? ' <i class="fas fa-user" title="In Character"></i>' : '')}${(action.data?.chatbubble ? ' <i class="fas fa-comment" title="Chat Bubble"></i>' : '')} "${msg}"`;
                 }
             },
             'runmacro': {
