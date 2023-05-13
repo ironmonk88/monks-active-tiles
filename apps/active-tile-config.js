@@ -103,7 +103,9 @@ export const WithActiveTileConfig = (TileConfig) => {
             tiledata.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
             tiledata.triggerControlled = { 'all': i18n("MonksActiveTiles.control.all"), 'player': i18n("MonksActiveTiles.control.player"), 'gm': i18n("MonksActiveTiles.control.gm") };
 
-            
+
+            let landings = [];
+            let currentLanding = 0;
             tiledata.actions = await Promise.all((this.object.getFlag('monks-active-tiles', 'actions') || [])
                 .map(async (a) => {
                     if (a) {
@@ -118,17 +120,29 @@ export const WithActiveTileConfig = (TileConfig) => {
                         }
                         content += (a.delay > 0 ? ' after ' + a.delay + ' seconds' : '');
 
-                        let deactivated = "";
-                        if (a.action == "activate" && a.data?.activate == "deactivate" && (a.data?.entity?.id == this.object.id || a.data?.entity == ""))
-                            deactivated = "on";
-                        if (a.action == "anchor")
-                            deactivated = "off";
-                        return {
+                        let result = {
                             id: a.id,
                             content: content,
-                            disabled: trigger?.visible === false,
-                            deactivated: deactivated
-                        };
+                            disabled: trigger?.visible === false
+                        }
+
+                        if (a.action == "activate" && a.data?.activate == "deactivate" && (a.data?.entity?.id == this.object.id || a.data?.entity == ""))
+                            result.deactivated = "on";
+                        if (a.action == "anchor")
+                            result.deactivated = "off";
+
+                        if (a.action == "anchor" && setting("show-landing")) {
+                            if (a.data.stop) {
+                                landings = [];
+                            }
+
+                            landings.push(++currentLanding);
+                            result.marker = currentLanding;
+                            result.landingStop = a.data.stop;
+                        }
+                        result.landings = duplicate(landings);
+
+                        return result;
                     }
                 }).filter(a => !!a));
 

@@ -34,6 +34,7 @@
 .monks-active-tiles.sheet .items-list .item-controls {
     flex: 0 0 50px;
     justify-content: space-between;
+    align-self: center;
 }
 
 .monks-active-tiles.sheet .items-list .items-header .item-controls {
@@ -46,8 +47,7 @@
 }
 
 .monks-active-tiles.sheet .items-list .item {
-    align-items: center;
-    padding: 4px 2px;
+    align-items: stretch;
     border-bottom: 1px solid #c9c7b8;
 }
 
@@ -57,6 +57,7 @@
 
 .monks-active-tiles.sheet .items-list .item .item-name {
     color: #191813;
+    padding: 4px 2px;
 }
 
 .monks-active-tiles.sheet .items-list .item .item-name.disabled {
@@ -252,12 +253,14 @@
     font-style: italic;
 }
 
-#trigger-action .files-list {
+#trigger-action .files-list,
+#trigger-action .buttons-list {
     padding-left: 0px;
     margin: 0px;
 }
 
 #trigger-action .files-list .items-header .item-controls,
+#trigger-action .buttons-list .items-header .item-controls,
 .monks-active-tiles .files-list .items-header .item-controls {
     justify-content: flex-end;
     color: #7a7971;
@@ -288,7 +291,7 @@
     padding: 0px 4px;
 }
 
-#trigger-action .file-list li a,
+#trigger-action .items-list li a,
 .monks-active-tiles .file-list li a {
     color: #7a7971;
     flex: 0 0 28px;
@@ -477,3 +480,33 @@ a.tile-trigger-link i {
 body.system-CoC7 .multiple-dropdown .multiple-dropdown-option {
     width: unset;
 }
+
+.monks-active-tiles.sheet .action-items .landing-marker {
+    flex: 0 0 4px;
+    display: block;
+    background-color: #808080;
+}
+
+.monks-active-tiles.sheet .action-items .item-list .item:not(:last-child) .landing-marker {
+    margin-bottom: -1px;
+}
+
+.monks-active-tiles.sheet .action-items .landing-marker[marker="1"] { background-color: #008000; }
+.monks-active-tiles.sheet .action-items .landing-marker[marker="2"] { background-color: #800080; }
+.monks-active-tiles.sheet .action-items .landing-marker[marker="3"] { background-color: #0000FF; }
+.monks-active-tiles.sheet .action-items .landing-marker[marker="4"] { background-color: #FF0000; }
+.monks-active-tiles.sheet .action-items .landing-marker[marker="5"] { background-color: #FFA500; }
+.monks-active-tiles.sheet .action-items .landing-marker[marker="6"] { background-color: #A52A2A; }
+.monks-active-tiles.sheet .action-items .landing-marker[marker="7"] { background-color: #008080; }
+.monks-active-tiles.sheet .action-items .landing-marker[marker="8"] { background-color: #FFFF00; }
+
+.monks-active-tiles.sheet .action-items .item .item-name[marker] { border-top: 1px dashed #808080; }
+.monks-active-tiles.sheet .action-items .item .item-name.landing-stop[marker] { border-top-style: solid; }
+.monks-active-tiles.sheet .action-items .item .item-name[marker="1"] { border-top-color: #008000; }
+.monks-active-tiles.sheet .action-items .item .item-name[marker="2"] { border-top-color: #800080; }
+.monks-active-tiles.sheet .action-items .item .item-name[marker="3"] { border-top-color: #0000FF; }
+.monks-active-tiles.sheet .action-items .item .item-name[marker="4"] { border-top-color: #0000FF; }
+.monks-active-tiles.sheet .action-items .item .item-name[marker="5"] { border-top-color: #FFA500; }
+.monks-active-tiles.sheet .action-items .item .item-name[marker="6"] { border-top-color: #A52A2A; }
+.monks-active-tiles.sheet .action-items .item .item-name[marker="7"] { border-top-color: #008080; }
+.monks-active-tiles.sheet .action-items .item .item-name[marker="8"] { border-top-color: #FFFF00; }

@@ -1,4 +1,4 @@
-import { MonksActiveTiles, log, error, actiontext, debug, warn, setting, i18n, makeid, rollDice } from './monks-active-tiles.js';
+import { MonksActiveTiles, log, error, actiontext, debug, warn, setting, i18n, makeid, rollDice, getVolume, getValue } from './monks-active-tiles.js';
 import { BatchManager } from "./classes/BatchManager.js";
 
 export class ActionManager {
@@ -32,7 +32,6 @@ export class ActionManager {
             },
             'delay': {
                 name: "MonksActiveTiles.action.delay",
-                group: "logic",
                 ctrls: [
                     {
                         id: "delay",
@@ -96,7 +95,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-coordinates",
                         type: "select",
                         subtype: "position",
-                        options: { showToken: true, showPlayers: true, showPrevious: true },
+                        options: { show: ['token', 'players', 'previous'] },
                         restrict: (entity) => { return (entity instanceof Tile || entity instanceof Token); },
                         required: true
                     },
@@ -146,12 +145,15 @@ export class ActionManager {
 
                         dest.duration = (action.data?.duration ?? 1) * 1000;
 
+                        dest.x = parseInt(await getValue(dest.x, args, dest, { prop: canvas.scene._viewPosition.x, explicit: true }));
+                        dest.y = parseInt(await getValue(dest.y, args, dest, { prop: canvas.scene._viewPosition.y, explicit: true }));
+                        /*
                         if (typeof dest.x == "string" && (dest.x.startsWith("+") || dest.x.startsWith("-"))) {
                             dest.x = parseInt(eval(`${canvas.scene._viewPosition.x} ${dest.x}`));
                         }
                         if (typeof dest.y == "string" && (dest.y.startsWith("+") || dest.y.startsWith("-"))) {
                             dest.y = parseInt(eval(`${canvas.scene._viewPosition.y} ${dest.y}`));
-                        }
+                        }*/
 
                         if (["all", "players"].includes(panfor) || (panfor == "token" && userid != game.user.id)) {
                             MonksActiveTiles.emit('pan',
@@ -188,7 +190,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true },
+                        options: { show: ['token', 'within', 'players', 'previous'] },
                         restrict: (entity) => { return (entity instanceof Token); }
                     },
                     {
@@ -199,7 +201,7 @@ export class ActionManager {
                         onChange: (app) => {
                             app.checkConditional();
                         },
-                        options: { showTagger: true, showPrevious: true },
+                        options: { show: ['previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Tile); },
                         required: true,
                         placeholder: 'Select a location or Tile'
@@ -264,7 +266,7 @@ export class ActionManager {
                     }
                 },
                 fn: async (args = {}) => {
-                    const { tile, action, pt, userid, value } = args;
+                    const { tile, action, pt, userid, value, method, original } = args;
 
                     let entities = await MonksActiveTiles.getEntities(args);
 
@@ -300,8 +302,21 @@ export class ActionManager {
 
                         let dest = dests.pickRandom(tile.id);
                         let entDest = duplicate(dest);
-                        if (!entDest)
+                        if (!entDest) {
+                            console.warn("monks-active-tiles | Could not find a teleport destination", action.data.location);
+                            let newPos = canvas.grid.getSnappedPosition(original.x, original.y);
+
+                            let ray = new Ray({ x: tokendoc.x, y: tokendoc.y }, { x: newPos.x, y: newPos.y });
+
+                            const s = tokendoc.parent.dimensions.size;
+                            const speed = s * 6;
+                            let duration = (ray.distance * 1000) / speed;
+ 
+                            let time = new Date().getTime() + duration;
+
+                            batch.add("update", tokendoc, { x: newPos.x, y: newPos.y }, { bypass: false, originaltile: tile.id, animate: true, animation: { duration, time } });
                             continue;
+                        }
 
                         if (entDest.x && typeof entDest.x == "string" && entDest.x.indexOf('-') > 1) {
                             let parts = entDest.x.split("-");
@@ -317,12 +332,15 @@ export class ActionManager {
                             entDest.y = min + (Math.random() * (max - min));
                         }
 
+                        entDest.x = parseInt(await getValue(entDest.x, args, tokendoc, { prop: tokendoc.x }));
+                        entDest.y = parseInt(await getValue(entDest.y, args, tokendoc, { prop: tokendoc.y }));
+                        /*
                         if (entDest.x && typeof entDest.x == "string" && (entDest.x.startsWith("+") || entDest.x.startsWith("-"))) {
                             entDest.x = parseInt(eval(`${tokendoc.x} ${entDest.x}`));
                         }
                         if (entDest.y && typeof entDest.y == "string" && (entDest.y.startsWith("+") || entDest.y.startsWith("-"))) {
                             entDest.y = parseInt(eval(`${tokendoc.y} ${entDest.y}`));
-                        }
+                        }*/
 
                         let scene = (dest.scene == undefined ? tokendoc.parent : game.scenes.get(dest.scene)) || tokendoc.parent;
 
@@ -333,10 +351,13 @@ export class ActionManager {
                                 entDest.x = dest.dest.x + (dest.dest.width / 2);
                                 entDest.y = dest.dest.y + (dest.dest.height / 2);
                             } else if (destpos == "relative") {
+                                let usePt = duplicate(pt);
+                                if (method != "enter" && method != "exit" && tile.pointWithin(pt))
+                                    usePt = duplicate(oldPos);
                                 let midDestX = dest.dest.x + (Math.abs(dest.dest.width) / 2);
                                 let midDestY = dest.dest.y + (Math.abs(dest.dest.height) / 2);
-                                let deltaX = (pt.x - oldTile.x) * (Math.abs(dest.dest.width) / Math.abs(tile.width));
-                                let deltaY = (pt.y - oldTile.y) * (Math.abs(dest.dest.height) / Math.abs(tile.height));
+                                let deltaX = (usePt.x - oldTile.x) * (Math.abs(dest.dest.width) / Math.abs(tile.width));
+                                let deltaY = (usePt.y - oldTile.y) * (Math.abs(dest.dest.height) / Math.abs(tile.height));
 
                                 entDest.x = Math.clamped(midDestX + deltaX, dest.dest.x, dest.dest.x + dest.dest.width) - (Math.sign(deltaX) * ((scene.dimensions.size * Math.abs(tokendoc.width)) / 2));
                                 entDest.y = Math.clamped(midDestY + deltaY, dest.dest.y, dest.dest.y + dest.dest.height) - (Math.sign(deltaY) * ((scene.dimensions.size * Math.abs(tokendoc.height)) / 2));
@@ -400,14 +421,20 @@ export class ActionManager {
 
                             newTokens.push({ data: { x: newPos.x, y: newPos.y, width: tokendoc.width, height: tokendoc.height } });
 
-                            batch.add("update", tokendoc, { x: newPos.x, y: newPos.y, 'flags.monks-active-tiles.teleporting': true, 'flags.monks-active-tiles.current': true }, { bypass: true, animate: false, teleport: true, animation: { duration: 0 } } )
+                            batch.add("update", tokendoc, { x: newPos.x, y: newPos.y, 'flags.monks-active-tiles.teleporting': true, 'flags.monks-active-tiles.current': true }, { bypass: true, animate: false, teleport: true, animation: { duration: 0 } })
                             //await tokendoc.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false, teleport: true });
                         } else {
                             result.tokens = [];
                             //if the end spot is on a different scene then hide this token, check the new scene for a token for that actor and move it, otherwise create the token on the new scene
 
-                            if (userid != game.user.id && setting('teleport-wash')) {
-                                MonksActiveTiles.emit('fade', { userid: userid, time: 1000, colour: action.data.colour || setting("teleport-colour") });
+                            let owners = game.users.filter(u => {
+                                return !u.isGM && u.character && u.character.id == tokendoc.actor?.id;
+                            }).map(u => u.id);
+                            if (!game.user.isGM && userid != game.user.id && !owners.includes(game.user.id))
+                                owners.push(game.user.id);
+
+                            if (userid != game.user.id && setting('teleport-wash') && owners.length) {
+                                MonksActiveTiles.emit('fade', { userid: owners, time: 1000, colour: action.data.colour || setting("teleport-colour") });
                                 //await MonksActiveTiles.timeout(400);
                             }
 
@@ -447,11 +474,6 @@ export class ActionManager {
                                 batch.add("update", tokendoc, { hidden: true });   //hide the old one
                             //batch.add("update", newtoken, { hidden: oldhidden, img: tokendoc.img });   //preserve the image, and hiddenness of the old token
 
-                            let owners = game.users.filter(u => {
-                                return !u.isGM && u.character && u.character.id == tokendoc.actor?.id;
-                            }).map(u => u.id);
-                            if (!game.user.isGM && userid != game.user.id && !owners.includes(game.user.id))
-                                owners.push(game.user.id);
                             if (owners.length) {
                                 //pass this back to the player
                                 switchViews.push({ userid: [owners], sceneid: scene.id, newpos: newPos, oldpos: oldPos })
@@ -516,7 +538,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showTile: true, showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['tile', 'token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => {
                             return (
                                 entity instanceof Token ||
@@ -535,7 +557,7 @@ export class ActionManager {
                         onChange: (app) => {
                             app.checkConditional();
                         },
-                        options: { showTagger: true, showToken: true, showOrigin: true, showPrevious: true },
+                        options: { show: ['token', 'previous', 'tagger', 'origin'] },
                         restrict: (entity) => { return (entity instanceof Tile && this.scene.id == entity.parent.id) || this.scene.id == entity.id; },
                         required: true
                     },
@@ -629,6 +651,7 @@ export class ActionManager {
                                 entDest.y = min + (Math.random() * (max - min));
                             }
 
+                            /*
                             if (typeof entDest.x == "string" && (entDest.x.startsWith("+") || entDest.x.startsWith("-"))) {
                                 entDest.x = parseInt(eval(`${entity.x} ${entDest.x}`));
                                 location.id = "origin";
@@ -637,6 +660,13 @@ export class ActionManager {
                                 entDest.y = parseInt(eval(`${entity.y} ${entDest.y}`));
                                 location.id = "origin";
                             }
+                            */
+                            if ((typeof entDest.x == "string" && (entDest.x.startsWith("+") || entDest.x.startsWith("-"))) ||
+                                (typeof entDest.y == "string" && (entDest.y.startsWith("+") || entDest.y.startsWith("-")))) {
+                                location.id = "origin";
+                            }
+                            entDest.x = parseInt(await getValue(entDest.x, args, entity, { prop: entity.x }));
+                            entDest.y = parseInt(await getValue(entDest.y, args, entity, { prop: entity.y }));
 
                             if (dest.dest instanceof TileDocument) {
                                 if (action.data.position == "center") {
@@ -735,7 +765,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showTile: true, showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['tile', 'token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => {
                             return (
                                 entity instanceof Token ||
@@ -766,7 +796,7 @@ export class ActionManager {
                     let entities = await MonksActiveTiles.getEntities(args);
 
                     if (entities && entities.length > 0) {
-                        
+
                         let promises = [];
                         let batch = new BatchManager();
                         for (let entity of entities) {
@@ -775,10 +805,10 @@ export class ActionManager {
                             let duration = (action.data?.duration ?? 5) * 1000;
                             let time = new Date().getTime() + duration;
 
-                            let rotation = action.data.rotation;
-                            if (rotation.startsWith("+") || rotation.startsWith("-"))
-                                rotation = eval(entity.rotation + rotation);
-                            rotation = parseInt(rotation);
+                            let rotation = parseInt(await getValue(action.data.rotation, args, entity, { prop: entity.rotation })) || 0;
+                            //if (rotation.startsWith("+") || rotation.startsWith("-"))
+                            //    rotation = eval(entity.rotation + rotation);
+                            //rotation = parseInt(rotation);
 
                             batch.add("update", entity, { rotation: rotation }, { bypass: !action.data.trigger, animate: true, animation: { duration, time } });
                         }
@@ -819,7 +849,7 @@ export class ActionManager {
                         onChange: (app) => {
                             app.checkConditional();
                         },
-                        options: { showTile: true, showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['tile', 'token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Token || entity instanceof Tile || entity instanceof Drawing); }
                     },
                     {
@@ -893,7 +923,7 @@ export class ActionManager {
                                         */
                                     MonksActiveTiles.batch.add("update", entity, { hidden: hide }, { animation: { duration, time } });
                                 } else
-                                    MonksActiveTiles.batch.add("update", entity, { hidden: hide }, { animation: { duration: 0 }});
+                                    MonksActiveTiles.batch.add("update", entity, { hidden: hide }, { animation: { duration: 0 } });
 
                                 MonksActiveTiles.addToResult(entity, result);
                             }
@@ -916,7 +946,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showPrevious: true, showPlayers: true },
+                        options: { show: ['players', 'previous'] },
                         restrict: (entity) => { return (entity instanceof Actor || entity instanceof JournalEntry || entity instanceof Note); },
                         onChange: (app) => {
                             app.checkConditional();
@@ -944,12 +974,23 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-coordinates",
                         type: "select",
                         subtype: "either",
-                        options: { showTagger: true, showPrevious: true, showTile: true },
+                        options: { show: ['tile', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Tile && this.scene.id == entity.parent.id) || this.scene.id == entity.id; },
                         required: true
                     },
                     {
-                        id: "activetoken", 
+                        id: "position",
+                        name: "MonksActiveTiles.ctrl.positioning",
+                        list: "position",
+                        type: "list",
+                        conditional: (app) => {
+                            let entity = JSON.parse($('input[name="data.location"]', app.element).val() || "{}");
+                            return /^Scene.[a-zA-Z0-9]{16}.Tile.[a-zA-Z0-9]{16}$/.test(entity?.id) || (entity?.id || "").startsWith("tagger") || (entity?.id == "tile");
+                        },
+                        defvalue: "random"
+                    },
+                    {
+                        id: "activetoken",
                         name: "MonksActiveTiles.ctrl.activetoken",
                         type: "checkbox",
                         conditional: (app) => {
@@ -958,6 +999,7 @@ export class ActionManager {
                         },
                         defvalue: true
                     },
+
                     {
                         id: "snap",   //using remote snap because I don't want this to trigger the token to be snapped to the grid on the tile
                         name: "MonksActiveTiles.ctrl.snap",
@@ -980,6 +1022,10 @@ export class ActionManager {
                     'collection': {
                         'actors': "Actors",
                         'journal': "Journal Entries"
+                    },
+                    'position': {
+                        'random': "MonksActiveTiles.position.random",
+                        'center': "MonksActiveTiles.position.center"
                     }
                 },
                 fn: async (args = {}) => {
@@ -1030,15 +1076,24 @@ export class ActionManager {
                                                 let tdests = (ea.location ? dests.filter(d => d.dest ? Tagger.hasTags(d.dest, ea.location) : d) : dests);
                                                 let dest = tdests.pickRandom(tile.id);
 
-                                                if (dest) {
+                                                let entDest = duplicate(dest);
+                                                if (!entDest)
+                                                    continue;
+
+                                                if (entDest) {
                                                     if (dest.dest instanceof TileDocument) {
-                                                        // Find a random location within this Tile
-                                                        dest.x = dest.dest.x + Math.floor((Math.random() * Math.abs(dest.dest.width)));
-                                                        dest.y = dest.dest.y + Math.floor((Math.random() * Math.abs(dest.dest.height)));
+                                                        if (action.data.position == "center") {
+                                                            entDest.x = dest.dest.x + (dest.dest.width / 2);
+                                                            entDest.y = dest.dest.y + (dest.dest.height / 2);
+                                                        } else {
+                                                            // Find a random location within this Tile
+                                                            entDest.x = (dest.dest.x + midX) + Math.floor((Math.random() * (Math.abs(dest.dest.width) - (Math.abs(actor.prototypeToken.width) * canvas.scene.dimensions.size))));
+                                                            entDest.y = (dest.dest.y + midY) + Math.floor((Math.random() * (Math.abs(dest.dest.height) - (Math.abs(actor.prototypeToken.height) * canvas.scene.dimensions.size))));
+                                                        }
                                                     }
                                                     let data = {
-                                                        x: dest.x,
-                                                        y: dest.y,
+                                                        x: entDest.x,
+                                                        y: entDest.y,
                                                         hidden: action.data.invisible || ea.hidden
                                                     };
 
@@ -1092,24 +1147,36 @@ export class ActionManager {
                                 }
                             } else if (entity instanceof Actor) {
                                 let dest = dests[Math.floor(Math.random() * dests.length)];
-                                if (dest) {
+
+                                let entDest = duplicate(dest);
+                                if (entDest) {
                                     if (dest.dest instanceof TileDocument) {
                                         // Find a random location within this Tile
-                                        dest.x = dest.dest.x + Math.floor((Math.random() * Math.abs(dest.dest.width)));
-                                        dest.y = dest.dest.y + Math.floor((Math.random() * Math.abs(dest.dest.height)));
-                                    } else {
-                                        if (dest.x) {
-                                            let roll = await rollDice(dest.x);
-                                            dest.x = roll.value;
+                                        if (dest.dest instanceof TileDocument) {
+                                            if (action.data.position == "center") {
+                                                entDest.x = dest.dest.x + (dest.dest.width / 2);
+                                                entDest.y = dest.dest.y + (dest.dest.height / 2);
+                                            } else {
+                                                // Find a random location within this Tile
+                                                let midX = ((canvas.scene.dimensions.size * Math.abs(entity.prototypeToken.width)) / 2);
+                                                let midY = ((canvas.scene.dimensions.size * Math.abs(entity.prototypeToken.height)) / 2);
+                                                entDest.x = (dest.dest.x + midX) + Math.floor((Math.random() * (Math.abs(dest.dest.width) - (Math.abs(entity.prototypeToken.width) * canvas.scene.dimensions.size))));
+                                                entDest.y = (dest.dest.y + midY) + Math.floor((Math.random() * (Math.abs(dest.dest.height) - (Math.abs(entity.prototypeToken.height) * canvas.scene.dimensions.size))));
+                                            }
                                         }
-                                        if (dest.y) {
-                                            let roll = await rollDice(dest.y);
-                                            dest.y = roll.value;
+                                    } else {
+                                        if (entDest.x) {
+                                            let roll = await rollDice(entDest.x);
+                                            entDest.x = roll.value;
+                                        }
+                                        if (entDest.y) {
+                                            let roll = await rollDice(entDest.y);
+                                            entDest.y = roll.value;
                                         }
                                     }
                                     let data = {
-                                        x: dest.x,
-                                        y: dest.y,
+                                        x: entDest.x,
+                                        y: entDest.y,
                                         hidden: action.data.invisible
                                     };
                                     actors.push({ data, actor: entity, dest: dest });
@@ -1205,7 +1272,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showPrevious: true },
+                        options: { show: ['previous'] },
                         restrict: (entity) => { return (entity instanceof JournalEntry || entity instanceof Note); },
                         required: true,
                         defaultType: 'journal',
@@ -1323,7 +1390,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showTile: true, showTagger: true },
+                        options: { show: ['tile', 'within', 'previous', 'tagger'] },
                         restrict: (entity) => {
                             return (entity instanceof Tile || entity instanceof AmbientLight || entity instanceof AmbientSound || entity.constructor.name == "Terrain");
                         },
@@ -1383,7 +1450,7 @@ export class ActionManager {
                         onChange: (app) => {
                             app.checkConditional();
                         },
-                        options: { showTile: true, showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true }
+                        options: { show: ['tile', 'token', 'within', 'players', 'previous', 'tagger'] }
                     },
                     {
                         id: "collection",
@@ -1493,74 +1560,7 @@ export class ActionManager {
                                     prop = prop.value;
                                 }
 
-                                if (val == 'true') {
-                                    val = true;
-                                } else if (val == 'false') {
-                                    val = false;
-                                } else {
-                                    let context = {
-                                        actor: tokens[0]?.actor?.toObject(false),
-                                        token: tokens[0]?.toObject(false),
-                                        tile: tile.toObject(),
-                                        entity: entity,
-                                        variable: getProperty(tile, "flags.monks-active-tiles.variables") || {},
-                                        user: game.users.get(userid),
-                                        value: value,
-                                        scene: canvas.scene,
-                                        canvas: canvas,
-                                        method: method,
-                                        change: change
-                                    };
-
-                                    if (typeof val == "string" && val.includes("{{")) {
-                                        const compiled = Handlebars.compile(val);
-                                        val = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
-                                    }
-
-                                    const rgx = /\[\[(\/[a-zA-Z]+\s)?(.*?)([\]]{2,3})(?:{([^}]+)})?/gi;
-                                    val = await MonksActiveTiles.inlineRoll(val, rgx, action.data.chatMessage, action.data.rollmode, entity);
-
-                                    if (typeof val == "string" && (val.startsWith('+ ') || val.startsWith('- '))) {
-                                        try {
-                                            if (prop instanceof Array) {
-                                                let add = val.startsWith('+ ');
-                                                let parts = val.replace('+ ', '').replace('- ', '').split(',').map(p => p.trim());
-                                                if (add)
-                                                    val = prop.concat(parts).filter((value, index, self) => { return self.indexOf(value) === index; });
-                                                else
-                                                    val = prop.filter(value => { return !parts.includes(value) });
-                                            } else {
-                                                val = eval(prop + val);
-                                            }
-                                        } catch (err) {
-                                            val = (prop instanceof Array ? [] : 0);
-                                            debug(err);
-                                        }
-                                    }
-                                    if (typeof val == "string" && val.startsWith('=')) {
-                                        try {
-                                            if (prop instanceof Array) {
-                                                val = val.replace('=', '').split(',').map(p => p.trim()).filter(p => !!p);
-                                            } else {
-                                                val = eval(val.substring(1));
-                                            }
-                                        } catch (err) {
-                                            val = (prop instanceof Array ? [] : 0);
-                                            debug(err);
-                                        }
-                                    }
-
-                                    if (val instanceof Array) {
-                                        for (let i = 0; i < val.length; i++) {
-                                            if (!isNaN(val[i]) && !isNaN(parseFloat(val[i])))
-                                                val[i] = parseFloat(val[i]);
-                                        }
-                                    } else {
-                                        if (!isNaN(val) && !isNaN(parseFloat(val)))
-                                            val = parseFloat(val);
-                                    }
-                                }
-                                update[attr] = val;
+                                update[attr] = await getValue(val, args, entity, { prop });
 
                                 MonksActiveTiles.batch.add('update', base, update);
                                 MonksActiveTiles.addToResult(entity, result);
@@ -1601,7 +1601,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showTile: true, showToken: true, showWithin: true, showPlayers: true, showPrevious: true }
+                        options: { show: ['tile', 'token', 'within', 'players', 'previous'] }
                     },
                     {
                         id: "attribute",
@@ -1669,7 +1669,7 @@ export class ActionManager {
                         type: "select",
                         subtype: "entity",
                         restrict: (entity) => { return entity instanceof Token; },
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true }
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] }
                     },
                     {
                         id: "value",
@@ -1756,7 +1756,13 @@ export class ActionManager {
                         for (let entity of entities) {
                             const a = entity.actor;
 
-                            let val = action.data.value;
+                            let val = await getValue(action.data.value, args, entity, {
+                                actor: a.toObject(false),
+                                token: entity.toObject(false),
+                                rollmode: action.data.rollmode,
+                                flavor: "{{entity.name}} is being {{#if (lt result 0)}}hurt{{else}}healed{{/if}}"
+                            });
+                            /*
                             let context = {
                                 actor: a.toObject(false),
                                 token: entity.toObject(false),
@@ -1784,20 +1790,14 @@ export class ActionManager {
 
                                 if (action.data.chatMessage) {
                                     let flavor = `${entity.name} is being ${val < 0 ? "hurt" : "healed"}`;
-                                    /*if (game.dice3d != undefined && roll.roll instanceof Roll && roll.roll.ignoreDice !== true && action.data.showdice) {
-                                        let whisper = (action.data.rollmode == 'roll' ? null : ChatMessage.getWhisperRecipients("GM").map(w => { return w.id }));
-                                        game.dice3d.showForRoll(roll.roll, game.user, true, whisper, action.data.rollmode !== 'roll' && !game.user.isGM).then(() => {
-                                            roll.roll.toMessage({flavor}, { rollMode: action.data.rollmode });
-                                        });
-                                    } else {*/
-                                        roll.roll.toMessage({flavor}, { rollMode: action.data.rollmode });
-                                    //}
+                                    roll.roll.toMessage({ flavor }, { rollMode: action.data.rollmode });
                                 }
                             }
 
                             try {
                                 val = parseFloat(eval(val));
                             } catch { }
+                            */
 
                             val = val * -1;
 
@@ -1870,6 +1870,13 @@ export class ActionManager {
                         id: "prevent",
                         name: "MonksActiveTiles.ctrl.preventsound",
                         type: "checkbox"
+                    },
+                    {
+                        id: "playlist",
+                        name: "MonksActiveTiles.ctrl.showplaylist",
+                        type: "checkbox",
+                        conditional: () => { return game.modules.get("monks-sound-enhancements")?.active },
+                        defvalue: true
                     },
                 ],
                 values: {
@@ -1981,15 +1988,27 @@ export class ActionManager {
                         let fade = action.data.fade ?? 0;
                         AudioHelper.play({ src: audiofile, volume: (fade > 0 ? 0 : volume), loop: action.data.loop }, false).then((sound) => {
                             if (fade > 0)
-                                sound.fade(volume * game.settings.get("core", "globalAmbientVolume"), { duration: fade * 1000 });
+                                sound.fade(volume * getVolume(), { duration: fade * 1000 });
                             if (tile.soundeffect == undefined)
                                 tile.soundeffect = {};
                             tile.soundeffect[action.id] = sound;
+                            tile.soundeffect[action.id].on("stop", () => {
+                                MonksActiveTiles.emit('stopsound', {
+                                    tileid: tile.uuid,
+                                    actionid: action.id,
+                                    userid: (playfor == 'triggering' ? [userid] : (playfor == 'owner' ? owners : null)),
+                                    fade: 0.25
+                                });
+                                delete tile.soundeffect[action.id];
+                            });
                             tile.soundeffect[action.id].on("end", () => {
                                 debug('Finished playing', audiofile);
                                 delete tile.soundeffect[action.id];
                             });
-                            tile.soundeffect[action.id]._mattvolume = volume;
+                            tile.soundeffect[action.id].effectiveVolume = volume;
+                            if (game.modules.get("monks-sound-enhancements")?.active && action.data.playlist) {
+                                game.MonksSoundEnhancements.addSoundEffect(tile.soundeffect[action.id], "Tile Sound Effect");
+                            }
                         });
                     }
                 },
@@ -2008,7 +2027,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.playlist",
                         type: "select",
                         subtype: "entity",
-                        options: { showPrevious: true, showControlled: true },
+                        options: { show: ['previous', 'controlled'] },
                         restrict: (entity) => {
                             return (entity instanceof Playlist || entity instanceof PlaylistSound);
                         },
@@ -2103,7 +2122,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showTile: true },
+                        options: { show: ['tile'] },
                         restrict: (entity) => { return entity instanceof Tile; },
                         defaultType: 'tiles'
                     },
@@ -2257,8 +2276,8 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.selectdoor",
                         type: "select",
                         subtype: "entity",
-                        options: { showTagger: true, showPrevious: true },
-                        restrict: (entity) => { return (entity instanceof Wall && entity.document.door); },  //this needs to be a wall segment
+                        options: { show: ['previous', 'tagger'] },
+                        restrict: (entity) => { return (entity instanceof Wall); },  //this needs to be a wall segment
                         required: true,
                         defaultType: 'walls',
                         placeholder: 'Please select a Wall'
@@ -2366,6 +2385,8 @@ export class ActionManager {
                 fn: async (args = {}) => {
                     const { tile, tokens, action, userid, value, method, change } = args;
                     //Display a notification with the message
+                    let content = await getValue(action.data.text, args);
+                    /*
                     let context = {
                         actor: tokens[0]?.actor?.toObject(false),
                         token: tokens[0]?.toObject(false),
@@ -2383,6 +2404,7 @@ export class ActionManager {
                         const compiled = Handlebars.compile(content);
                         content = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
                     }
+                    */
 
                     if (action.data.showto != 'gm')
                         MonksActiveTiles.emit('notification', { content: content, type: action.data.type, userid: (action.data.showto == 'token' ? userid : null) });
@@ -2414,7 +2436,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.speaker",
                         type: "select",
                         subtype: "entity",
-                        options: { showToken: true, showPrevious: true, showTagger: true },
+                        options: { show: ['token', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Token); }
                     },
                     {
@@ -2425,7 +2447,14 @@ export class ActionManager {
                     {
                         id: "chatbubble",
                         name: "MonksActiveTiles.ctrl.chatbubble",
-                        list: "chatbubble",
+                        list: () => {
+                            if (!game.settings.get("core", "chatBubbles")) return { 'false': "MonksActiveTiles.msgtype.MessageOnly" };
+                            return {
+                                'true': "MonksActiveTiles.msgtype.MessageAndBubble",
+                                'false': "MonksActiveTiles.msgtype.MessageOnly",
+                                'bubble': "MonksActiveTiles.msgtype.ChatBubble"
+                            }
+                        },
                         type: "list"
                     },
                     {
@@ -2453,11 +2482,6 @@ export class ActionManager {
                         'all': "MonksActiveTiles.for.all",
                         'gm': "MonksActiveTiles.for.gm",
                         'token': "MonksActiveTiles.for.token"
-                    },
-                    'chatbubble': {
-                        'true': "MonksActiveTiles.msgtype.MessageAndBubble",
-                        'false': "MonksActiveTiles.msgtype.MessageOnly",
-                        'bubble': "MonksActiveTiles.msgtype.ChatBubble"
                     }
                 },
                 fn: async (args = {}) => {
@@ -2478,6 +2502,10 @@ export class ActionManager {
 
                         const speaker = { scene: scene?.id, actor: tkn?.actor?.id || user?.character?.id, token: tkn?.id, alias: tkn?.name || user?.name };
 
+                        let content = await getValue(action.data.text, args, entity, { speaker });
+                        let flavor = await getValue(action.data.flavor, args, entity, { speaker });
+
+                        /*
                         let context = {
                             actor: tokens[0]?.actor?.toObject(false),
                             token: tokens[0]?.toObject(false),
@@ -2503,45 +2531,65 @@ export class ActionManager {
                             const compiled = Handlebars.compile(flavor);
                             flavor = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
                         }
+                        */
 
                         if (content.startsWith('/')) {
                             ui.chat.processMessage(content);
-                        } else if (action.data.chatbubble == "bubble") {
-                            if (tkn instanceof Token) {
-                                await canvas.hud.bubbles.say(tkn, content);
-                            }
                         } else {
-                            let messageData = {
-                                user: userid,
-                                speaker: speaker,
-                                type: (action.data.incharacter ? CONST.CHAT_MESSAGE_TYPES.IC : CONST.CHAT_MESSAGE_TYPES.OOC),
-                                content: content
-                            };
-
-                            if (flavor)
-                                messageData.flavor = flavor;
-
+                            let tokenOwners = [];
                             if (action.data.for == 'gm') {
-                                messageData.whisper = ChatMessage.getWhisperRecipients("GM").map(u => u.id);
-                                messageData.speaker = null;
-                                messageData.user = game.user.id;
+                                tokenOwners = ChatMessage.getWhisperRecipients("GM").map(u => u.id);
                             }
                             else if (action.data.for == 'token') {
-                                let tokenOwners = (tkn ? Object.entries(tkn?.actor.ownership).filter(([k, v]) => { return v == CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER }).map(a => { return a[0]; }) : []);
-                                messageData.whisper = Array.from(new Set(ChatMessage.getWhisperRecipients("GM").map(u => u.id).concat(tokenOwners)));
+                                if (tkn?.actor.ownership?.default == CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER) {
+                                    // All players have access to this
+                                    tokenOwners = game.users.map(u => u.id);
+                                } else if (tkn) {
+                                    tokenOwners = Object.entries(tkn?.actor.ownership).filter(([k, v]) => { return k != "default" && v == CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER }).map(([k, v]) => { return k; });
+                                }
+                                tokenOwners = ChatMessage.getWhisperRecipients("GM").map(u => u.id).concat(tokenOwners).filter((value, index, array) => array.indexOf(value) === index);
                             }
 
-                            if (action.data.language != '' && game.modules.get("polyglot")?.active)
-                                mergeObject(messageData, { flags: { 'monks-active-tiles': { language: action.data.language } }, lang: action.data.language });
+                            if (action.data.chatbubble !== "false") {
+                                if (tkn instanceof Token) {
+                                    if (tokenOwners.includes(game.user.id) && canvas.scene.id == tkn.document.parent.id) {
+                                        canvas.hud.bubbles.say(tkn, content);
+                                    }
+                                    MonksActiveTiles.emit("bubble", { content, tokenId: tkn.id, for: tokenOwners });
+                                }
+                            }
+                            if (action.data.chatbubble !== "bubble") {
+                                let messageData = {
+                                    user: userid,
+                                    speaker: speaker,
+                                    type: (action.data.incharacter ? CONST.CHAT_MESSAGE_TYPES.IC : CONST.CHAT_MESSAGE_TYPES.OOC),
+                                    content: content
+                                };
 
-                            await ChatMessage.create(messageData, { chatBubble: action.data.chatbubble == "true" });
+                                if (flavor)
+                                    messageData.flavor = flavor;
+
+                                if (action.data.for == 'gm') {
+                                    messageData.whisper = tokenOwners;
+                                    messageData.speaker = null;
+                                    messageData.user = game.user.id;
+                                }
+                                else if (action.data.for == 'token') {
+                                    messageData.whisper = tokenOwners;
+                                }
+
+                                if (action.data.language != '' && game.modules.get("polyglot")?.active)
+                                    mergeObject(messageData, { flags: { 'monks-active-tiles': { language: action.data.language } }, lang: action.data.language });
+
+                                await ChatMessage.create(messageData, { chatBubble: false });
+                            }
                         }
                     }
                 },
                 content: async (trigger, action) => {
                     let syslang = CONFIG[game.system.id.toUpperCase()]?.languages || {};
                     let msg = (action.data.text.length <= 15 ? action.data.text : action.data.text.substr(0, 15) + "...");
-                    return `<span class="action-style">${i18n(trigger.name)}</span> for <span class="value-style">&lt;${i18n(trigger.values.for[action.data?.for])}&gt;</span>${(action.data.language != '' && game.modules.get("polyglot")?.active ? ` in <span class="details-style">"${i18n(syslang[action.data.language])}"</span>` : '')}${(action.data?.incharacter ? ' <i class="fas fa-user" title="In Character"></i>' : '')}${(action.data?.chatbubble ? ' <i class="fas fa-comment" title="Chat Bubble"></i>' : '')} "${msg}"`;
+                    return `<span class="action-style">${i18n(trigger.name)}</span> for <span class="value-style">&lt;${i18n(trigger.values.for[action.data?.for])}&gt;</span>${(action.data.language != '' && game.modules.get("polyglot")?.active ? ` in <span class="details-style">"${i18n(syslang[action.data.language])}"</span>` : '')}${(action.data?.incharacter ? ' <i class="fas fa-user" title="In Character"></i>' : '')}${(action.data?.chatbubble != "false" ? ' <i class="fas fa-comment" title="Chat Bubble"></i>' : '')} "${msg}"`;
                 }
             },
             'runmacro': {
@@ -2553,7 +2601,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showPrevious: true },
+                        options: { show: ['previous'] },
                         restrict: (entity) => { return (entity instanceof Macro); },
                         defaultType: "macro"
                     },
@@ -2618,7 +2666,7 @@ export class ActionManager {
 
                         entityName = (pack ? '<i class="fas fa-atlas"></i> ' + pack.metadata.label + ":" : "") + entityName;
                     } else {
-                        entityName = await MonksActiveTiles.entityName(action.data?.entity, 'tiles');
+                        entityName = await MonksActiveTiles.entityName(action.data?.entity, 'macros');
                     }
 
                     return `<span class="action-style">${i18n(trigger.name)}</span>, <span class="entity-style">${entityName}</span>${(action.data.runasgm != undefined && action.data.runasgm != 'unknown' ? ' as <span class="value-style">&lt;' + i18n(trigger.values.runas[action.data.runasgm]) + '&gt;</span>' : '')}`;
@@ -2734,7 +2782,7 @@ export class ActionManager {
                                         }
                                     }
                                 }
-                            } catch {}
+                            } catch { }
                         }
 
                         if (result.text == undefined) result.text = [];
@@ -2802,8 +2850,9 @@ export class ActionManager {
                                 let description = await TextEditor.enrichHTML(rolltable.description, { entities: true, async: true })
                                 messageData.content = await renderTemplate(CONFIG.RollTable.resultTemplate, {
                                     description: description,
-                                    results: tblResults.results.map(r => {
-                                        r.text = r.getChatText();
+                                    results: duplicate(tblResults.results).map(r => {
+                                        let original = tblResults.results.find(res => res.id == r._id);
+                                        r.text = original?.getChatText() || r.text;
                                         return r;
                                     }),
                                     rollHTML: rolltable.displayRoll ? await tblResults.roll.render() : null,
@@ -2900,7 +2949,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Token); }
                     },
                     {
@@ -2911,7 +2960,7 @@ export class ActionManager {
                             let conditions = CONFIG.statusEffects;
                             if (game.system.id == 'pf2e') {
                                 conditions = game.pf2e.ConditionManager.conditions;
-                                conditions = [...conditions].map(e => { return { id: e[0], label: e[1].name }; });
+                                conditions = [...conditions].map(e => { return { id: e[0], label: e[1].name }; }).filter((value, index, array) => array.findIndex(a => a.label === value.label) === index);
                             }
                             for (let effect of conditions.sort((a, b) => { return String(a.label).localeCompare(b.label) })) { //(i18n(a.label) > i18n(b.label) ? 1 : (i18n(a.label) < i18n(b.label) ? -1 : 0))
                                 result[effect.id] = i18n(effect.label);
@@ -3056,7 +3105,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showTile: true, showTagger: true },
+                        options: { show: ['tile', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Tile); },
                         defaultType: 'tiles'
                     },
@@ -3111,7 +3160,7 @@ export class ActionManager {
                                     MonksActiveTiles.emit('playvideo', { tileid: entity.uuid, play: play });
                             }
                             else {
-                                entity.update({ "video.autoplay": false }, { diff: false, playVideo: play == 'start' });
+                                entity.update({ "video.autoplay": false }, { diff: false, playVideo: play == 'start', offset: entity.object?.sourceElement.ended ? 0 : null });
                                 if (play == 'stop') {
                                     MonksActiveTiles.emit('playvideo', { tileid: entity.uuid, play: play });
                                     const el = entity.object.sourceElement;
@@ -3139,7 +3188,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showPrevious: true, showPlayers: true },
+                        options: { show: ['players', 'previous'] },
                         restrict: (entity) => { return (entity instanceof JournalEntry); },
                         required: true,
                         defaultType: 'journal',
@@ -3154,8 +3203,9 @@ export class ActionManager {
                                     let pageCtrl = action.ctrls.find(c => c.id == "page");
                                     let list = await pageCtrl.list(app, action, { entity: entityVal });
                                     $('select[name="data.page"]', app.element).append(app.fillList(list, data.page));
-                                } catch {}
+                                } catch { }
                             }
+                            app.checkConditional();
                         }
                     },
                     {
@@ -3182,13 +3232,41 @@ export class ActionManager {
                             }
                         },
                         type: "list",
-                        required: false
+                        required: false,
+                        conditional: async (app) => {
+                            let value = JSON.parse($('input[name="data.entity"]', app.element).val() || "{}");
+                            if (!!value?.id) {
+                                try {
+                                    // make sure it's not an enhanced journal, those shouldn't reveal their pages
+                                    if (/^JournalEntry.[a-zA-Z0-9]{16}$/.test(value.id) || /^Compendium.+[a-zA-Z0-9]{16}$/.test(value.id)) {
+                                        let entity = await fromUuid(value.id);
+                                        if (entity)
+                                            return !(entity && entity.pages.size == 1 && !!getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type"));
+                                    }
+                                } catch { }
+                            }
+                            return true;
+                        }
                     },
                     {
                         id: "subsection",
                         name: "Subsection",
                         type: "text",
-                        required: false
+                        required: false,
+                        conditional: async (app) => {
+                            let value = JSON.parse($('input[name="data.entity"]', app.element).val() || "{}");
+                            if (!!value?.id) {
+                                try {
+                                    // make sure it's not an enhanced journal, those shouldn't reveal their pages
+                                    if (/^JournalEntry.[a-zA-Z0-9]{16}$/.test(value.id) || /^Compendium.+[a-zA-Z0-9]{16}$/.test(value.id)) {
+                                        let entity = await fromUuid(value.id);
+                                        if (entity)
+                                            return !(entity && entity.pages.size == 1 && !!getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type"));
+                                    }
+                                } catch { }
+                            }
+                            return true;
+                        }
                     },
                     {
                         id: "showto",
@@ -3267,8 +3345,9 @@ export class ActionManager {
                                 }
                             }
 
-                            if (action.data?.enhanced !== true || !game.modules.get("monks-enhanced-journal")?.active || !game.MonksEnhancedJournal.openJournalEntry(entity, { tempOwnership: !action.data.permission }))
-                                entity.sheet.render(true, { force: !action.data.permission, pageId: action.data.page, anchor: action.data.subsection?.slugify() });
+                            let anchor = action.data.subsection?.slugify().replace(/["']/g, "").substring(0, 64);
+                            if (action.data?.enhanced !== true || !game.modules.get("monks-enhanced-journal")?.active || !game.MonksEnhancedJournal.openJournalEntry(entity, { tempOwnership: !action.data.permission, pageId: action.data.page, anchor: anchor }))
+                                entity.sheet.render(true, { force: !action.data.permission, pageId: action.data.page, anchor: anchor });
                         }
                     }
 
@@ -3288,7 +3367,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showPrevious: true, showTagger: true, showWithin: true, showPlayers: true },
+                        options: { show: ['within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Actor || entity instanceof Token); },
                         required: true,
                         defaultType: 'actors',
@@ -3354,7 +3433,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Token); }
                     },
                     {
@@ -3362,7 +3441,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-item",
                         type: "select",
                         subtype: "entity",
-                        options: { showPrevious: true },
+                        options: { show: ['previous'] },
                         restrict: (entity) => { return (entity instanceof Item); },
                         required: true,
                         placeholder: 'Please select an item',
@@ -3472,7 +3551,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Token); }
                     },
                     {
@@ -3543,7 +3622,7 @@ export class ActionManager {
                         type: "select",
                         required: true,
                         subtype: "entity",
-                        options: { showPrevious: true, showTagger: true },
+                        options: { show: ['previous', 'tagger'] },
                         restrict: (entity) => {
                             return (
                                 entity instanceof Token ||
@@ -3651,7 +3730,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Token); }
                     },
                     {
@@ -3787,7 +3866,7 @@ export class ActionManager {
                         type: "select",
                         subtype: "entity",
                         required: true,
-                        options: { showTile: true, showTagger: true, showPrevious: true },
+                        options: { show: ['tile', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Tile); },
                         defaultType: 'tiles',
                         placeholder: "Please select a Tile"
@@ -3797,7 +3876,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true },
+                        options: { show: ['token', 'within', 'players', 'previous'] },
                         restrict: (entity) => { return (entity instanceof Token); }
                     },
                     {
@@ -3837,7 +3916,8 @@ export class ActionManager {
                         if (getProperty(entity, "flags.monks-active-tiles.active") === false && action.data?.allowdisabled !== true)
                             continue;
 
-                        let landing = action.data?.landing;
+                        let landing = await getValue(action.data?.landing, args, entity);
+                        /*
                         if (landing && landing.includes("{{")) {
                             let context = {
                                 actor: tokens[0]?.actor?.toObject(false),
@@ -3854,6 +3934,7 @@ export class ActionManager {
                             const compiled = Handlebars.compile(landing);
                             landing = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
                         }
+                        */
 
                         let newargs = Object.assign({}, args, {
                             tokens: tokens,
@@ -3973,7 +4054,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Token); },
                         defaultType: 'tokens'
                     },
@@ -4050,7 +4131,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Token); }
                     },
                     {
@@ -4078,8 +4159,9 @@ export class ActionManager {
                             }
 
                             let update = {};
-                            let val = action.data.value;
+                            let val = await getValue(action.data.value, args, entity, { prop, inline: false });
 
+                            /*
                             let context = {
                                 actor: tokens[0]?.actor?.toObject(false),
                                 token: tokens[0]?.toObject(false),
@@ -4096,11 +4178,6 @@ export class ActionManager {
                                 const compiled = Handlebars.compile(val);
                                 val = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
                             }
-
-                            /*
-                           const rgx = /\[\[(\/[a-zA-Z]+\s)?(.*?)([\]]{2,3})(?:{([^}]+)})?/gi;
-                           val = await MonksActiveTiles.inlineRoll(val, rgx, action.data.chatMessage, action.data.rollmode, entity);
-                           */
 
                             if (typeof val == "string" && (val.startsWith('+ ') || val.startsWith('- '))) {
                                 try {
@@ -4120,6 +4197,7 @@ export class ActionManager {
                             }
 
                             val = parseFloat(val);
+                            */
                             if (isNaN(val))
                                 val = 0;
 
@@ -4152,7 +4230,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showTile: true, showTagger: true },
+                        options: { show: ['tile', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Tile); },
                         defaultType: 'tiles'
                     },
@@ -4161,7 +4239,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-token",
                         type: "select",
                         subtype: "entity",
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Token); },
                         defvalue: null,
                         placeholder: "Please select a token"
@@ -4176,7 +4254,7 @@ export class ActionManager {
                         for (let entity of entities) {
                             if (entity instanceof TileDocument) {
                                 if (tokens && tokens.length > 0) {
-                                    for(let token of tokens)
+                                    for (let token of tokens)
                                         await entity.resetHistory(token.id);
                                 } else if (!action.data?.token) {
                                     await entity.resetHistory();
@@ -4201,7 +4279,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showTile: true },
+                        options: { show: ['tile'] },
                         restrict: (entity) => { return (entity instanceof Tile); },
                         defaultType: 'tiles'
                     },
@@ -4364,7 +4442,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showTile: true, showTagger: true },
+                        options: { show: ['tile', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Tile); },
                         defaultType: 'tiles'
                     },
@@ -4496,7 +4574,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showTile: true, showTagger: true },
+                        options: { show: ['tile', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Tile); },
                         defaultType: 'tiles'
                     },
@@ -4567,8 +4645,12 @@ export class ActionManager {
 
                             let getPosition = async function () {
                                 let fileindex = entity.flags["monks-active-tiles"].fileindex || 0;
-                                let position = action.data?.select ?? "next";
+                                let position = await getValue(action.data?.select ?? "next", args, entity, {
+                                    fileindex: fileindex,
+                                    files: entity._images
+                                });
 
+                                /*
                                 if (position.includes("{{")) {
                                     let context = {
                                         actor: tokens[0]?.actor?.toObject(false),
@@ -4588,6 +4670,7 @@ export class ActionManager {
                                     const compiled = Handlebars.compile(position);
                                     position = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
                                 }
+                                */
 
                                 if (position == "first")
                                     position = 1;
@@ -4760,7 +4843,7 @@ export class ActionManager {
                         type: "select",
                         subtype: "entity",
                         required: true,
-                        options: { showTile: true, showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['tile', 'token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => {
                             return (
                                 entity instanceof Token ||
@@ -4847,7 +4930,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => {
                             return entity instanceof Token;
                         },
@@ -4948,11 +5031,16 @@ export class ActionManager {
                     },
                 ],
                 values: {
-                    'volumetype': {
-                        "globalPlaylistVolume": 'MonksActiveTiles.volumetype.playlists',
-                        "globalAmbientVolume": 'MonksActiveTiles.volumetype.ambient',
-                        "globalInterfaceVolume": 'MonksActiveTiles.volumetype.interface',
-                    }
+                    'volumetype': () => {
+                        let result = {
+                            "globalPlaylistVolume": 'MonksActiveTiles.volumetype.playlists',
+                            "globalAmbientVolume": 'MonksActiveTiles.volumetype.ambient',
+                            "globalInterfaceVolume": 'MonksActiveTiles.volumetype.interface',
+                        };
+                        if (game.modules.get("monks-sound-enhancements")?.active)
+                            result.globalSoundEffectVolume = 'MonksActiveTiles.volumetype.soundeffect';
+                        return result;
+                    }                        
                 },
                 fn: async (args = {}) => {
                     let { action } = args;
@@ -4983,20 +5071,51 @@ export class ActionManager {
                         type: "text",
                     },
                     {
-                        id: "content",
-                        name: "MonksActiveTiles.ctrl.content",
-                        type: "text",
-                        subtype: "multiline",
-                        required: true
-                    },
-                    {
                         id: "for",
                         name: "MonksActiveTiles.ctrl.for",
                         list: "for",
                         type: "list",
                         defvalue: "token"
                     },
+                    {
+                        id: "closeNo",
+                        name: "MonksActiveTiles.ctrl.close-means-no",
+                        type: "checkbox",
+                        defvalue: true,
+                        conditional: (app) => {
+                            return $('select[name="data.dialogtype"]', app.element).val() == 'confirm';
+                        },
+                    },
+                    { type: "line", help: "Provide either text or an html file"},
+                    {
+                        id: "content",
+                        name: "MonksActiveTiles.ctrl.content",
+                        type: "text",
+                        subtype: "multiline",
+                    },
+                    {
+                        id: "file",
+                        name: "MonksActiveTiles.ctrl.htmlfile",
+                        type: "filepicker",
+                        subtype: "html"
+                    },
                     { type: "line" },
+                    {
+                        id: "options",
+                        name: "MonksActiveTiles.ctrl.options",
+                        type: "text",
+                        conditional: (app) => {
+                            return $('select[name="data.dialogtype"]', app.element).val() == 'custom';
+                        },
+                    },
+                    {
+                        id: "buttons",
+                        name: "MonksActiveTiles.ctrl.buttons",
+                        type: "buttonlist",
+                        conditional: (app) => {
+                            return $('select[name="data.dialogtype"]', app.element).val() == 'custom';
+                        },
+                    },
                     {
                         id: "yes",
                         name: "MonksActiveTiles.ctrl.onyes",
@@ -5019,7 +5138,8 @@ export class ActionManager {
                 values: {
                     'dialogtype': {
                         "confirm": 'MonksActiveTiles.dialogtype.confirm',
-                        "alert": 'MonksActiveTiles.dialogtype.alert'
+                        "alert": 'MonksActiveTiles.dialogtype.alert',
+                        "custom": 'MonksActiveTiles.dialogtype.custom'
                     },
                     'for': {
                         'gm': "MonksActiveTiles.for.gm",
@@ -5027,13 +5147,40 @@ export class ActionManager {
                     }
                 },
                 fn: async (args = {}) => {
-                    let { action, tile, _id, value, tokens, userid } = args;
+                    let { action, tile, _id, value, tokens, userid, change, method } = args;
 
                     let title = action.data.title;
                     let content = action.data.content;
 
+                    if (action.data.file) {
+                        let context = {
+                            actor: tokens[0]?.actor?.toObject(false),
+                            token: tokens[0]?.toObject(false),
+                            tile: tile,
+                            variable: getProperty(tile, "flags.monks-active-tiles.variables") || {},
+                            user: game.users.get(userid),
+                            value: value,
+                            scene: canvas.scene,
+                            method: method,
+                            change: change
+                        };
+                        content = await renderTemplate(action.data.file, context);
+                    }
+
                     if ((action.data.for == 'gm' && game.user.isGM) || (action.data.for != 'gm' && userid == game.user.id))
-                        MonksActiveTiles._showDialog(tile, tokens[0], value, action.data.dialogtype, title, content, action.data?.options, action.data.yes, action.data.no).then((results) => { tile.resumeActions(_id, results); });
+                        MonksActiveTiles._showDialog(
+                            tile,
+                            tokens[0],
+                            value,
+                            action.data.dialogtype,
+                            title,
+                            content,
+                            action.data?.options,
+                            action.data.yes,
+                            action.data.no,
+                            action.data.closeNo ?? true,
+                            action.data.buttons
+                        ).then((results) => { tile.resumeActions(_id, results); });
                     else {
                         MonksActiveTiles.emit("showdialog", {
                             _id,
@@ -5046,14 +5193,16 @@ export class ActionManager {
                             content,
                             options: action.data?.options,
                             yes: action.data.yes,
-                            no: action.data.no
+                            no: action.data.no,
+                            closeNo: action.data.closeNo ?? true,
+                            buttons: action.data.buttons
                         });
                     }
 
                     return { pause: true };
                 },
                 content: async (trigger, action) => {
-                    let msg = encodeURI(action.data.content.length <= 15 ? action.data.content : action.data.content.substr(0, 15) + "...");
+                    let msg = encodeURI(action.data.content.length <= 15 ? action.data.content : action.data.content.substr(0, 15) + "...") || action.data.file;
                     return `<span class="action-style">${i18n(trigger.name)}</span>, for <span class="value-style">&lt;${i18n(trigger.values.for[action.data?.for])}&gt;</span> <span class="detail-style">"${i18n(trigger.values.dialogtype[action.data.dialogtype])}"</span> "${msg}"`;
                 }
             },
@@ -5072,7 +5221,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true }
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] }
                     },
                     {
                         id: "for",
@@ -5134,6 +5283,9 @@ export class ActionManager {
 
                         let token = entity?.object;
 
+                        let content = await getValue(action.data.text, args, entity, { actor: token?.actor, token, scene });
+
+                        /*
                         let context = {
                             actor: token?.actor,
                             token: token,
@@ -5145,12 +5297,12 @@ export class ActionManager {
                             method: method,
                             change: change
                         };
-                        let content = action.data.text;
 
                         if (content.includes("{{")) {
                             const compiled = Handlebars.compile(content);
                             content = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
                         }
+                        */
 
                         let showfor = action.data.for;
 
@@ -5237,7 +5389,7 @@ export class ActionManager {
                 }
             },
             'append': {
-                name: "Write to Journal",
+                name: "MonksActiveTiles.action.writetojournal",
                 requiresGM: true,
                 ctrls: [
                     {
@@ -5245,7 +5397,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showPrevious: true, showPlayers: true },
+                        options: { show: ['players', 'previous'] },
                         restrict: (entity) => { return (entity instanceof JournalEntry); },
                         required: true,
                         defaultType: 'journal',
@@ -5336,7 +5488,8 @@ export class ActionManager {
 
                     let entities = await MonksActiveTiles.getEntities(args, 'journal');
                     for (let entity of entities) {
-                        if (entity instanceof JournalEntry && entity.pages.size > 0) {
+                        if (entity instanceof JournalEntry) {
+                            /*
                             let context = {
                                 actor: tokens[0]?.actor?.toObject(false),
                                 token: tokens[0]?.toObject(false),
@@ -5350,15 +5503,18 @@ export class ActionManager {
                                 change: change,
                                 timestamp: new Date().toLocaleString()
                             };
+                            */
 
                             let page = (action.data.page ? entity.pages.get(action.data.page) : null);
                             if (!page) {
                                 if (action.data.create) {
-                                    let name = action.data.createname || "";
+                                    let name = await getValue(action.data.createname || "", args, entity, { timestamp: new Date().toLocaleString() });
+                                    /*
                                     if (name.includes("{{")) {
                                         const compiled = Handlebars.compile(name);
                                         name = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
                                     }
+                                    */
                                     page = await JournalEntryPage.create({ type: "text", name: name }, { parent: entity });
                                 } else if (entity.pages.contents.length)
                                     page = entity.pages.contents[0];
@@ -5367,11 +5523,13 @@ export class ActionManager {
                             if (!page)
                                 continue;
 
-                            let text = action.data.text;
+                            let text = await getValue(action.data.text, args, entity, { timestamp: new Date().toLocaleString() });
+                            /*
                             if (text.includes("{{")) {
                                 const compiled = Handlebars.compile(text);
                                 text = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
                             }
+                            */
 
                             let content = page.text.content || "";
                             if (action.data.append == "append")
@@ -5391,7 +5549,7 @@ export class ActionManager {
                 }
             },
             'setvalue': {
-                name: "Set Active Tiles Variable",
+                name: "MonksActiveTiles.action.setvariable",
                 requiresGM: true,
                 ctrls: [
                     {
@@ -5399,7 +5557,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showTile: true, showPrevious: true, showTagger: true },
+                        options: { show: ['tile', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Tile); },
                         defaultType: 'tiles',
                     },
@@ -5421,6 +5579,7 @@ export class ActionManager {
                     let entities = await MonksActiveTiles.getEntities(args, 'tiles');
                     for (let entity of entities) {
                         if (entity instanceof TileDocument) {
+                            /*
                             let context = {
                                 actor: tokens[0]?.actor,
                                 token: tokens[0],
@@ -5434,27 +5593,79 @@ export class ActionManager {
                                 change: change,
                                 timestamp: new Date().toLocaleString()
                             };
+                            */
 
-                            let name = action.data.name;
+                            let name = await getValue(action.data.name, args, entity, { timestamp: new Date().toLocaleString() });
 
+                            /*
                             if (name.includes("{{")) {
                                 const compiled = Handlebars.compile(name);
                                 name = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
                             }
+                            */
 
-                            let val = action.data.value;
+                            let variables = getProperty(tile, "flags.monks-active-tiles.variables") || {};
+                            let val = await getValue(action.data.value, args, entity, { timestamp: new Date().toLocaleString(), prop: variables[name] });
+
+                            /*
                             if (val.includes("{{")) {
                                 const compiled = Handlebars.compile(val);
                                 val = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
                             }
+                            if (val.startsWith("+") || val.startsWith("-")) {
+                                val = `${context.variable[name]} ${val}`;
+                            }
+
                             try {
                                 val = eval(val);
                             } catch {
                             }
+                            */
 
                             await entity.setFlag("monks-active-tiles", `variables.${name}`, val);
                         }
                     }
+                },
+                content: async (trigger, action) => {
+                    let entityName = await MonksActiveTiles.entityName(action.data?.entity, "tiles");
+                    return `<span class="action-style">${i18n(trigger.name)}</span>, <span class="entity-style">${entityName}</span> <span class="detail-style">"${action.data?.name}"</span> to <span class="value-style">&lt;${action.data?.value}&gt;</span>`;
+                }
+            },
+            'setcurrent': {
+                name: "MonksActiveTiles.action.setcurrent",
+                requiresGM: true,
+                ctrls: [
+                    {
+                        id: "entity",
+                        name: "MonksActiveTiles.ctrl.select-entity",
+                        type: "select",
+                        subtype: "entity",
+                        options: { show: ['players', 'tagger', 'within'] },
+                        restrict: (entity) => {
+                            return (
+                                entity instanceof Token ||
+                                entity instanceof Tile ||
+                                entity instanceof Wall ||
+                                entity instanceof Drawing ||
+                                entity instanceof Note ||
+                                entity instanceof AmbientLight ||
+                                entity instanceof AmbientSound ||
+                                entity instanceof MeasuredTemplate
+                            );
+                        },
+                    },
+                ],
+                fn: async (args = {}) => {
+                    const { tile, tokens, action, userid, value, method, change } = args;
+
+                    let result = {};
+
+                    let entities = await MonksActiveTiles.getEntities(args);
+                    for (let entity of entities) {
+                        MonksActiveTiles.addToResult(entity, result);
+                    }
+
+                    return result;
                 },
                 content: async (trigger, action) => {
                     let entityName = await MonksActiveTiles.entityName(action.data?.entity, "tiles");
@@ -5480,7 +5691,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Token); }
                     },
                     {
@@ -5622,6 +5833,80 @@ export class ActionManager {
                     return `<span class="filter-style">Filter</span> <span class="entity-style">${entityName}</span> ${action.data.measure != 'lte' ? 'by a distance' : 'that are'} <span class="entity-style">${trigger.values.measure[action.data.measure || 'eq']}</span>${(action.data.measure != 'lt' ? ` <span class="details-style">"${action.data?.distance.value || action.data?.distance || 0}"</span> ${unit} of this Tile` : '')} ${(action.data?.continue != 'always' ? ', Continue if ' + (action.data?.continue == 'within' ? 'Any Within Distance' : 'All Within Distance') : '')}`;
                 }
             },
+            'visibility': {
+                name: "MonksActiveTiles.filter.visibility",
+                ctrls: [
+                    {
+                        id: "entity",
+                        name: "MonksActiveTiles.ctrl.select-entity",
+                        type: "select",
+                        subtype: "entity",
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
+                        restrict: (entity) => { return (entity instanceof Token); }
+                    },
+                    {
+                        id: "target",
+                        name: "MonksActiveTiles.ctrl.select-target",
+                        type: "select",
+                        subtype: "entity",
+                        options: { show: ['tile', 'tagger'] },
+                        restrict: (entity) => {
+                            return (
+                                entity instanceof Token ||
+                                entity instanceof Tile ||
+                                entity instanceof Drawing ||
+                                entity instanceof Wall || 
+                                entity instanceof AmbientLight);
+                        },
+                        defaultType: "tiles"
+                    },
+                    {
+                        id: "continue",
+                        name: "Continue if",
+                        list: "continue",
+                        type: "list",
+                        defvalue: 'within'
+                    }
+                ],
+                values: {
+                    'continue': {
+                        "always": "Always",
+                        "within": "Any see target",
+                        "all": "All see target"
+                    }
+                },
+                group: "filters",
+                fn: async (args = {}) => {
+                    const { tile, value, action } = args;
+
+                    let targets = await MonksActiveTiles.getEntities(args, "tiles", action.data.target);
+                    if (!targets.length) return;
+
+                    let target = targets[0];
+                    let midTarget = { x: target.x + (Math.abs(target.width) / 2), y: target.y + (Math.abs(target.height) / 2) };
+
+                    let entities = await MonksActiveTiles.getEntities(args);
+
+                    let tokens = entities.filter(t => {
+                        if (!(t instanceof TokenDocument))
+                            return false;
+
+                        const tolerance = Math.min(t.w, t.h) / 4;
+                        return canvas.effects.visibility.testVisibility({ x: midTarget.x, y: midTarget.y }, { tolerance, object: t });
+                    });
+
+                    let cont = (action.data?.continue == 'always'
+                        || (action.data?.continue == 'within' && tokens.length > 0)
+                        || (action.data?.continue == 'all' && tokens.length == value["tokens"].length && tokens.length > 0));
+
+                    return { continue: cont, tokens: tokens };
+                },
+                content: async (trigger, action) => {
+                    let entityName = await MonksActiveTiles.entityName(action.data?.entity);
+                    let targetName = await MonksActiveTiles.entityName(action.data?.target);
+                    return `<span class="filter-style">Filter</span> <span class="entity-style">${entityName}</span> that can see ${targetName} ${(action.data?.continue != 'always' ? ', Continue if ' + (action.data?.continue == 'within' ? 'Any Within Distance' : 'All Within Distance') : '')}`;
+                }
+            },
             'exists': {
                 name: "MonksActiveTiles.filter.exists",
                 ctrls: [
@@ -5633,7 +5918,7 @@ export class ActionManager {
                         onChange: (app) => {
                             app.checkConditional();
                         },
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Token); }
                     },
                     {
@@ -5682,6 +5967,7 @@ export class ActionManager {
                     let { tokens, tile, userid, value, method, action, change } = args;
                     let entities = await MonksActiveTiles.getEntities(args, action.data?.collection || "tokens");
 
+                    /*
                     let context = {
                         actor: tokens[0]?.actor?.toObject(false),
                         token: tokens[0]?.toObject(false),
@@ -5693,18 +5979,20 @@ export class ActionManager {
                         method: method,
                         change: change
                     };
+                    */
 
-                    let goto = action.data?.none || "";
+                    let goto = await getValue(action.data?.none || "", args);
 
+                    /*
                     if (goto.includes("{{")) {
                         const compiled = Handlebars.compile(goto);
                         goto = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
                     }
+                    */
 
-                    let count = action.data?.count ?? "> 0";
-                    if (count.startsWith("="))
-                        count = "=" + count;
+                    let cando = await getValue(action.data?.count ?? "> 0", args, null, { prop: entities.length, operation: 'compare' });
 
+                    /*
                     if (count.includes("{{")) {
                         const compiled = Handlebars.compile(count);
                         count = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
@@ -5715,8 +6003,9 @@ export class ActionManager {
                         cando = !!eval(entities.length + " " + count);
                     } catch {
                     }
+                    */
 
-                    let result = { continue: (cando || goto != "") };
+                    let result = { continue: (!!cando || goto != "") };
                     result[action.data?.collection || "tokens"] = entities;
                     if (goto != "" && !cando)
                         result.goto = goto;
@@ -5756,8 +6045,9 @@ export class ActionManager {
                 fn: async (args = {}) => {
                     let { tokens, tile, userid, value, method, action, change } = args;
 
-                    let goto = action.data?.none || "";
+                    let goto = await getValue(action.data?.none || "", args);
 
+                    /*
                     if (goto.includes("{{")) {
                         let context = {
                             actor: tokens[0]?.actor?.toObject(false),
@@ -5774,7 +6064,11 @@ export class ActionManager {
                         const compiled = Handlebars.compile(goto);
                         goto = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
                     }
+                    */
 
+                    let cando = await getValue(action.data?.count ?? "> 1", args, null, { prop: tile.countTriggered(action.data.unique ? "unique" : null), operation: 'compare' });
+
+                    /*
                     let count = action.data?.count ?? "> 1";
                     if (count.startsWith("="))
                         count = "=" + count;
@@ -5784,8 +6078,9 @@ export class ActionManager {
                         cando = !!eval(tile.countTriggered(action.data.unique ? "unique" : null) + " " + count);
                     } catch {
                     }
+                    */
 
-                    let result = { continue: (cando || goto != "") };
+                    let result = { continue: (!!cando || goto != "") };
                     if (goto != "" && !cando)
                         result.goto = goto;
 
@@ -5805,7 +6100,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Token); }
                     },
                     {
@@ -5820,18 +6115,21 @@ export class ActionManager {
                 fn: async (args = {}) => {
                     let { action, tile } = args;
 
-                    let count = action.data?.count ?? "= 1";
-                    if (count.startsWith("="))
-                        count = "=" + count;
+                    //let count = action.data?.count ?? "= 1";
+                    //if (count.startsWith("="))
+                    //    count = "=" + count;
 
                     let entities = await MonksActiveTiles.getEntities(args);
-                    entities = entities.filter(e => {
+                    entities = entities.filter(async (entity) => {
+                        let cando = await getValue(action.data?.count ?? "= 1", args, entity, { prop: tile.countTriggered(entity.id), operation: 'compare' });
+
+                        /*
                         let cando = false;
                         try {
                             cando = !!eval(tile.countTriggered(e.id) + " " + count);
                         } catch {
-                        }
-                        return cando
+                        }*/
+                        return !!cando;
                     })
 
                     return { tokens: entities };
@@ -5854,7 +6152,7 @@ export class ActionManager {
                         onChange: (app) => {
                             app.checkConditional();
                         },
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Token); }
                     },
                     {
@@ -5937,7 +6235,7 @@ export class ActionManager {
                         onChange: (app) => {
                             app.checkConditional();
                         },
-                        options: { showToken: true, showTile: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['tile', 'token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => {
                             return (entity instanceof Token ||
                                 entity instanceof Tile ||
@@ -5995,12 +6293,13 @@ export class ActionManager {
 
                     let entities = await MonksActiveTiles.getEntities(args, collection);
 
-                    let filtered = entities.filter(entity => {
-                        let attr = action.data.attribute;
+                    let filtered = entities.filter(async (entity) => {
+                        let attr = await getValue(action.data.attribute, args, entity, { prop: "" });
                         let prop;
                         let base = entity;
                         let found = false;
 
+                        /*
                         let context = {
                             actor: tokens[0]?.actor?.toObject(false),
                             token: tokens[0]?.toObject(false),
@@ -6013,7 +6312,9 @@ export class ActionManager {
                             method: method,
                             change: change
                         };
+                        */
 
+                        /*
                         if (attr.includes("{{")) {
                             const compiled = Handlebars.compile(attr);
                             attr = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
@@ -6023,6 +6324,7 @@ export class ActionManager {
                             } catch {
                             }
                         } else {
+                        */
                             if (!attr.startsWith('flags')) {
                                 if (!hasProperty(base, attr) && entity instanceof TokenDocument) {
                                     if (hasProperty(base, "system." + attr) && entity instanceof TokenDocument) {
@@ -6036,15 +6338,11 @@ export class ActionManager {
                                     if (!hasProperty(base, attr)) {
                                         if (hasProperty(base, "system." + attr))
                                             attr = "system." + attr;
-                                        else {
-                                            warn("Couldn't find attribute", entity, attr);
-                                            return false;
-                                        }
                                     }
                                 }
                             }
 
-                            prop = getProperty(base, attr);
+                            prop = getProperty(base, attr) || prop;
 
                             if (prop && (typeof prop == 'object') && !(prop instanceof Array) && !(prop instanceof Set)) {
                                 if (prop.value == undefined) {
@@ -6055,11 +6353,13 @@ export class ActionManager {
                                 attr = attr + '.value';
                                 prop = prop.value;
                             }
-                        }
+                        //}
 
-                        let val = action.data.value;
+                        let val = await getValue(action.data.value, args, entity, { prop, operation: 'compare' });
 
-                        if (val === 'true') return prop == true;
+                        /*
+                        if (val === 'true')
+                            return prop == true;
                         else if (val === 'false') {
                             return prop == false;
                         } else {
@@ -6070,12 +6370,7 @@ export class ActionManager {
 
                             if (val.startsWith('= ')) val = '=' + val;
 
-                            //let stmt = (typeof prop == 'string' ? `"${prop}"` : prop) + ' ' + val;
                             let stmt = (prop instanceof Array || prop instanceof Set ? `[${Array.from(prop).map(v => typeof v == 'string' ? '"' + v + '"' : v).join(',')}].includes(${val})` : (typeof prop == 'string' ? `"${prop}"` : prop) + ' ' + val);
-                            //if (game.user.isGM && prop instanceof Array)
-                            //    ui.notifications.warn("Active Tiles will discontinue the use of ; to change multiple attributes at the same time.  Please add additional actions to make the changes.");
-
-                            //stmt = stmt.replace("&&", "&& " + prop).replace("||", "|| " + prop);
 
                             try {
                                 return eval(stmt);
@@ -6083,6 +6378,8 @@ export class ActionManager {
                                 return false;
                             }
                         }
+                        */
+                        return val;
                     });
 
                     //addToResult
@@ -6111,7 +6408,7 @@ export class ActionManager {
                         onChange: (app) => {
                             app.checkConditional();
                         },
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => {
                             return (entity instanceof Token);
                         }
@@ -6143,31 +6440,31 @@ export class ActionManager {
                 fn: async (args = {}) => {
                     let { action, value, tokens, tile } = args;
 
-                    let count = action.data?.count ?? "= 1";
-                    if (count.startsWith("="))
-                        count = "=" + count;
+                    //let count = action.data?.count ?? "= 1";
+                    //if (count.startsWith("="))
+                    //    count = "=" + count;
 
                     let entities = await MonksActiveTiles.getEntities(args, action.data?.collection || "tokens");
 
-                    let result = entities.filter(entity => {
+                    let result = entities.filter(async (entity) => {
                         if (!entity.actor)
                             return false;
                         let items = entity.actor.items.filter(i => (i.name || "").trim().toLowerCase() == (action.data.item || "").trim().toLowerCase());
 
+                        let cando = await getValue(action.data?.count ?? "= 1", args, entity, { prop: items.length, operation: 'compare' });
+
+                        /*
                         let cando = false;
                         try {
                             cando = !!eval(items.length + " " + count);
                         } catch {
-                        }
+                        }*/
 
-                        if (cando && ["dnd5e"].includes(game.system.id) && action.data?.quantity && items.length) {
-                            let quantity = action.data?.quantity;
-                            if (quantity.startsWith("="))
-                                quantity = "=" + quantity;
-                            items = items.filter(i => {
+                        if (!!cando && ["dnd5e"].includes(game.system.id) && action.data?.quantity && items.length) {
+                            items = items.filter(async (item) => {
                                 try {
                                     switch (game.system.id) {
-                                        case "dnd5e": return !!eval(i.system.quantity + " " + quantity);
+                                        case "dnd5e": let result = await getValue(action.data?.quantity, args, item, { prop: item.system.quantity, operation: 'compare' }); return result;
                                     }
                                 } catch { }
                                 return false;
@@ -6175,7 +6472,7 @@ export class ActionManager {
                             cando = (items.length > 0);
                         }
 
-                        return cando;
+                        return !!cando;
                     });
 
                     return { tokens: result };
@@ -6197,7 +6494,7 @@ export class ActionManager {
                         onChange: (app) => {
                             app.checkConditional();
                         },
-                        options: { showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => {
                             return (entity instanceof Token);
                         }
@@ -6228,9 +6525,10 @@ export class ActionManager {
                 fn: async (args = {}) => {
                     let { action, value, tokens, tile } = args;
 
-                    let count = action.data?.count ?? "= 1";
-                    if (count.startsWith("="))
+                    /*let count = action.data?.count ?? "= 1";
+                    if (count.startsWith("=") && !count.startsWith('=='))
                         count = "=" + count;
+                        */
 
                     let entities = await MonksActiveTiles.getEntities(args, action.data?.collection || "tokens");
 
@@ -6420,7 +6718,8 @@ export class ActionManager {
                 fn: async (args = {}) => {
                     const { tokens, tile, userid, value, method, action, change } = args;
 
-                    let goto = action.data?.tag;
+                    let goto = await getValue(action.data?.tag, args, null, { prop: "" });
+                    /*
                     if (goto.includes("{{")) {
                         let context = {
                             actor: tokens[0]?.actor?.toObject(false),
@@ -6436,7 +6735,14 @@ export class ActionManager {
 
                         const compiled = Handlebars.compile(goto);
                         goto = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
+
+                        if (goto.startsWith("=")) {
+                            try {
+                                goto = eval(goto.substring(1));
+                            } catch {}
+                        }
                     }
+                    */
 
                     if (action.data?.limit) {
                         let loop = args.value.loop || {};
@@ -6461,7 +6767,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { showTile: true, showPrevious: true, showTagger: true },
+                        options: { show: ['tile', 'previous', 'tagger'] },
                         restrict: (entity) => {
                             return (entity instanceof Tile);
                         },
@@ -6692,7 +6998,7 @@ Hooks.on("setupTileActions", (app) => {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    options: { showTile: true, showToken: true, showWithin: true, showPlayers: true, showPrevious: true, showTagger: true },
+                    options: { show: ['tile', 'token', 'within', 'players', 'previous', 'tagger'] },
                     restrict: (entity) => {
                         return (
                             entity instanceof Token ||
@@ -6731,8 +7037,9 @@ Hooks.on("setupTileActions", (app) => {
 
                 let entities = await MonksActiveTiles.getEntities(args);
                 if (entities.length) {
-                    let tag = action.data.tag;
+                    let tag = await getValue(action.data.tag, args);
 
+                    /*
                     let context = {
                         actor: tokens[0]?.actor?.toObject(false),
                         token: tokens[0]?.toObject(false),
@@ -6749,6 +7056,7 @@ Hooks.on("setupTileActions", (app) => {
                         const compiled = Handlebars.compile(tag);
                         tag = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
                     }
+                    */
 
                     if (action.data.state == 'add')
                         Tagger.addTags(entities, tag);
@@ -6816,12 +7124,12 @@ Hooks.on("setupTileActions", (app) => {
                     name: "Effect",
                     list: () => {
                         let list = [];
-                        let effects = CONFIG.fxmaster.weather;
+                        let effects = CONFIG.fxmaster.particleEffects;
 
                         for (let [key, effect] of Object.entries(effects)) {
                             let group = list.find((k) => k.id == effect.group);
                             if (!group) {
-                                group = { id: effect.group, text: `FXMASTER.WeatherEffectsGroup${effect.group.titleCase()}`, groups: {} };
+                                group = { id: effect.group, text: `FXMASTER.ParticleEffectsGroup${effect.group.titleCase()}`, groups: {} };
                                 list.push(group);
                             }
 
@@ -6909,8 +7217,8 @@ Hooks.on("setupTileActions", (app) => {
             },
             content: async (trigger, action) => {
                 let parts = action.data.effect.split(":");
-                let effect = CONFIG.fxmaster.weather[parts[1]];
-                return `<span class="action-style">Weather Effect</span> <span class="details-style">"${effect.label}"</span>`;
+                let effect = CONFIG.fxmaster.particleEffects[parts[1]];
+                return `<span class="action-style">Weather Effect</span> <span class="details-style">"${i18n(effect.label)}"</span>`;
             }
         });
         app.registerTileAction('fxmaster', 'clear', {
@@ -6974,13 +7282,7 @@ Hooks.on("setupTileActions", (app) => {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    options: {
-                        showToken: true,
-                        showWithin: true,
-                        showPlayers: true,
-                        showPrevious: true,
-                        showTagger: true
-                    },
+                    options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
                     restrict: (entity) => {
                         return (entity instanceof Token);
                     }
@@ -7046,12 +7348,7 @@ Hooks.on("setupTileActions", (app) => {
                     name: "MonksActiveTiles.ctrl.select-entity",
                     type: "select",
                     subtype: "entity",
-                    options: {
-                        showWithin: true,
-                        showPlayers: true,
-                        showPrevious: true,
-                        showTagger: true
-                    },
+                    options: { show: ['within', 'players', 'previous', 'tagger'] },
                     restrict: (entity) => {
                         return (entity instanceof Token);
                     }
@@ -7063,10 +7360,9 @@ Hooks.on("setupTileActions", (app) => {
                     required: true,
                     defvalue: "",
                     list: () => {
-                        return game.dfreds.effects.all.reduce((acc, effect) => {
-                            acc[effect.name] = effect.name;
-                            return acc;
-                        }, {});
+                        return game.dfreds.effects.all.map((effect) => {
+                            return effect.label;
+                        }).sort((a, b) => a.localeCompare(b));
                     },
                 },
                 {

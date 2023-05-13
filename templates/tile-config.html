@@ -147,7 +147,10 @@
         <ol class="item-list" style="position: relative;">
             {{#each actions}}
             <li class="item flexrow " data-id="{{this.id}}" data-collection="actions" draggable="true">
-                <div class="item-name flexrow{{#if this.disabled}} disabled{{/if}}">
+                {{#each this.landings}}
+                <div class="landing-marker" marker="{{this}}">&nbsp;</div>
+                {{/each}}
+                <div class="item-name flexrow{{#if this.disabled}} disabled{{/if}}{{#if this.landingStop}} landing-stop{{/if}}" {{#if this.marker}}marker="{{this.marker}}"{{/if}}>
                     <h4 style="white-space: normal;">{{{this.content}}}</h4>
                 </div>
 

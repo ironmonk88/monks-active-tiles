@@ -1,3 +1,87 @@
+## Version 10.16
+
+Moved the delay action from Action Flow to an actual action instead.
+
+Changed all value fields to have a consistant way of getting the data.  What this means is that each field now should allow you to use handlebars, dice notation, or +/- notation.
+
+If the teleport destination can't be found, then the token won't stop, but will continue on to the original destination.
+
+Fixed teleport using relative positioning if the trigger wasn't on enter or on exit.
+
+Fixed teleport wash for owners of a token that aren't the user triggering the teleport.
+
+Added positioning to creating a token, so it can be created relative to where the character entered the tile.
+
+Fixed issue with creating multiple tokens overwriting the original destination location.
+
+Added the option with the activate action to target lights and sounds within the Tile.  And use the current lights and sounds.
+
+Monks Sound Enhancements has added a global volume slider for sound effects, and Active Tiles will use that value for any sounds being played.  Otherwise it will default back to the ambient slider.
+
+Fixed issues with sound effects not stopping properly for users.
+
+Monks Sound Enhancements also gives the option to show sounds playing on the sounds tab, and Active Tile has the option to hook into that to display sound effects being played.
+
+Fixed issues with whispering a chat message to tokens owners.
+
+Fixed issues with chat bubble, chat message sbeing displayed to everyone.
+
+Fixed issue with chat bubble icon always showing up, for chat messages in the action listing.
+
+Fixed the run macro action to default to macros instead of tiles.
+
+Fixed issues with roll table results when setting the chat text.
+
+Added code to filter out duplicate conditions in case a system adds multiple conditions.
+
+Fixed issue with play animation not playing again in Firefox.
+
+Removed the page and subsetion options when opening journal entries if the journal in question is an Enhanced Journal entry.
+
+Fixed Active Tiles part in opening journals to a specific anchor.  Enhanced Journals will still need to updated for it to work properly.
+
+Added Sound Effects volume to the options when settign the global volume levels, if Monks Sound Enhancements is installed.
+
+Added the option to handle closing the dialog as a 'no' when using the show dialog action.
+
+Added the option to load a file for the dialog content instead of having to type all the html into a text field.  This way you can share Dialog content.
+
+Added the option to send options to the dialog.
+
+Added the feature to add custom buttons for a dialog.  You can also have no buttons, providing your own custom button within the html for submitting the dialog.
+
+Fixed issue where a Journal with no entries wasn't able to have text added to it.
+
+Added a new action to be able to set the current collection.  For the most part, you could do this within the actions themselves, but this action allows you to do it outside of other actions.
+
+Fixed issue with changes to the FX Master module.
+
+Fixed issue with DFreds convenient effects filter list.
+
+Removed familiar, hazard, and loot from type to include when selecting player tokens.
+
+Fixed issue with rotation reversing and rotating the opposite direction.
+
+Fixed issue with inline roll notation within Active Tile actions.
+
+Added code to support adding current players to the value list.
+
+Fixed issue where having multiple GMs was causing actions to happen more than once.
+
+Fixed issue where tiles that were created before Active Tiles was activated were causing errors due to lacking Active Tile flags.
+
+Added the option to only run inline links to Tiles if the tile is active.  Use `@Tile[Scene.F3Ga2w0WNGBxfhij.Tile.Rj6HLBoqiXYSFYHi actve:true]{Display Text}` to make sure the tile is active when triggering.
+
+Added the option to use `_failedlanding` if you have a call to a landing and that landing doesn't exist, then it will jump to _failedlanding.
+
+Fixed issue where inline tile links weren't formatting correctly in items.
+
+Added new macro to support PF2E DCs, thank you Exhile of Broken Sky.
+
+Removed the legacy delay field from the action config.  You should be using the delay action instead.
+
+Added the option to highlight the actions that are within landings.
+
 ## Version 10.15
 
 Fixing issue with players clicking to activate tiles.

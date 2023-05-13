@@ -107,6 +107,9 @@
   "MonksActiveTiles.action.runbatch": "Run All Batch Actions",
   "MonksActiveTiles.action.rotation": "Rotation",
   "MonksActiveTiles.action.showimage": "Show Image",
+  "MonksActiveTiles.action.writetojournal": "Write to Journal",
+  "MonksActiveTiles.action.setvariable": "Set Active Tiles Variable",
+  "MonksActiveTiles.action.setcurrent": "Set Active Tiles Current Collection",
 
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
   "MonksActiveTiles.filter.exists": "Check entity count",
@@ -117,6 +120,7 @@
   "MonksActiveTiles.filter.inventory": "Filter by items in inventory",
   "MonksActiveTiles.filter.condition": "Filter by condition",
   "MonksActiveTiles.filter.random": "Random Number",
+  "MonksActiveTiles.filter.visibility": "Filter by visibility",
 
   "MonksActiveTiles.logic.anchor": "Landing",
   "MonksActiveTiles.logic.goto": "Jump to Landing",
@@ -236,6 +240,11 @@
   "MonksActiveTiles.ctrl.fail": "Goto landing on fail",
   "MonksActiveTiles.ctrl.showdice": "Show Dice",
   "MonksActiveTiles.ctrl.allowdisabled": "Allow Disabled",
+  "MonksActiveTiles.ctrl.showplaylist": "Show on playlist",
+  "MonksActiveTiles.ctrl.htmlfile": "HTML file",
+  "MonksActiveTiles.ctrl.buttons": "Buttons",
+  "MonksActiveTiles.ctrl.select-target": "Select Target",
+  "MonksActiveTiles.ctrl.close-means-no": "Closing dialog triggers no goto",
 
   "MonksActiveTiles.mode.enter": "Enter",
   "MonksActiveTiles.mode.exit": "Exit",
@@ -339,9 +348,11 @@
   "MonksActiveTiles.volumetype.playlists": "Playlists",
   "MonksActiveTiles.volumetype.ambient": "Ambient",
   "MonksActiveTiles.volumetype.interface": "Interface",
+  "MonksActiveTiles.volumetype.soundeffect": "Sound Effect",
 
   "MonksActiveTiles.dialogtype.confirm": "Confirm",
   "MonksActiveTiles.dialogtype.alert": "Alert",
+  "MonksActiveTiles.dialogtype.custom": "Custom",
 
   "MonksActiveTiles.target.appendtarget": "Add Additional Targets",
   "MonksActiveTiles.target.overwritetarget": "Switch Targets",
@@ -423,5 +434,7 @@
   "MonksActiveTiles.allow-door-passthrough.name": "Allow Door Click-through",
   "MonksActiveTiles.allow-door-passthrough.hint": "Allow Tiles underneath a door to still be triggered if the door is clicked on",
   "MonksLittleDetails.drop-item-size.name": "Drop Item Size",
-  "MonksLittleDetails.drop-item-size.hint": "Set the size of the item dropped"
+  "MonksLittleDetails.drop-item-size.hint": "Set the size of the item dropped",
+  "MonksActiveTiles.show-landing.name": "Show Landing Highlight",
+  "MonksActiveTiles.show-landing.hint":  "Highlight the actions that happen within landings"
 }
