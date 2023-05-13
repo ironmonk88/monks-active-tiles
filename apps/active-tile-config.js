@@ -103,9 +103,6 @@ export const WithActiveTileConfig = (TileConfig) => {
             tiledata.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
             tiledata.triggerControlled = { 'all': i18n("MonksActiveTiles.control.all"), 'player': i18n("MonksActiveTiles.control.player"), 'gm': i18n("MonksActiveTiles.control.gm") };
 
-
-            let landings = [];
-            let currentLanding = 0;
             tiledata.actions = await Promise.all((this.object.getFlag('monks-active-tiles', 'actions') || [])
                 .map(async (a) => {
                     if (a) {
@@ -122,6 +119,8 @@ export const WithActiveTileConfig = (TileConfig) => {
 
                         let result = {
                             id: a.id,
+                            action: a.action,
+                            data: a.data,
                             content: content,
                             disabled: trigger?.visible === false
                         }
@@ -131,20 +130,26 @@ export const WithActiveTileConfig = (TileConfig) => {
                         if (a.action == "anchor")
                             result.deactivated = "off";
 
-                        if (a.action == "anchor" && setting("show-landing")) {
-                            if (a.data.stop) {
-                                landings = [];
-                            }
-
-                            landings.push(++currentLanding);
-                            result.marker = currentLanding;
-                            result.landingStop = a.data.stop;
-                        }
-                        result.landings = duplicate(landings);
-
                         return result;
                     }
                 }).filter(a => !!a));
+
+            if (setting("show-landing")) {
+                let landings = [];
+                let currentLanding = 0;
+                for (let a of tiledata.actions) {
+                    if (a.action == "anchor") {
+                        if (a.data.stop) {
+                            landings = [];
+                        }
+
+                        landings.push(++currentLanding);
+                        a.marker = currentLanding;
+                        a.landingStop = a.data.stop;
+                    }
+                    a.landings = duplicate(landings);
+                }
+            }
 
             let disabled = false;
             for (let a of tiledata.actions) {

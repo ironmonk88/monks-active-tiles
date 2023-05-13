@@ -613,6 +613,7 @@ export class ActionManager {
                         //let hasOriginal = !!value.original;
 
                         //set or toggle visible
+                        let result = {};
                         let promises = [];
                         let batch = new BatchManager();
                         for (let entity of entities) {
@@ -688,8 +689,8 @@ export class ActionManager {
                             }
 
                             let newPos = {
-                                x: entDest.x - (location?.id == "origin" ? 0 : ((object.w || object.width) / 2)),
-                                y: entDest.y - (location?.id == "origin" ? 0 : ((object.h || object.height) / 2))
+                                x: entDest.x - (location?.id == "origin" || entity instanceof AmbientSoundDocument ? 0 : ((object.w || object.width) / 2)),
+                                y: entDest.y - (location?.id == "origin" || entity instanceof AmbientSoundDocument ? 0 : ((object.h || object.height) / 2))
                             };
 
                             if (!canvas.dimensions.rect.contains(newPos.x, newPos.y)) {
@@ -731,6 +732,8 @@ export class ActionManager {
 
                                 batch.add("update", entity, { x: newPos.x, y: newPos.y }, { bypass: !action.data.trigger, originaltile: tile.id, animate: true, animation: { duration, time } });
                             }
+
+                            MonksActiveTiles.addToResult(entity, result);
                         }
                         if (promises.length) {
                             //if (action.data.wait)
@@ -744,9 +747,6 @@ export class ActionManager {
                             //    batch.execute();
                         }
 
-                        let result = { entities: entities };
-                        if (entities[0] instanceof TokenDocument)
-                            result.tokens = entities;
                         return result;
                     }
                 },
@@ -858,7 +858,8 @@ export class ActionManager {
                         list: "collection",
                         type: "list",
                         onChange: (app, ctrl, action, data) => {
-                            $('input[name="data.entity"]', app.element).next().html('Current collection of ' + $(ctrl).val());
+                            let displayName = game.i18n.format("MonksActiveTiles.CurrentCollection", { collection: $(ctrl).val() || "tokens" });
+                            $('input[name="data.entity"]', app.element).next().html(displayName);
                         },
                         conditional: (app) => {
                             let entity = JSON.parse($('input[name="data.entity"]', app.element).val() || "{}");
@@ -961,7 +962,8 @@ export class ActionManager {
                         list: "collection",
                         type: "list",
                         onChange: (app, ctrl, action, data) => {
-                            $('input[name="data.entity"]', app.element).next().html('Current collection of ' + $(ctrl).val());
+                            let displayName = game.i18n.format("MonksActiveTiles.CurrentCollection", { collection: $(ctrl).val() || "actors" });
+                            $('input[name="data.entity"]', app.element).next().html(displayName);
                         },
                         conditional: (app) => {
                             let entity = JSON.parse($('input[name="data.entity"]', app.element).val() || "{}");
@@ -1394,7 +1396,26 @@ export class ActionManager {
                         restrict: (entity) => {
                             return (entity instanceof Tile || entity instanceof AmbientLight || entity instanceof AmbientSound || entity.constructor.name == "Terrain");
                         },
+                        onChange: (app) => {
+                            app.checkConditional();
+                        },
                         defaultType: 'tiles'
+                    },
+                    {
+                        id: "collection",
+                        name: "Collection",
+                        list: "collection",
+                        type: "list",
+                        onChange: (app, ctrl, action, data) => {
+                            let entity = JSON.parse($('input[name="data.entity"]', app.element).val() || "{}");
+                            let displayName = entity?.id == 'within' ? game.i18n.format("MonksActiveTiles.WithinTile", { collection: ($(ctrl).val() || "tiles").capitalize() }) : game.i18n.format("MonksActiveTiles.CurrentCollection", { collection: $(ctrl).val() || "tiles" });
+                            $('input[name="data.entity"]', app.element).next().html(displayName);
+                        },
+                        conditional: (app) => {
+                            let entity = JSON.parse($('input[name="data.entity"]', app.element).val() || "{}");
+                            return entity?.id == 'previous' || entity?.id == 'within';
+                        },
+                        defvalue: 'tiles'
                     },
                     {
                         id: "activate",
@@ -1411,11 +1432,16 @@ export class ActionManager {
                         'toggle': "MonksActiveTiles.activate.toggle",
                         'previous': "MonksActiveTiles.activate.previous"
 
+                    },
+                    'collection': {
+                        'lights': "Lights",
+                        'sounds': "Sounds",
+                        'tiles': "Tiles",
                     }
                 },
                 fn: async (args = {}) => {
                     const { action, value } = args;
-                    let entities = await MonksActiveTiles.getEntities(args, 'tiles');
+                    let entities = await MonksActiveTiles.getEntities(args, action.data?.collection || 'tiles');
                     if (entities.length == 0)
                         return;
 
@@ -1432,7 +1458,7 @@ export class ActionManager {
                     }
                 },
                 content: async (trigger, action) => {
-                    let entityName = await MonksActiveTiles.entityName(action.data?.entity, 'tiles');
+                    let entityName = await MonksActiveTiles.entityName(action.data?.entity, action.data?.collection || 'tiles');
                     return `<span class="action-style">${action.data?.activate == "previous" ? "Activate from previous value" : i18n(trigger.values.activate[action.data?.activate]) + (action.data?.activate == "toggle" ? " Activation" : "")}</span> <span class="entity-style">${entityName}</span>`;
                 }
             },
@@ -1458,7 +1484,8 @@ export class ActionManager {
                         list: "collection",
                         type: "list",
                         onChange: (app, ctrl, action, data) => {
-                            $('input[name="data.entity"]', app.element).next().html('Current collection of ' + $(ctrl).val());
+                            let displayName = game.i18n.format("MonksActiveTiles.CurrentCollection", { collection: $(ctrl).val() || "tokens" });
+                            $('input[name="data.entity"]', app.element).next().html(displayName);
                         },
                         conditional: (app) => {
                             let entity = JSON.parse($('input[name="data.entity"]', app.element).val() || "{}");
@@ -4682,10 +4709,10 @@ export class ActionManager {
                                     position = ((fileindex + 1) % entity._images.length) + 1;
                                 else if (position == "previous")
                                     position = (fileindex == 0 ? entity._images.length : fileindex);
-                                else if (position.indexOf("d") != -1) {
+                                else if (typeof position == "string" && position.indexOf("d") != -1) {
                                     let roll = await rollDice(position);
                                     position = roll.value;
-                                } else if (position.indexOf("-") != -1) {
+                                } else if (typeof position == "string" && position.indexOf("-") != -1) {
                                     let parts = position.split("-");
                                     let min = parseInt(parts[0]);
                                     let max = parseInt(parts[1]);
@@ -4869,7 +4896,8 @@ export class ActionManager {
                         list: "collection",
                         type: "list",
                         onChange: (app, ctrl, action, data) => {
-                            $('input[name="data.entity"]', app.element).next().html('Current collection of ' + $(ctrl).val());
+                            let displayName = game.i18n.format("MonksActiveTiles.CurrentCollection", { collection: $(ctrl).val() || "tiles" });
+                            $('input[name="data.entity"]', app.element).next().html(displayName);
                         },
                         conditional: (app) => {
                             let entity = JSON.parse($('input[name="data.entity"]', app.element).val() || "{}");
@@ -5020,7 +5048,16 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.volumetype",
                         type: "list",
                         defvalue: "globalAmbientVolume",
-                        list: "volumetype"
+                        list: () => {
+                            let result = {
+                                "globalPlaylistVolume": 'MonksActiveTiles.volumetype.globalPlaylistVolume',
+                                "globalAmbientVolume": 'MonksActiveTiles.volumetype.globalAmbientVolume',
+                                "globalInterfaceVolume": 'MonksActiveTiles.volumetype.globalInterfaceVolume',
+                            };
+                            if (game.modules.get("monks-sound-enhancements")?.active)
+                                result.globalSoundEffectVolume = 'MonksActiveTiles.volumetype.globalSoundEffectVolume';
+                            return result;
+                        }
                     },
                     {
                         id: "volume",
@@ -5030,25 +5067,14 @@ export class ActionManager {
                         step: "0.05"
                     },
                 ],
-                values: {
-                    'volumetype': () => {
-                        let result = {
-                            "globalPlaylistVolume": 'MonksActiveTiles.volumetype.playlists',
-                            "globalAmbientVolume": 'MonksActiveTiles.volumetype.ambient',
-                            "globalInterfaceVolume": 'MonksActiveTiles.volumetype.interface',
-                        };
-                        if (game.modules.get("monks-sound-enhancements")?.active)
-                            result.globalSoundEffectVolume = 'MonksActiveTiles.volumetype.soundeffect';
-                        return result;
-                    }                        
-                },
                 fn: async (args = {}) => {
                     let { action } = args;
 
                     $(`#global-volume input[name="${action.data.volumetype}"]`).val(action.data.volume).change();
                 },
                 content: async (trigger, action) => {
-                    return `<span class="action-style">Change ${i18n(trigger.name)}</span> set <span class="details-style">"${i18n(trigger.values.volumetype[action.data.volumetype])}"</span> to <span class="value-style">&lt;${action.data.volume}&gt;</span>`;
+
+                    return `<span class="action-style">Change ${i18n(trigger.name)}</span> set <span class="details-style">"${i18n(`MonksActiveTiles.volumetype.${action.data.volumetype}`)}"</span> to <span class="value-style">&lt;${action.data.volume}&gt;</span>`;
                 }
             },
             'dialog': {
@@ -5669,7 +5695,7 @@ export class ActionManager {
                 },
                 content: async (trigger, action) => {
                     let entityName = await MonksActiveTiles.entityName(action.data?.entity, "tiles");
-                    return `<span class="action-style">${i18n(trigger.name)}</span>, <span class="entity-style">${entityName}</span> <span class="detail-style">"${action.data?.name}"</span> to <span class="value-style">&lt;${action.data?.value}&gt;</span>`;
+                    return `<span class="action-style">${i18n(trigger.name)}</span>, <span class="entity-style">${entityName}</span>`;
                 }
             },
             'runbatch': {
@@ -5835,6 +5861,7 @@ export class ActionManager {
             },
             'visibility': {
                 name: "MonksActiveTiles.filter.visibility",
+                visible: false,
                 ctrls: [
                     {
                         id: "entity",
@@ -5927,7 +5954,8 @@ export class ActionManager {
                         list: "collection",
                         type: "list",
                         onChange: (app, ctrl, action, data) => {
-                            $('input[name="data.entity"]', app.element).next().html('Current collection of ' + $(ctrl).val());
+                            let displayName = game.i18n.format("MonksActiveTiles.CurrentCollection", { collection: $(ctrl).val() || "tokens" });
+                            $('input[name="data.entity"]', app.element).next().html(displayName);
                         },
                         conditional: (app) => {
                             let entity = JSON.parse($('input[name="data.entity"]', app.element).val() || "{}");
@@ -6161,7 +6189,8 @@ export class ActionManager {
                         list: "collection",
                         type: "list",
                         onChange: (app, ctrl, action, data) => {
-                            $('input[name="data.entity"]', app.element).next().html('Current collection of ' + $(ctrl).val());
+                            let displayName = game.i18n.format("MonksActiveTiles.CurrentCollection", { collection: $(ctrl).val() || "tokens" });
+                            $('input[name="data.entity"]', app.element).next().html(displayName);
                         },
                         conditional: (app) => {
                             let entity = JSON.parse($('input[name="data.entity"]', app.element).val() || "{}");
@@ -6253,7 +6282,8 @@ export class ActionManager {
                         list: "collection",
                         type: "list",
                         onChange: (app, ctrl, action, data) => {
-                            $('input[name="data.entity"]', app.element).next().html('Current collection of ' + $(ctrl).val());
+                            let displayName = game.i18n.format("MonksActiveTiles.CurrentCollection", { collection: $(ctrl).val() || "tokens" });
+                            $('input[name="data.entity"]', app.element).next().html(displayName);
                         },
                         conditional: (app) => {
                             let entity = JSON.parse($('input[name="data.entity"]', app.element).val() || "{}");

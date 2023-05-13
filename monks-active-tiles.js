@@ -279,7 +279,7 @@ export class MonksActiveTiles {
         }
         else if (id == 'within') {
             if (action.action == "activate") {
-                entities = [...tile.entitiesWithin("lights"), ...tile.entitiesWithin("sounds")];
+                entities = tile.entitiesWithin(defaultType);
             } else
                 //find all tokens with this Tile
                 entities = tile.entitiesWithin();
@@ -350,7 +350,7 @@ export class MonksActiveTiles {
         else if (entity?.id == 'players')
             name = i18n("MonksActiveTiles.PlayerTokens");
         else if (entity?.id == 'within')
-            name = i18n("MonksActiveTiles.WithinTile");
+            name = game.i18n.format("MonksActiveTiles.WithinTile", { collection: (defaultType || "tokens").capitalize() });
         else if (entity?.id == 'controlled')
             name = defaultType == "playlists" ? i18n("MonksActiveTiles.CurrentlyPlaying") : i18n("MonksActiveTiles.Controlled");
         else if (entity?.id == undefined || entity?.id == '' || entity?.id == 'previous')
@@ -519,6 +519,66 @@ export class MonksActiveTiles {
 
         let scene = game.scenes.find(s => s.id == sceneId);
         return `${(scene?.id != canvas.scene.id ? 'Scene: ' + scene.name + ', ' : '')}${name}`;
+    }
+
+    static testVisibility(point, { tolerance = 2, object = null } = {}) {
+
+        // If no vision sources are present, the visibility is dependant of the type of user
+        if (!canvas.effects.visionSources.size) return game.user.isGM;
+
+        // Get scene rect to test that some points are not detected into the padding
+        const sr = canvas.dimensions.sceneRect;
+        const inBuffer = !sr.contains(point.x, point.y);
+
+        // Prepare an array of test points depending on the requested tolerance
+        const t = tolerance;
+        const offsets = t > 0 ? [[0, 0], [-t, -t], [-t, t], [t, t], [t, -t], [-t, 0], [t, 0], [0, -t], [0, t]] : [[0, 0]];
+        const config = {
+            object,
+            tests: offsets.map(o => ({
+                point: new PIXI.Point(point.x + o[0], point.y + o[1]),
+                los: new Map()
+            }))
+        };
+        const modes = CONFIG.Canvas.detectionModes;
+
+        // First test basic detection for light sources which specifically provide vision
+        for (const lightSource of canvas.effects.lightSources.values()) {
+            if (!lightSource.data.vision || !lightSource.active || lightSource.disabled) continue;
+            const result = lightSource.testVisibility(config);
+            if (result === true) return true;
+        }
+
+        // Second test basic detection tests for vision sources
+        for (const visionSource of canvas.effects.visionSources.values()) {
+            if (!visionSource.active) continue;
+            // Skip sources that are not both inside the scene or both inside the buffer
+            if (inBuffer === sr.contains(visionSource.x, visionSource.y)) continue;
+            const token = visionSource.object.document;
+            const basic = token.detectionModes.find(m => m.id === DetectionMode.BASIC_MODE_ID);
+            if (!basic) continue;
+            const result = modes.basicSight.testVisibility(visionSource, basic, config);
+            if (result === true) return true;
+        }
+
+        // Lastly test special detection modes for vision sources
+        if (!(object instanceof Token)) return false;   // Special detection modes can only detect tokens
+        for (const visionSource of canvas.effects.visionSources.values()) {
+            if (!visionSource.active) continue;
+            // Skip sources that are not both inside the scene or both inside the buffer
+            if (inBuffer === sr.contains(visionSource.x, visionSource.y)) continue;
+            const token = visionSource.object.document;
+            for (const mode of token.detectionModes) {
+                if (mode.id === DetectionMode.BASIC_MODE_ID) continue;
+                const dm = modes[mode.id];
+                const result = dm?.testVisibility(visionSource, mode, config);
+                if (result === true) {
+                    object.detectionFilter = dm.constructor.getDetectionFilter();
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     static async getTileFiles(files) {
@@ -943,12 +1003,16 @@ export class MonksActiveTiles {
     static async animateEntity(entity, from, animation) {
         let object = entity.mesh || entity.shape || entity;
         let to = {
-            x: entity.document.x + ((entity.document.width || entity.document.shape?.width || 0) / 2),
-            y: entity.document.y + ((entity.document.height || entity.document.shape?.height || 0) / 2),
+            x: entity.document.x,
+            y: entity.document.y,
             rotation: entity.document.rotation,
             alpha: (entity.document.hidden ? (game.user.isGM ? 0.5 : 0) : entity.document.alpha ?? 1),
             hidden: entity.document.hidden
         };
+        if (!(entity instanceof Tile || entity instanceof AmbientSound)) {
+            to.x += ((entity.document.width || entity.document.shape?.width || 0) / 2);
+            to.y += ((entity.document.height || entity.document.shape?.height || 0) / 2);
+        }
         //await CanvasAnimation.terminateAnimation(`${entity.document.documentName}.${entity.id}.animateEntity`);
 
         let duration = (animation.time - new Date().getTime()) ?? animation.duration;
@@ -3108,6 +3172,8 @@ export class MonksActiveTiles {
         }
         TileDocument.prototype.entitiesWithin = function (collection = "tokens") {
             return this.parent[collection]?.filter(t => {
+                if (t.id == this.id) return false;
+
                 let triggerPt = getProperty(t, "flags.monks-active-tiles.triggerPt");
                 let midToken = (triggerPt ? triggerPt : {
                     x: t.x + ((Math.abs(t.width || 1) * t.parent.dimensions.size) / 2),

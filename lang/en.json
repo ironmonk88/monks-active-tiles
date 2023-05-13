@@ -8,7 +8,7 @@
   "MonksActiveTiles.TriggeringToken": "Triggering Token",
   "MonksActiveTiles.PlayerTokens": "Player Tokens",
   "MonksActiveTiles.CurrentLocation": "Current Location",
-  "MonksActiveTiles.WithinTile": "Tokens within Tile",
+  "MonksActiveTiles.WithinTile": "{collection} within Tile",
   "MonksActiveTiles.WithinWall": "Tiles under Door",
   "MonksActiveTiles.CurrentCollection": "Current {collection}",
   "MonksActiveTiles.Origin": "Original Destination",
@@ -345,10 +345,10 @@
   "MonksActiveTiles.runas.gm": "GM",
   "MonksActiveTiles.runas.player": "Triggering Player",
 
-  "MonksActiveTiles.volumetype.playlists": "Playlists",
-  "MonksActiveTiles.volumetype.ambient": "Ambient",
-  "MonksActiveTiles.volumetype.interface": "Interface",
-  "MonksActiveTiles.volumetype.soundeffect": "Sound Effect",
+  "MonksActiveTiles.volumetype.globalPlaylistVolume": "Playlists",
+  "MonksActiveTiles.volumetype.globalAmbientVolume": "Ambient",
+  "MonksActiveTiles.volumetype.globalInterfaceVolume": "Interface",
+  "MonksActiveTiles.volumetype.globalSoundEffectVolume": "Sound Effect",
 
   "MonksActiveTiles.dialogtype.confirm": "Confirm",
   "MonksActiveTiles.dialogtype.alert": "Alert",
@@ -400,7 +400,7 @@
   "MonksActiveTiles.msg.usetoken": "Use the triggering token",
   "MonksActiveTiles.msg.useplayers": "Use player tokens",
   "MonksActiveTiles.msg.useplayersjournal": "Use player journal",
-  "MonksActiveTiles.msg.usewithin": "Use tokens within triggering tile",
+  "MonksActiveTiles.msg.usewithin": "Use entities within triggering tile",
   "MonksActiveTiles.msg.usewithinwall": "Trigger Tile underneath this door",
   "MonksActiveTiles.msg.useprevious": "Use this actions current collection",
   "MonksActiveTiles.msg.usepreviouslocation": "Use this actions current location",
@@ -436,5 +436,5 @@
   "MonksLittleDetails.drop-item-size.name": "Drop Item Size",
   "MonksLittleDetails.drop-item-size.hint": "Set the size of the item dropped",
   "MonksActiveTiles.show-landing.name": "Show Landing Highlight",
-  "MonksActiveTiles.show-landing.hint":  "Highlight the actions that happen within landings"
+  "MonksActiveTiles.show-landing.hint": "Highlight the actions that happen within landings"
 }

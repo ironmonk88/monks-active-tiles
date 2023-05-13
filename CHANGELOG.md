@@ -1,3 +1,23 @@
+## Version 10.17
+
+Fixed issue with Move not adding entities to the values properly.
+
+Fixed issues with animated placement of entities using the Move action.
+
+Fixed issues with he display name when settign the current collection or collections within.
+
+Added the option to set the current collection with the Activate action.  This will now also set the collection that gets used when selecting entities within the tile.
+
+Fixed issue when setting the tile image if the position is a number.
+
+Fixed issue with the list of available global volumes.
+
+Fixed issue with additional text being dislayed with the Set Currect Collection action.
+
+Removing the Visibility filter until I can figure out a way around things that Foundry is doing.
+
+Fixed issues with landing colours not quite lining up properly.
+
 ## Version 10.16
 
 Moved the delay action from Action Flow to an actual action instead.
