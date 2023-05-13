@@ -1,3 +1,11 @@
+## Version 10.18
+
+Fixed issues with all the filter actions.
+
+Fixed issues with true and false properties
+
+Tried to make it a little easier for altering values that should be strings.
+
 ## Version 10.17
 
 Fixed issue with Move not adding entities to the values properly.

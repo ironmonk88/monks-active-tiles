@@ -78,9 +78,9 @@ export let getValue = async (val = "", args, entity, options = {operation:'assig
     const { tile, tokens, action, userid, value, method, change } = args;
 
     if (val == 'true') {
-        val = (prop == undefined ? true : prop === true);
+        val = (options.prop == undefined ? true : options.prop === true);
     } else if (val == 'false') {
-        val = (prop == undefined ? false : prop === false);
+        val = (options.prop == undefined ? false : options.prop === false);
     } else {
         let context = Object.assign({
             actor: tokens[0]?.actor,
@@ -149,7 +149,7 @@ export let getValue = async (val = "", args, entity, options = {operation:'assig
                     }
                 }
             } catch (err) {
-                val = (options.prop instanceof Array ? [] : 0);
+                val = (options.prop instanceof Array ? [] : val);
                 debug(err);
             }
         }
@@ -166,6 +166,15 @@ export let getValue = async (val = "", args, entity, options = {operation:'assig
     }
 
     return val;
+}
+
+export let asyncFilter = async (entities = [], fn = () => { }) => {
+    let result = [];
+    for (let e of entities) {
+        let can = await fn(e);
+        if (can) result.push(e);
+    }
+    return result;
 }
 
 export class MonksActiveTiles {

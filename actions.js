@@ -1,7 +1,11 @@
-import { MonksActiveTiles, log, error, actiontext, debug, warn, setting, i18n, makeid, rollDice, getVolume, getValue } from './monks-active-tiles.js';
+import { MonksActiveTiles, log, error, actiontext, debug, warn, setting, i18n, makeid, rollDice, getVolume, getValue, asyncFilter } from './monks-active-tiles.js';
 import { BatchManager } from "./classes/BatchManager.js";
 
 export class ActionManager {
+    static wrapQuotes = (val) => {
+        if (typeof val == "string" && val.startsWith('"') && val.endsWith('"')) return val;
+        return `"${val}"`;
+    }
     static get actions() {
         return {
             'pause': {
@@ -1614,7 +1618,7 @@ export class ActionManager {
                             value = `(${value.substring(1)})`;
                         }
 
-                        str += `, ${actionName} <span class="value-style">&lt;${attr}&gt;</span> ${midName} <span class="details-style">"${value}"</span>`;
+                        str += `, ${actionName} <span class="value-style">&lt;${attr}&gt;</span> ${midName} <span class="details-style">${ActionManager.wrapQuotes(value)}</span>`;
                     }
                     return `<span class="action-style">${i18n(trigger.name)}</span> <span class="entity-style">${entityName}</span>${str}`;
                 }
@@ -1849,7 +1853,7 @@ export class ActionManager {
                 },
                 content: async (trigger, action) => {
                     let entityName = await MonksActiveTiles.entityName(action.data?.entity);
-                    return `<span class="action-style">${(action.data?.value.startsWith('-') ? 'Hurt' : 'Heal')}</span> <span class="entity-style">${entityName}</span>, by <span class="details-style">"${action.data?.value}"</span>`;
+                    return `<span class="action-style">${(action.data?.value.startsWith('-') ? 'Hurt' : 'Heal')}</span> <span class="entity-style">${entityName}</span>, by <span class="details-style">${ActionManager.wrapQuotes(action.data?.value)}</span>`;
                 }
             },
             'playsound': {
@@ -2042,7 +2046,7 @@ export class ActionManager {
                 content: async (trigger, action) => {
                     let playfor = action.data.audiofor;
                     if (playfor == "token") playfor = "triggering";
-                    return `<span class="action-style">${i18n(trigger.name)}</span> <span class="details-style">"${action.data.audiofile}"</span> for <span class="value-style">&lt;${i18n(trigger.values.audiofor[playfor])}&gt;</span>${(action.data?.loop ? ' <i class="fas fa-sync" title="Loop sound"></i>' : '')}`;
+                    return `<span class="action-style">${i18n(trigger.name)}</span> <span class="details-style">${ActionManager.wrapQuotes(action.data.audiofile)}</span> for <span class="value-style">&lt;${i18n(trigger.values.audiofor[playfor])}&gt;</span>${(action.data?.loop ? ' <i class="fas fa-sync" title="Loop sound"></i>' : '')}`;
                 }
             },
             'playlist': {
@@ -2290,7 +2294,7 @@ export class ActionManager {
                 },
                 content: async (trigger, action) => {
                     let showfor = action.data.showfor;
-                    return `<span class="action-style">${i18n(trigger.name)}</span> <span class="details-style">"${action.data.imagefile}"</span> for <span class="value-style">&lt;${i18n(trigger.values.showfor[showfor])}&gt;</span>`;
+                    return `<span class="action-style">${i18n(trigger.name)}</span> <span class="details-style">${ActionManager.wrapQuotes(action.data.imagefile)}</span> for <span class="value-style">&lt;${i18n(trigger.values.showfor[showfor])}&gt;</span>`;
                 }
             },
             'changedoor': {
@@ -4245,7 +4249,7 @@ export class ActionManager {
                         midName = "by";
                         value = action.data?.value.substring(2);
                     }
-                    return `<span class="action-style">${actionName} elevation</span> of <span class="entity-style">${entityName}</span> ${midName} <span class="details-style">"${value}"</span>`;
+                    return `<span class="action-style">${actionName} elevation</span> of <span class="entity-style">${entityName}</span> ${midName} <span class="details-style">${ActionManager.wrapQuotes(value)}</span>`;
                 }
             },
             'resethistory': {
@@ -6148,7 +6152,7 @@ export class ActionManager {
                     //    count = "=" + count;
 
                     let entities = await MonksActiveTiles.getEntities(args);
-                    entities = entities.filter(async (entity) => {
+                    entities = await asyncFilter(entities, async (entity) => {
                         let cando = await getValue(action.data?.count ?? "= 1", args, entity, { prop: tile.countTriggered(entity.id), operation: 'compare' });
 
                         /*
@@ -6158,7 +6162,7 @@ export class ActionManager {
                         } catch {
                         }*/
                         return !!cando;
-                    })
+                    });
 
                     return { tokens: entities };
                 },
@@ -6323,7 +6327,7 @@ export class ActionManager {
 
                     let entities = await MonksActiveTiles.getEntities(args, collection);
 
-                    let filtered = entities.filter(async (entity) => {
+                    let filtered = await asyncFilter(entities, async (entity) => {
                         let attr = await getValue(action.data.attribute, args, entity, { prop: "" });
                         let prop;
                         let base = entity;
@@ -6476,7 +6480,7 @@ export class ActionManager {
 
                     let entities = await MonksActiveTiles.getEntities(args, action.data?.collection || "tokens");
 
-                    let result = entities.filter(async (entity) => {
+                    let result = await asyncFilter(entities, async (entity) => {
                         if (!entity.actor)
                             return false;
                         let items = entity.actor.items.filter(i => (i.name || "").trim().toLowerCase() == (action.data.item || "").trim().toLowerCase());
@@ -6491,7 +6495,7 @@ export class ActionManager {
                         }*/
 
                         if (!!cando && ["dnd5e"].includes(game.system.id) && action.data?.quantity && items.length) {
-                            items = items.filter(async (item) => {
+                            items = await asyncFilter(items, async (item) => {
                                 try {
                                     switch (game.system.id) {
                                         case "dnd5e": let result = await getValue(action.data?.quantity, args, item, { prop: item.system.quantity, operation: 'compare' }); return result;
