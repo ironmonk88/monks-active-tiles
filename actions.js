@@ -367,14 +367,18 @@ export class ActionManager {
                                 entDest.y = Math.clamped(midDestY + deltaY, dest.dest.y, dest.dest.y + dest.dest.height) - (Math.sign(deltaY) * ((scene.dimensions.size * Math.abs(tokendoc.height)) / 2));
                             } else {
                                 // Find a random location within this Tile
-                                entDest.x = (dest.dest.x + ((scene.dimensions.size * Math.abs(tokendoc.width)) / 2)) + Math.floor((Math.random() * (Math.abs(dest.dest.width) - (Math.abs(tokendoc.width) * scene.dimensions.size))));
-                                entDest.y = (dest.dest.y + ((scene.dimensions.size * Math.abs(tokendoc.height)) / 2)) + Math.floor((Math.random() * (Math.abs(dest.dest.height) - (Math.abs(tokendoc.height) * scene.dimensions.size))));
+                                let w = Math.abs(dest.dest.width) - (action.data.snap ? 0 : (Math.abs(tokendoc.width) * scene.dimensions.size));
+                                let h = Math.abs(dest.dest.height) - (action.data.snap ? 0 : (Math.abs(tokendoc.height) * scene.dimensions.size));
+                                entDest.x = dest.dest.x + Math.floor((Math.random() * w));
+                                entDest.y = dest.dest.y + Math.floor((Math.random() * h));
                             }
 
                             if (!dest.dest.pointWithin(entDest)) {
                                 // If this dest is not within the Tile, then find a random point
-                                entDest.x = (dest.dest.x + ((scene.dimensions.size * Math.abs(tokendoc.width)) / 2)) + Math.floor((Math.random() * (Math.abs(dest.dest.width) - (Math.abs(tokendoc.width) * scene.dimensions.size))));
-                                entDest.y = (dest.dest.y + ((scene.dimensions.size * Math.abs(tokendoc.height)) / 2)) + Math.floor((Math.random() * (Math.abs(dest.dest.height) - (Math.abs(tokendoc.height) * scene.dimensions.size))));
+                                let w = Math.abs(dest.dest.width) - (action.data.snap ? 0 : (Math.abs(tokendoc.width) * scene.dimensions.size));
+                                let h = Math.abs(dest.dest.height) - (action.data.snap ? 0 : (Math.abs(tokendoc.height) * scene.dimensions.size));
+                                entDest.x = dest.dest.x + Math.floor((Math.random() * w));
+                                entDest.y = dest.dest.y + Math.floor((Math.random() * h));
                             }
                         }
 
@@ -406,8 +410,9 @@ export class ActionManager {
                             newPos.y -= midY;
 
                             if (action.data.remotesnap) {
-                                newPos.x = newPos.x.toNearest(tokendoc.parent.dimensions.size);
-                                newPos.y = newPos.y.toNearest(tokendoc.parent.dimensions.size);
+                                let [y, x] = canvas.grid.grid.getGridPositionFromPixels(newPos.x, newPos.y);
+                                newPos.x = x * tokendoc.parent.dimensions.size;
+                                newPos.y = y * tokendoc.parent.dimensions.size;
                             }
 
                             let offset = { dx: oldPos.x - newPos.x, dy: oldPos.y - newPos.y };
@@ -452,8 +457,9 @@ export class ActionManager {
                             newPos.y -= ((scene.dimensions.size * Math.abs(tokendoc.height)) / 2);
 
                             if (action.data.remotesnap) {
-                                newPos.x = newPos.x.toNearest(scene.dimensions.size);
-                                newPos.y = newPos.y.toNearest(scene.dimensions.size);
+                                let gs = scene.dimensions.size;
+                                newPos.x = Math.floor(newPos.x / gs) * gs;
+                                newPos.y = Math.floor(newPos.y / gs) * gs;
                             }
 
                             let td = mergeObject(await tokendoc.toObject(), { x: newPos.x, y: newPos.y, 'flags.monks-active-tiles.teleporting': true, 'flags.monks-active-tiles.current': true });
@@ -666,17 +672,18 @@ export class ActionManager {
                                 location.id = "origin";
                             }
                             */
+                            /*
                             if ((typeof entDest.x == "string" && (entDest.x.startsWith("+") || entDest.x.startsWith("-"))) ||
                                 (typeof entDest.y == "string" && (entDest.y.startsWith("+") || entDest.y.startsWith("-")))) {
                                 location.id = "origin";
-                            }
+                            }*/
                             entDest.x = parseInt(await getValue(entDest.x, args, entity, { prop: entity.x }));
                             entDest.y = parseInt(await getValue(entDest.y, args, entity, { prop: entity.y }));
 
                             if (dest.dest instanceof TileDocument) {
                                 if (action.data.position == "center") {
-                                    entDest.x = dest.dest.x + (dest.dest.width / 2);
-                                    entDest.y = dest.dest.y + (dest.dest.height / 2);
+                                    entDest.x = dest.dest.x + (dest.dest.width / 2) - midX;
+                                    entDest.y = dest.dest.y + (dest.dest.height / 2) - midY;
                                 } else if (action.data.position == "relative") {
                                     let midDestX = dest.dest.x + (Math.abs(dest.dest.width) / 2);
                                     let midDestY = dest.dest.y + (Math.abs(dest.dest.height) / 2);
@@ -687,14 +694,16 @@ export class ActionManager {
                                     entDest.y = Math.clamped(midDestY + deltaY, dest.dest.y, dest.dest.y + dest.dest.height) - (Math.sign(pt.y - oldTile.y) * midY);
                                 } else {
                                     // Find a random location within this Tile
-                                    entDest.x = (dest.dest.x + midX) + Math.floor((Math.random() * (Math.abs(dest.dest.width) - (Math.abs(entity.width) * entity.parent.dimensions.size))));
-                                    entDest.y = (dest.dest.y + midY) + Math.floor((Math.random() * (Math.abs(dest.dest.height) - (Math.abs(entity.height) * entity.parent.dimensions.size))));
+                                    let w = Math.abs(dest.dest.width) - (action.data.snap ? 0 : (Math.abs(entity.width) * entity.parent.dimensions.size));
+                                    let h = Math.abs(dest.dest.height) - (action.data.snap ? 0 : (Math.abs(entity.height) * entity.parent.dimensions.size));
+                                    entDest.x = dest.dest.x + Math.floor((Math.random() * w));
+                                    entDest.y = dest.dest.y + Math.floor((Math.random() * h));
                                 }
                             }
 
                             let newPos = {
-                                x: entDest.x - (location?.id == "origin" || entity instanceof AmbientSoundDocument ? 0 : ((object.w || object.width) / 2)),
-                                y: entDest.y - (location?.id == "origin" || entity instanceof AmbientSoundDocument ? 0 : ((object.h || object.height) / 2))
+                                x: entDest.x,// - (location?.id == "origin" || !(entity instanceof TokenDocument) ? 0 : ((object.w || object.width) / 2)),
+                                y: entDest.y// - (location?.id == "origin" || !(entity instanceof TokenDocument) ? 0 : ((object.h || object.height) / 2))
                             };
 
                             if (!canvas.dimensions.rect.contains(newPos.x, newPos.y)) {
@@ -702,8 +711,11 @@ export class ActionManager {
                                 ui.notifications.error(i18n("MonksActiveTiles.msg.prevent-teleport"));
                                 return;
                             }
-                            if (action.data.snap)
-                                newPos = canvas.grid.getSnappedPosition(newPos.x, newPos.y);
+                            if (action.data.snap) {
+                                let gs = entity.parent.dimensions.size;
+                                newPos.x = Math.floor(newPos.x / gs) * gs;
+                                newPos.y = Math.floor(newPos.y / gs) * gs;
+                            }
 
                             let ray = new Ray({ x: entity.x, y: entity.y }, { x: newPos.x, y: newPos.y });
 
@@ -1093,6 +1105,8 @@ export class ActionManager {
                                                             entDest.y = dest.dest.y + (dest.dest.height / 2);
                                                         } else {
                                                             // Find a random location within this Tile
+                                                            let midX = ((canvas.scene.dimensions.size * Math.abs(entity.width ?? 1)) / 2);
+                                                            let midY = ((canvas.scene.dimensions.size * Math.abs(entity.height ?? 1)) / 2);
                                                             entDest.x = (dest.dest.x + midX) + Math.floor((Math.random() * (Math.abs(dest.dest.width) - (Math.abs(actor.prototypeToken.width) * canvas.scene.dimensions.size))));
                                                             entDest.y = (dest.dest.y + midY) + Math.floor((Math.random() * (Math.abs(dest.dest.height) - (Math.abs(actor.prototypeToken.height) * canvas.scene.dimensions.size))));
                                                         }
@@ -3813,11 +3827,25 @@ export class ActionManager {
                         type: "list"
                     },
                     {
+                        id: "fastforward",
+                        name: "MonksActiveTiles.ctrl.fastforward",
+                        type: "checkbox",
+                        defvalue: false,
+                        help: "Roll without a prompt"
+                    },
+                    {
                         id: "rollattack",
                         name: "MonksActiveTiles.ctrl.rollattack",
                         type: "checkbox",
                         defvalue: true,
                         help: "Attempt to Roll as an attack before displaying as a chat card"
+                    },
+                    {
+                        id: "rolldamage",
+                        name: "MonksActiveTiles.ctrl.rolldamage",
+                        type: "checkbox",
+                        defvalue: false,
+                        help: "Attempt to Roll damage if the attack exceeds the AC"
                     }
                 ],
                 values: {
@@ -3829,10 +3857,16 @@ export class ActionManager {
                     }
                 },
                 fn: async (args = {}) => {
-                    const { action } = args;
+                    const { action, userid } = args;
                     let entities = await MonksActiveTiles.getEntities(args);
                     if (entities.length == 0)
                         return;
+
+                    let user = game.users.get(userid);
+                    let rollresults = {};
+                    let item;
+                    let act;
+                    let strike;
 
                     //get the actor and the attack and the entities to apply this to.
                     if (action.data?.actor.id) {
@@ -3840,33 +3874,48 @@ export class ActionManager {
                         if (actor && actor instanceof TokenDocument)
                             actor = actor.actor;
                         if (actor) {
-                            let item = actor.items.get(action.data?.attack?.id);
+                            item = actor.items.get(action.data?.attack?.id);
 
                             if (item) {
-                                for (let entity of entities) {
-                                    if (entity) {
-                                        entity?.object?.setTarget(true, { releaseOthers: true });
-                                        if (game.system.id == "pf2e") {
-                                            let action = actor.system.actions.find(a => a.item.id == item.id);
-                                            if (action) {
-                                                let strike = action.variants[0];
-                                                if (strike) {
-                                                    await strike.roll();
-                                                    entity?.object?.setTarget(false, { releaseOthers: true });
-                                                    continue;
-                                                }
+                                let attack = action.data?.rollattack ? item.rollAttack || item.useAttack || item.use : false;
+
+                                if (game.system.id == "pf2e" && action.data?.rollattack) {
+                                    act = actor.system.actions.find(a => a.item.id == item.id);
+                                    if (act) {
+                                        strike = act.variants[0];
+                                        if (strike) {
+                                            attack = strike.roll;
+                                        }
+                                    }
+                                }
+
+                                if (item.displayCard)
+                                    item.displayCard({ rollMode: (action.data?.rollmode || 'roll'), createMessage: true });
+                                else if (item.toChat)
+                                    item.toChat();
+
+                                if (attack) {
+                                    user.targets.forEach(t => t.setTarget(false, { user, releaseOthers: true, groupSelection: false }));
+                                    for (let entity of entities) {
+                                        if (entity) {
+                                            entity?.object?.setTarget(true, { user, releaseOthers: true });
+
+                                            if (attack) {
+                                                let roll = await attack.call(item, {
+                                                    rollMode: (action.data?.rollmode || 'roll'),
+                                                    flavor: `${item.name}, against ${entity.name}`,
+                                                    skipDialog: true,
+                                                    fastForward: action.data?.fastforward
+                                                });
+                                                if (game.system.id == "pf2e")
+                                                    entity?.object?.setTarget(false, { user, releaseOthers: false });
+
+                                                rollresults[entity.id] = roll;
                                             }
                                         }
-
-                                        if (action.data?.rollattack && item.useAttack)
-                                            item.useAttack({ skipDialog: true });
-                                        else if (action.data?.rollattack && item.use)
-                                            item.use({ rollMode: (action.data?.rollmode || 'roll') });
-                                        else if (item.displayCard)
-                                            item.displayCard({ rollMode: (action.data?.rollmode || 'roll'), createMessage: true }); //item.roll({configureDialog:false});
-                                        else if (item.toChat)
-                                            item.toChat(); //item.roll({configureDialog:false});
                                     }
+                                } else if (!attack) {
+                                    user.updateTokenTargets(entities.map(t => t.id));
                                 }
                             } else
                                 warn(`Could not find the attack item when using the attack action`);
@@ -3874,7 +3923,28 @@ export class ActionManager {
                             warn(`Could not find actor when using the attack action`);
                     }
 
-                    return { tokens: entities, entities: entities };
+                    let damage = item?.rollDamage || act?.damage;
+                    if (action.data?.rolldamage && damage) {
+                        user.targets.forEach(t => t.setTarget(false, { user, releaseOthers: true, groupSelection: false }));
+                        for (let [k, v] of Object.entries(rollresults)) {
+                            let entity = entities.find(e => e.id == k);
+                            if (entity && v.total >= entity.actor.system.attributes.ac.value || v.dice[0].total == 20) {
+                                entity?.object?.setTarget(true, { user, releaseOthers: true });
+                                if (game.system.id == "pf2e") {
+                                    if (act) {
+                                        if (v.total >= entity.actor.system.attributes.ac.value + 10 || v.dice[0].total == 20)
+                                            await act.critical();
+                                        else
+                                            await act.damage();
+                                    }
+                                } else {
+                                    damage.call(item, { critical: v.total == 20, options: { flavor: "Damage for " + entity.name } });
+                                }
+                            }
+                        }
+                    }
+
+                    return { tokens: entities, entities: entities, attack: item, attacks: rollresults };
                 },
                 content: async (trigger, action) => {
                     if (!action.data?.actor.id)
@@ -6329,7 +6399,7 @@ export class ActionManager {
 
                     let filtered = await asyncFilter(entities, async (entity) => {
                         let attr = await getValue(action.data.attribute, args, entity, { prop: "" });
-                        let prop;
+                        let prop = "";
                         let base = entity;
                         let found = false;
 
@@ -6428,7 +6498,7 @@ export class ActionManager {
                 },
                 content: async (trigger, action) => {
                     let entityName = await MonksActiveTiles.entityName(action.data?.entity, action.data?.collection);
-                    return `<span class="filter-style">Find</span> <span class="entity-style">${entityName}</span> with <span class="value-style">&lt;${action.data?.attribute}&gt;</span> <span class="details-style">"${action.data?.value}"</span>`;
+                    return `<span class="filter-style">Find</span> <span class="entity-style">${entityName}</span> with <span class="value-style">&lt;${action.data?.attribute}&gt;</span> <span class="details-style">${ActionManager.wrapQuotes(action.data?.value)}</span>`;
                 }
             },
             'inventory': {

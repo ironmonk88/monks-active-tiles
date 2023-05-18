@@ -77,6 +77,8 @@ export let getVolume = () => {
 export let getValue = async (val = "", args, entity, options = {operation:'assign'}) => {
     const { tile, tokens, action, userid, value, method, change } = args;
 
+    let originalVal = val;
+
     if (val == 'true') {
         val = (options.prop == undefined ? true : options.prop === true);
     } else if (val == 'false') {
@@ -160,7 +162,7 @@ export let getValue = async (val = "", args, entity, options = {operation:'assig
                     val[i] = parseFloat(val[i]);
             }
         } else {
-            if (!isNaN(val) && !isNaN(parseFloat(val)))
+            if (!isNaN(val) && !isNaN(parseFloat(val)) && val != originalVal)
                 val = parseFloat(val);
         }
     }
@@ -1472,13 +1474,13 @@ export class MonksActiveTiles {
     static async inlineRoll(value, rgx, chatMessage = true, rollMode = "selfroll", token) {
         let doRoll = async function (match, command, formula, closing, label, ...args) {
             if (closing.length === 3) formula += "]";
-            let roll = await Roll.create(formula).roll();
+            let roll = await Roll.create(formula).roll({async: true});
 
             if (chatMessage) {
                 const cls = ChatMessage.implementation;
                 const speaker = cls.getSpeaker({ token: token });
 
-                let mode = command.replace(/[^A-Za-z]/g, "");
+                let mode = command?.replace(/[^A-Za-z]/g, "");
                 if (!["publicroll", "gmroll", "blindroll", "selfroll"].includes(mode)) mode = null;
 
                 roll.toMessage({ flavor: (label ? `${label}: ${roll.total}` : roll.total), speaker }, { rollMode: mode || rollMode });
@@ -2635,7 +2637,7 @@ export class MonksActiveTiles {
                     let tile = (data?.tileid ? await fromUuid(data.tileid) : null);
                     let token = (data?.tokenid ? await fromUuid(data.tokenid) : null);
 
-                    MonksActiveTiles._showDialog(tile, token, data.value, data.type, data.title, data.content, data.options, data.yes, data.no, data.buttons).then((results) => {
+                    MonksActiveTiles._showDialog(tile, token, data.value, data.type, data.title, data.content, data.options, data.yes, data.no, data.closeNo, data.buttons).then((results) => {
                         MonksActiveTiles.emit("returndialog", { _id: data._id, tileid: data?.tileid, results: results });
                     });
                 }
@@ -4929,6 +4931,35 @@ Hooks.on("dropCanvasData", async (canvas, data, options, test) => {
                         { "action": "anchor", "data": { "tag": "NotCloseEnough", "stop": true }, "id": "9Pi17j10WPrzAFeq" },
                         { "action": "notification", "data": { "text": "Not close enough to pick up this item", "type": "warning", "showto": "token" }, "id": "Unr31Z6iM2P2U7VC" }
                     ]
+                }
+            }
+        });
+
+        const cls = getDocumentClass("Tile");
+        await cls.create(td, { parent: canvas.scene });
+    } else if (data.type == 'Scene' && setting('drop-scene')) {
+        let scene = await fromUuid(data.uuid);
+
+        if (!scene)
+            return ui.notifications.warn("Could not find scene");
+
+        let size = canvas.scene.dimensions.size;
+        let dest = { x: data.x - (size / 2), y: data.y - (size / 2) };
+
+        let td = mergeObject(dest, {
+            img: scene.background?.src,
+            width: size,
+            height: size,
+            flags: {
+                'monks-active-tiles': {
+                    "active": true,
+                    "restriction": "all",
+                    "controlled": "all",
+                    "trigger": "click",
+                    "pertoken": false,
+                    "minrequired": 0,
+                    "chance": 100,
+                    "actions": [ { "action": "scene", "data": { "sceneid": scene.id, "activate": false }, "id": "7D4WFv4KEUwUeVnd" } ]
                 }
             }
         });

@@ -55,6 +55,15 @@ export const registerSettings = function () {
 		type: Number,
 	});
 
+	game.settings.register(modulename, "drop-scene", {
+		name: i18n("MonksActiveTiles.drop-scene.name"),
+		hint: i18n("MonksActiveTiles.drop-scene.hint"),
+		scope: "world",
+		config: true,
+		default: true,
+		type: Boolean,
+	});
+
 	game.settings.register(modulename, "allow-door", {
 		name: i18n("MonksActiveTiles.allow-door.name"),
 		hint: i18n("MonksActiveTiles.allow-door.hint"),

@@ -1,3 +1,19 @@
+## Version 10.19
+
+Fixed issue with teleport and move to a random location within a tile.
+
+Fixed issue with snap to grid, instead of snapping tot he closest point, it will snap to the grid square the point is in.
+
+Fixed issue with positioning of tokens when moving and teleporting
+
+Fixed issues with the Attack action, and added the option to fast forward the roll, and to rolldamage after the attack.
+
+Fixed issue where a 0 value wasn't returnign the correct value.
+
+Fixed issue with showing a custom dialog for players.
+
+Added the option to drag and drop a scene onto the canvas to create an active tile that will change to that scene.
+
 ## Version 10.18
 
 Fixed issues with all the filter actions.
