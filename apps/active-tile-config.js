@@ -190,7 +190,12 @@ export const WithActiveTileConfig = (TileConfig) => {
 
         _onDragStart(event) {
             let li = event.currentTarget.closest(".item");
-            const dragData = { type: this.constructor.documentName, id: li.dataset.id };
+            const dragData = {
+                type: this.object.constructor.documentName,
+                tileId: this.object.id,
+                collection: li.dataset.collection,
+                id: li.dataset.id
+            };
             event.dataTransfer.setData("text/plain", JSON.stringify(dragData));
             this._dragType = dragData.type;
         }
@@ -199,7 +204,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             return true;
         }
 
-        _onDrop(event) {
+        async _onDrop(event) {
             const cls = this.constructor.documentName;
 
             // Try to extract the data
@@ -214,22 +219,44 @@ export const WithActiveTileConfig = (TileConfig) => {
             // Identify the drop target
             const target = event.target.closest(".item") || null;
 
-            // Call the drop handler
-            if (target && target.dataset.id) {
-                let items = duplicate(this[target.dataset.collection]);
+            if (data.tileId != this.object.id) {
+                if (data.collection == target.dataset.collection) {
+                    let src = canvas.scene.tiles.get(data.tileId);
+                    let action = getProperty(src, "flags.monks-active-tiles.actions")?.find(a => a.id == data.id);
 
-                if (data.id === target.dataset.id) return; // Don't drop on yourself
+                    if (action) {
+                        let newAction = duplicate(action);
+                        newAction.id = makeid();
+                        let items = duplicate(this[target.dataset.collection]);
+                        let to = items.findIndex(a => a.id == target.dataset.id);
+                        items.splice(to, 0, newAction);
+                        this.object.flags["monks-active-tiles"][target.dataset.collection] = items;
 
-                let from = items.findIndex(a => a.id == data.id);
-                let to = items.findIndex(a => a.id == target.dataset.id);
-                log('from', from, 'to', to);
-                items.splice(to, 0, items.splice(from, 1)[0]);
+                        let element = $(`.action-items li[data-id="${data.id}"]`).clone();
+                        $(element).attr('data-id', newAction.id).insertBefore(target);
+                        $('.action-edit', element).click(this._editAction.bind(this));
+                        $('.action-delete', element).click(this._deleteAction.bind(this));;
+                        this.setPosition({ height: 'auto' });
+                    }
+                }
+            } else {
+                // Call the drop handler
+                if (target && target.dataset.id) {
+                    let items = duplicate(this[target.dataset.collection]);
 
-                this.object.flags["monks-active-tiles"][target.dataset.collection] = items;
-                if (from < to)
-                    $('.item[data-id="' + data.id + '"]', this.element).insertAfter(target);
-                else
-                    $('.item[data-id="' + data.id + '"]', this.element).insertBefore(target);
+                    if (data.id === target.dataset.id) return; // Don't drop on yourself
+
+                    let from = items.findIndex(a => a.id == data.id);
+                    let to = items.findIndex(a => a.id == target.dataset.id);
+                    log('from', from, 'to', to);
+                    items.splice(to, 0, items.splice(from, 1)[0]);
+
+                    this.object.flags["monks-active-tiles"][target.dataset.collection] = items;
+                    if (from < to)
+                        $('.item[data-id="' + data.id + '"]', this.element).insertAfter(target);
+                    else
+                        $('.item[data-id="' + data.id + '"]', this.element).insertBefore(target);
+                }
             }
         }
 

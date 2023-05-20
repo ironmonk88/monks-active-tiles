@@ -1,0 +1,58 @@
+<form id="my-form">
+<style>
+@font-face {
+  font-family: digital;
+  src: url('modules/monks-active-tiles/dialogs/keypad/Technology.ttf');
+}
+@keyframes password-error-animation {
+	0% { color: ##191813; }
+	50% { color: #FF0000; }
+	100% { color: ##191813; }
+}
+.password-error {
+	animation-name: password-error-animation;
+	animation-duration: 0.5s;
+	animation-iteration-count: infinite;
+}
+</style>
+<script>
+	let checkingPassword = false;
+	let password = "12345";
+	function addNumber(num) {
+		if (!checkingPassword)
+			$('#my-password').val($('#my-password').val() + num);
+	}
+	function clearNumber(num) {
+		if (!checkingPassword)
+			$('#my-password').val('');
+	}
+	function submitPassword() {
+		if ($('#my-password').val() != password) {
+			checkingPassword = true;
+			$('#my-password').val('UNAUTHORISED').addClass('password-error');
+			window.setTimeout(() => {
+				checkingPassword = false;
+				$('#my-password').val('').removeClass('password-error');
+			}, 3000);
+		} else
+			$('#my-form').submit();
+	}
+</script>
+	<input id="my-password" type="text" name="goto" style="font-family: digital;font-size: 75px;height: 75px;" />
+	<img src="/modules/monks-active-tiles/dialogs/keypad/keypad.webp" width="600" height="600" usemap="#keypad" />
+	<map name="keypad">
+		<area shape="rect" coords="100,45,215,150" href="javascript:addNumber('1')">
+		<area shape="rect" coords="250,45,350,150" href="javascript:addNumber('2')">
+		<area shape="rect" coords="380,45,500,150" href="javascript:addNumber('3')">
+		<area shape="rect" coords="100,175,215,280" href="javascript:addNumber('4')">
+		<area shape="rect" coords="250,175,350,280" href="javascript:addNumber('5')">
+		<area shape="rect" coords="380,175,500,280" href="javascript:addNumber('6')">
+		<area shape="rect" coords="100,315,215,420" href="javascript:addNumber('7')">
+		<area shape="rect" coords="250,315,350,420" href="javascript:addNumber('8')">
+		<area shape="rect" coords="380,315,500,420" href="javascript:addNumber('9')">
+		<area shape="rect" coords="250,445,350,550" href="javascript:addNumber('0')">
+		
+		<area shape="rect" coords="100,445,215,550" href="javascript:clearNumber()">
+		<area shape="rect" coords="380,445,500,550" href="javascript:submitPassword()">
+	</map>
+</form>

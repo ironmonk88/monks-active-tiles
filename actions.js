@@ -1801,6 +1801,8 @@ export class ActionManager {
                         for (let entity of entities) {
                             const a = entity.actor;
 
+                            if (!a) continue;
+
                             let val = await getValue(action.data.value, args, entity, {
                                 actor: a.toObject(false),
                                 token: entity.toObject(false),
@@ -1843,6 +1845,11 @@ export class ActionManager {
                                 val = parseFloat(eval(val));
                             } catch { }
                             */
+
+                            if (typeof val == "string" && (val.startsWith("+ ") || val.startsWith("- "))) {
+                                val = parseFloat(val[0] + val.substring(2));
+                                ui.notifications.warn("Hurt/Heal action should not have a space between the sign and the number, legacy support for this will be removed some time in the future.");
+                            }
 
                             val = val * -1;
 
@@ -3821,31 +3828,56 @@ export class ActionManager {
                         required: true
                     },
                     {
+                        id: "rollattack",
+                        name: 'MonksActiveTiles.ctrl.rollattack',
+                        list: "attacktype",
+                        type: "list",
+                        defvalue: "true",
+                        onChange: (app) => {
+                            app.checkConditional();
+                        },
+                    },
+                    {
+                        id: "chatcard",
+                        name: "MonksActiveTiles.ctrl.chatcard",
+                        type: "checkbox",
+                        defvalue: true,
+                        conditional: (app) => {
+                            let type = $('select[name="data.rollattack"]', app.element).val();
+                            return type != 'chatcard';
+                        },
+                    },
+                    {
                         id: "rollmode",
                         name: 'MonksActiveTiles.ctrl.rollmode',
                         list: "rollmode",
-                        type: "list"
+                        type: "list",
+                        conditional: (app) => {
+                            let type = $('select[name="data.rollattack"]', app.element).val();
+                            return type == 'true' || type == 'false';
+                        },
                     },
                     {
                         id: "fastforward",
                         name: "MonksActiveTiles.ctrl.fastforward",
                         type: "checkbox",
                         defvalue: false,
-                        help: "Roll without a prompt"
-                    },
-                    {
-                        id: "rollattack",
-                        name: "MonksActiveTiles.ctrl.rollattack",
-                        type: "checkbox",
-                        defvalue: true,
-                        help: "Attempt to Roll as an attack before displaying as a chat card"
+                        help: "Roll without a prompt",
+                        conditional: (app) => {
+                            let type = $('select[name="data.rollattack"]', app.element).val();
+                            return type == 'true' || type == 'false';
+                        },
                     },
                     {
                         id: "rolldamage",
                         name: "MonksActiveTiles.ctrl.rolldamage",
                         type: "checkbox",
                         defvalue: false,
-                        help: "Attempt to Roll damage if the attack exceeds the AC"
+                        help: "Attempt to Roll damage if the attack exceeds the AC",
+                        conditional: (app) => {
+                            let type = $('select[name="data.rollattack"]', app.element).val();
+                            return type == 'true';
+                        },
                     }
                 ],
                 values: {
@@ -3854,6 +3886,11 @@ export class ActionManager {
                         "gmroll": 'MonksActiveTiles.rollmode.private',
                         "blindroll": 'MonksActiveTiles.rollmode.blind',
                         "selfroll": 'MonksActiveTiles.rollmode.self'
+                    },
+                    'attacktype': {
+                        "chatcard": 'MonksActiveTiles.attacktype.chatcard',
+                        "true": 'MonksActiveTiles.attacktype.attack',
+                        "false": 'MonksActiveTiles.attacktype.use',
                     }
                 },
                 fn: async (args = {}) => {
@@ -3877,7 +3914,7 @@ export class ActionManager {
                             item = actor.items.get(action.data?.attack?.id);
 
                             if (item) {
-                                let attack = action.data?.rollattack ? item.rollAttack || item.useAttack || item.use : false;
+                                let attack = action.data?.rollattack == "true" ? item.rollAttack || item.useAttack : (action.data?.rollattack == "false" ? item.use : false);
 
                                 if (game.system.id == "pf2e" && action.data?.rollattack) {
                                     act = actor.system.actions.find(a => a.item.id == item.id);
@@ -3889,10 +3926,12 @@ export class ActionManager {
                                     }
                                 }
 
-                                if (item.displayCard)
-                                    item.displayCard({ rollMode: (action.data?.rollmode || 'roll'), createMessage: true });
-                                else if (item.toChat)
-                                    item.toChat();
+                                if ((action.data?.chatcard && action.data?.rollattack != 'chatcard') || action.data?.rollattack == "chatcard") {
+                                    if (item.displayCard)
+                                        item.displayCard({ rollMode: (action.data?.rollmode || 'roll'), createMessage: true });
+                                    else if (item.toChat)
+                                        item.toChat();
+                                }
 
                                 if (attack) {
                                     user.targets.forEach(t => t.setTarget(false, { user, releaseOthers: true, groupSelection: false }));
@@ -3924,7 +3963,7 @@ export class ActionManager {
                     }
 
                     let damage = item?.rollDamage || act?.damage;
-                    if (action.data?.rolldamage && damage) {
+                    if (action.data?.rollattack == "true" && action.data?.rolldamage && damage) {
                         user.targets.forEach(t => t.setTarget(false, { user, releaseOthers: true, groupSelection: false }));
                         for (let [k, v] of Object.entries(rollresults)) {
                             let entity = entities.find(e => e.id == k);
@@ -5209,6 +5248,22 @@ export class ActionManager {
                         },
                     },
                     {
+                        id: "width",
+                        name: "MonksActiveTiles.ctrl.width",
+                        type: "text",
+                        conditional: (app) => {
+                            return $('select[name="data.dialogtype"]', app.element).val() == 'custom';
+                        },
+                    },
+                    {
+                        id: "height",
+                        name: "MonksActiveTiles.ctrl.height",
+                        type: "text",
+                        conditional: (app) => {
+                            return $('select[name="data.dialogtype"]', app.element).val() == 'custom';
+                        },
+                    },
+                    {
                         id: "buttons",
                         name: "MonksActiveTiles.ctrl.buttons",
                         type: "buttonlist",
@@ -5267,6 +5322,12 @@ export class ActionManager {
                         content = await renderTemplate(action.data.file, context);
                     }
 
+                    let options = JSON.parse(action.data?.options || "{}");
+                    if (action.data?.width)
+                        options.width = action.data?.width != "auto" ? await getValue(action.data?.width, args, null, {type: "number"}) : action.data?.width;
+                    if (action.data?.height)
+                        options.height = action.data?.height != "auto" ? await getValue(action.data?.height, args, null, { type: "number" }) : action.data?.height;
+
                     if ((action.data.for == 'gm' && game.user.isGM) || (action.data.for != 'gm' && userid == game.user.id))
                         MonksActiveTiles._showDialog(
                             tile,
@@ -5275,7 +5336,7 @@ export class ActionManager {
                             action.data.dialogtype,
                             title,
                             content,
-                            action.data?.options,
+                            options,
                             action.data.yes,
                             action.data.no,
                             action.data.closeNo ?? true,
@@ -5291,7 +5352,7 @@ export class ActionManager {
                             type: action.data.dialogtype,
                             title,
                             content,
-                            options: action.data?.options,
+                            options: options,
                             yes: action.data.yes,
                             no: action.data.no,
                             closeNo: action.data.closeNo ?? true,
@@ -6861,6 +6922,78 @@ export class ActionManager {
                 },
                 content: async (trigger, action) => {
                     return `<span class="logic-style">${i18n(trigger.name)}:</span> <span class="tag-style">${action.data?.tag}</span>${action.data?.limit ? ' limit by <span class="details-style">"' + action.data?.limit + '"</span>' + (action.data?.resume ? ' <i class="fas fa-forward" title="Resume after looping"></i>' : ' <i class="fas fa-stop" title="Stop after looping"></i>') : ''}`;
+                }
+            },
+            'loop': {
+                name: "MonksActiveTiles.logic.loop",
+                ctrls: [
+                    {
+                        id: "tag",
+                        name: "MonksActiveTiles.ctrl.name",
+                        type: "text",
+                        placeholder: "Please enter a Landing name",
+                        required: true
+                    },
+                    {
+                        id: "collection",
+                        name: "Collection",
+                        list: "collection",
+                        type: "list",
+                        onChange: (app, ctrl, action, data) => {
+                            let displayName = game.i18n.format("MonksActiveTiles.CurrentCollection", { collection: $(ctrl).val() || "tokens" });
+                            $('input[name="data.entity"]', app.element).next().html(displayName);
+                        },
+                        conditional: (app) => {
+                            let entity = JSON.parse($('input[name="data.entity"]', app.element).val() || "{}");
+                            return entity?.id == 'previous';
+                        },
+                        defvalue: 'tokens'
+                    },
+                    {
+                        id: "resume",
+                        name: "MonksActiveTiles.ctrl.resume",
+                        type: "text",
+                    }
+                ],
+                values: {
+                    'collection': {
+                        'actors': "Actors",
+                        'drawings': "Drawings",
+                        'items': "Items",
+                        'journal': "Journal Entries",
+                        'lights': "Lights",
+                        'macros': "Macros",
+                        'scene': "Scene",
+                        'sounds': "Sounds",
+                        'tiles': "Tiles",
+                        'tokens': "Tokens",
+                        'walls': "Walls"
+                    }
+                },
+                group: "logic",
+                fn: async (args = {}) => {
+                    const { tokens, tile, userid, value, method, action, change } = args;
+
+                    let entities = await MonksActiveTiles.getEntities(args, action.data?.collection || "tokens");
+                    let _tag = action.data?.tag;
+
+                    let goto = await Promise.all(entities.map(async (e) => {
+                        let tag = await getValue(duplicate(_tag), args, null, { prop: e });
+                        return {
+                            tag: tag,
+                            entities: [e]
+                        }
+                    })) || [];
+
+                    if (action.data?.resume) {
+                        goto.push({ tag: action.data?.resume });
+                    }
+
+                    return { goto: goto };
+                },
+                content: async (trigger, action) => {
+                    let entityName = await MonksActiveTiles.entityName(action.data?.entity, action.data?.collection);
+                    return `<span class="logic-style">${i18n(trigger.name)}:</span> <span class="entity-style">${entityName}</span> through <span class="tag-style">${action.data?.tag}</span> ${(action.data?.resume ? ' <i class="fas fa-forward" title="Resume after looping"></i>' : ' <i class="fas fa-stop" title="Stop after looping"></i>')}`;
                 }
             },
             'stop': {

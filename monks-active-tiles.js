@@ -162,7 +162,7 @@ export let getValue = async (val = "", args, entity, options = {operation:'assig
                     val[i] = parseFloat(val[i]);
             }
         } else {
-            if (!isNaN(val) && !isNaN(parseFloat(val)) && val != originalVal)
+            if (!isNaN(val) && !isNaN(parseFloat(val)) && (val != originalVal || options.type == "number"))
                 val = parseFloat(val);
         }
     }
@@ -778,11 +778,6 @@ export class MonksActiveTiles {
         compiled = Handlebars.compile(content);
         content = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
 
-        let opts = {};
-        try {
-            opts = JSON.parse(options);
-        } catch { }
-
         if (type == 'confirm') {
             return Dialog.confirm({
                 title: title,
@@ -833,7 +828,7 @@ export class MonksActiveTiles {
 
                     return data;
                 },
-                options: opts,
+                options: options,
                 rejectClose: true,
             }).catch(() => {
                 return closeNo ? { goto: no } : {};
@@ -852,7 +847,7 @@ export class MonksActiveTiles {
 
                     return data;
                 },
-                options: opts,
+                options: options,
                 rejectClose: true
             }).catch(() => { return {}; });
         } else {
@@ -906,7 +901,7 @@ export class MonksActiveTiles {
                         }
                     }
                 }), {})
-            }, opts);
+            }, options);
         }
     }
 
@@ -2732,7 +2727,7 @@ export class MonksActiveTiles {
             case 'showimage': {
                 if ((data.userid == undefined || data.userid.find(u => u == game.user.id) != undefined)) {
                     new ImagePopout(data.src, {
-                        title: data.caption
+                        title: data.title
                     }).render(true);
                 }
             } break;
@@ -3185,19 +3180,25 @@ export class MonksActiveTiles {
             return this.parent[collection]?.filter(t => {
                 if (t.id == this.id) return false;
 
-                let triggerPt = getProperty(t, "flags.monks-active-tiles.triggerPt");
-                let midToken = (triggerPt ? triggerPt : {
-                    x: t.x + ((Math.abs(t.width || 1) * t.parent.dimensions.size) / 2),
-                    y: t.y + ((Math.abs(t.height || 1) * t.parent.dimensions.size) / 2),
-                });
+                let midEntity = getProperty(t, "flags.monks-active-tiles.triggerPt");
+                if (midEntity == undefined) {
+                    midEntity = { x: t.x, y: t.y };
+                    if (t instanceof TokenDocument) {
+                        midEntity.x = midEntity.x + ((Math.abs(t.width || 1) * t.parent.dimensions.size) / 2);
+                        midEntity.y = midEntity.y + ((Math.abs(t.height || 1) * t.parent.dimensions.size) / 2);
+                    } else if (!(t instanceof AmbientSoundDocument || t instanceof AmbientLightDocument)) {
+                        midEntity.x = midEntity.x + (Math.abs(t.width || 1) / 2);
+                        midEntity.y = midEntity.y + (Math.abs(t.height || 1) / 2);
+                    }
+                };
 
                 if (game.modules.get("levels")?.active && collection == "tokens") {
                     let tileht = this.flags.levels?.rangeTop ?? 1000;
                     let tilehb = this.flags.levels?.rangeBottom ?? -1000;
                     if (t.elevation >= tilehb && t.elevation <= tileht)
-                        return this.pointWithin(midToken);
+                        return this.pointWithin(midEntity);
                 } else
-                    return this.pointWithin(midToken);
+                    return this.pointWithin(midEntity);
             });
         }
 
@@ -4046,7 +4047,7 @@ export class MonksActiveTiles {
                                         delete result.runbatch;
                                     }
 
-                                    if (result.goto) {
+                                    if (result.hasOwnProperty && result.hasOwnProperty("goto")) {
                                         if (result.goto instanceof Array) {
                                             result.continue = false;
                                             for (let goto of result.goto) {
@@ -4055,8 +4056,16 @@ export class MonksActiveTiles {
                                                     let idx = actions.findIndex(a => a.action == 'anchor' && a.data.tag == goto.tag);
                                                     if (idx != -1) {
                                                         let gotoContext = Object.assign({}, context);
-                                                        gotoContext = mergeObject(gotoContext, { value: goto });
-                                                        gotoContext._id = makeid();
+                                                        delete goto.tag;
+                                                        if (goto.entities) {
+                                                            let result = {};
+                                                            for (let entity of goto.entities) {
+                                                                MonksActiveTiles.addToResult(entity, result);
+                                                            }
+                                                            Object.assign(gotoContext, result);
+                                                            Object.assign(goto, result);
+                                                        }
+                                                        Object.assign(gotoContext, { value: goto, _id: makeid() });
                                                         await this.runActions(gotoContext, idx + 1);
                                                     }
                                                 } else {

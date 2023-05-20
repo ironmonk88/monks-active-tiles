@@ -1,3 +1,29 @@
+## Version 10.20
+
+Fixed issue if Hurt/Heal action is run against a Token that isn't linked to an Actor.
+
+Fixed issue with Hurt Heal, when dice roll has a space between the +/- and the dice roll.  It technically shouldn't have one, but for legacy sake it will work for now but will warn that it should be changed.
+
+Changed the Attack action so you can choose how to "Attack" either by attacking, using, or just displaying a chat message.
+
+Fixed issue with showing help text when a field is hidden due to conditional fields.
+
+Added width and height properties to the show dialog action to make it a little easier to set the most common attributes.
+
+Added the loop action so you can loop through a collection of entities and run code individually against each.
+
+Fixed issue with adding a new button trying to edit an older button.
+
+Added the option to drag and drop an action from one Tile to a different Tile.
+
+Added an example of how to set up a custom dialog that displays a keypad.
+
+Fixed issue with Image Popout not showing the caption to players.
+
+Fixed issue with finding entities within a Tile.
+
+Fixed issue with jumpt to landing triggering with an undefined landing.
+
 ## Version 10.19
 
 Fixed issue with teleport and move to a random location within a tile.

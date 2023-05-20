@@ -788,7 +788,7 @@ export class ActionConfig extends FormApplication {
         for (let elem of $('.form-group', this.element)) {
             if ($(elem).data('conditional')) {
                 let cond = await $(elem).data('conditional').call(this, this);
-                $(elem).toggle(cond);
+                $(elem).toggle(cond).next("p.notes").toggle(cond);
             }
         }
         this.setPosition({ height: 'auto' });
@@ -863,7 +863,7 @@ export class ActionConfig extends FormApplication {
                                     .addClass("buttons-list items-list")
                                     .append($('<li>').addClass('items-header flexrow')
                                         .append($('<div>').addClass('item-controls').css({ 'text-align': 'right' })
-                                            .append($('<a>').css({ 'margin-right': '12px' }).attr({ 'title': "Add button" }).html('<i class="fas fa-plus"></i> Add').on('click', this._editButton.bind(this, {}))))
+                                            .append($('<a>').css({ 'margin-right': '12px' }).attr({ 'title': "Add button" }).html('<i class="fas fa-plus"></i> Add').on('click', this._editButton.bind(this, undefined))))
                                         .append($('<input>').css({ "margin-right": "0px !important" }).attr({ type: 'hidden', name: 'buttons' }).val(JSON.stringify(data.buttons || [])).change(this.refreshButtonList.bind(this, ul)))
                                     )
                                     .append(ul)));
@@ -998,7 +998,7 @@ export class ActionConfig extends FormApplication {
                 div.appendTo($('.action-controls', this.element));
 
                 if (ctrl.help && setting("show-help"))
-                    $('.action-controls', this.element).append($('<p>').addClass("notes").html(ctrl.help));
+                    $('.action-controls', this.element).append($('<p>').addClass("notes").html(ctrl.help).toggle(cond));
 
                 if ((ctrl.id == "attribute" && ctrl.id == 'attribute') || (ctrl.id == "tag" && command == "anchor")) {
                     this.attributes = this.tokenAttr;

@@ -126,6 +126,7 @@
   "MonksActiveTiles.logic.goto": "Jump to Landing",
   "MonksActiveTiles.logic.stop": "Stop remaining actions",
   "MonksActiveTiles.logic.playertype": "Redirect based on player type",
+  "MonksActiveTiles.logic.loop": "Loop through Entities",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
@@ -164,7 +165,7 @@
   "MonksActiveTiles.ctrl.animatepan": "Animate Canvas Pan",
   "MonksActiveTiles.ctrl.deletesource": "Delete Source Token",
   "MonksActiveTiles.ctrl.avoidtokens": "Avoid other tokens at Destination",
-  "MonksActiveTiles.ctrl.rollattack": "Roll as Attack",
+  "MonksActiveTiles.ctrl.rollattack": "Type of action",
   "MonksActiveTiles.ctrl.rolldamage": "Roll Damage",
   "MonksActiveTiles.ctrl.volume": "Volume",
   "MonksActiveTiles.ctrl.incharacter": "In Character",
@@ -247,6 +248,9 @@
   "MonksActiveTiles.ctrl.select-target": "Select Target",
   "MonksActiveTiles.ctrl.close-means-no": "Closing dialog triggers no goto",
   "MonksActiveTiles.ctrl.fastforward": "Fast forward",
+  "MonksActiveTiles.ctrl.width": "Width",
+  "MonksActiveTiles.ctrl.height": "Height",
+  "MonksActiveTiles.ctrl.chatcard": "Show Chat Card",
 
   "MonksActiveTiles.mode.enter": "Enter",
   "MonksActiveTiles.mode.exit": "Exit",
@@ -368,6 +372,10 @@
   "MonksActiveTiles.msgtype.MessageAndBubble": "Chat Message and Token Bubble",
   "MonksActiveTiles.msgtype.MessageOnly": "Chat Message Only",
   "MonksActiveTiles.msgtype.ChatBubble": "Token Bubble Only",
+
+  "MonksActiveTiles.attacktype.chatcard": "Chat Card",
+  "MonksActiveTiles.attacktype.attack": "Attack",
+  "MonksActiveTiles.attacktype.use": "Use",
 
   "MonksActiveTiles.transition.none": "None",
   "MonksActiveTiles.transition.fade": "Fade",
