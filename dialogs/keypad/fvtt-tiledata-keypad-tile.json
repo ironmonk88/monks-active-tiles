@@ -1,0 +1,125 @@
+{
+  "texture": {
+    "src": null,
+    "scaleX": 1,
+    "scaleY": 1,
+    "tint": null,
+    "offsetX": 0,
+    "offsetY": 0,
+    "rotation": 0
+  },
+  "x": 4600,
+  "y": 3600,
+  "z": 100,
+  "width": 200,
+  "height": 200,
+  "rotation": 0,
+  "alpha": 1,
+  "flags": {
+    "monks-active-tiles": {
+      "active": true,
+      "record": false,
+      "restriction": "all",
+      "controlled": "all",
+      "trigger": [
+        "click"
+      ],
+      "allowpaused": false,
+      "usealpha": false,
+      "pointer": false,
+      "pertoken": false,
+      "minrequired": 0,
+      "chance": 100,
+      "fileindex": 0,
+      "actions": [
+        {
+          "action": "dialog",
+          "data": {
+            "dialogtype": "custom",
+            "title": "",
+            "content": "",
+            "file": "/modules/monks-active-tiles/dialogs/keypad/keypad.html",
+            "for": "token",
+            "yes": "",
+            "no": "",
+            "buttons": [],
+            "options": "",
+            "closeNo": true,
+            "width": "618",
+            "height": ""
+          },
+          "id": "VWcC2dhTKQjsuH4L",
+          "_button-list": ""
+        },
+        {
+          "action": "anchor",
+          "data": {
+            "tag": "12345",
+            "stop": true
+          },
+          "id": "qrUpNPNQR0dW1NQr"
+        },
+        {
+          "action": "chatmessage",
+          "data": {
+            "flavor": "",
+            "text": "You've entered the correct code",
+            "entity": "",
+            "incharacter": false,
+            "chatbubble": "true",
+            "for": "all",
+            "language": ""
+          },
+          "id": "mKNF72BX4N5kGC7Q"
+        },
+        {
+          "action": "anchor",
+          "data": {
+            "tag": "_failedlanding",
+            "stop": true
+          },
+          "id": "gm3TCccm4HujLzY5"
+        },
+        {
+          "action": "chatmessage",
+          "data": {
+            "flavor": "",
+            "text": "Unauthorized access",
+            "entity": "",
+            "incharacter": false,
+            "chatbubble": "true",
+            "for": "all",
+            "language": ""
+          },
+          "id": "CtMz6HY4IJkLm43B"
+        }
+      ],
+      "files": []
+    },
+    "exportSource": {
+      "world": "lost-mine-of-phandelver",
+      "system": "dnd5e",
+      "coreVersion": "10.291",
+      "systemVersion": "2.1.5"
+    }
+  },
+  "overhead": false,
+  "roof": false,
+  "occlusion": {
+    "mode": 1,
+    "alpha": 0,
+    "radius": null
+  },
+  "video": {
+    "loop": true,
+    "autoplay": true,
+    "volume": 0
+  },
+  "hidden": false,
+  "locked": false,
+  "id": "9KWI0Vxgwff9Ln3M",
+  "name": "Keypad Tile",
+  "visible": true,
+  "img": null,
+  "thumbnail": "modules/monks-active-tiles/img/cube.svg"
+}
