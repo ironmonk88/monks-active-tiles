@@ -4,7 +4,7 @@
     <a class="item" data-tab="trigger-images"><i class="fas fa-image"></i> Images</a>
 </nav>
 
-<div class="matt-tab" data-tab="trigger-setup">
+<div class="tab matt-tab" data-tab="trigger-setup">
     <p class="notes">{{ localize "MonksActiveTiles.TriggersHint" }}</p>
 
     <div class="form-group">
@@ -109,9 +109,9 @@
     </div>
 </div>
 
-<div class="matt-tab" data-tab="trigger-actions">
+<div class="tab matt-tab" data-tab="trigger-actions">
     {{#if sounds}}
-    <ol class="items-list sounds-list">
+    <ol class="items-list sounds-list" data-collection="sounds">
         <li class="items-header flexrow">
             <h3 class="item-name flexrow">{{ localize "MonksActiveTiles.Sounds" }}</h3>
             <div class="item-controls flexrow"></div>
@@ -119,7 +119,7 @@
 
         <ol class="item-list">
             {{#each sounds}}
-            <li class="item flexrow " data-id="{{this.id}}" data-collection="actions" draggable="true">
+            <li class="item flexrow " data-id="{{this.id}}" draggable="true">
                 <div class="item-name flexrow">
                     <h4 style="white-space: normal;">{{this.name}}</h4>
                 </div>
@@ -133,7 +133,7 @@
     </ol>
     {{/if}}
 
-    <ol class="items-list action-items">
+    <ol class="items-list action-items" data-collection="actions">
         <li class="items-header flexrow">
             <h3 class="item-name flexrow">{{ localize "MonksActiveTiles.Actions" }}</h3>
 
@@ -146,7 +146,7 @@
 
         <ol class="item-list" style="position: relative;">
             {{#each actions}}
-            <li class="item flexrow " data-id="{{this.id}}" data-collection="actions" draggable="true">
+            <li class="item flexrow " data-id="{{this.id}}" draggable="true">
                 {{#each this.landings}}
                 <div class="landing-marker" marker="{{this}}">&nbsp;</div>
                 {{/each}}
@@ -164,7 +164,7 @@
     </ol>
 </div>
 
-<div class="matt-tab" data-tab="trigger-images">
+<div class="tab matt-tab" data-tab="trigger-images">
     <p class="notes">{{ localize "MonksActiveTiles.TriggersImages" }}</p>
 
     <div class="form-group">
@@ -174,7 +174,7 @@
         </div>
     </div>
 
-    <ol class="files-list items-list">
+    <ol class="files-list items-list" data-collection="files">
         <li class="items-header flexrow">
             <div class="item-controls" style="text-align: right;flex: 1;">
                 <a title="Browse Files" class="browse-files" style="margin-right: 12px;"><i class="fas fa-plus"></i> Add</a>

@@ -559,10 +559,14 @@ export class ActionConfig extends FormApplication {
                 const fd = new FormDataExtended(form);
                 let data = foundry.utils.expandObject(fd.object);
 
-                if (!isNaN(data.location.x))
+                if (!isNaN(data.location.x)) {
                     data.location.x = parseInt(data.location.x);
-                if (!isNaN(data.location.y))
+                    data.location.id = "";
+                }
+                if (!isNaN(data.location.y)) {
                     data.location.y = parseInt(data.location.y);
+                    data.location.id = "";
+                }
 
                 let location = data.location;
                 location.name = await MonksActiveTiles.locationName(location);

@@ -41,7 +41,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             let data = MonksActiveTiles.mergeArray(super.defaultOptions, {
                 classes: ["monks-active-tiles"],
                 scrollY: ["ol.item-list"],
-                dragDrop: [{ dragSelector: ".item", dropSelector: ".item-list" }, { dragSelector: ".item", dropSelector: ".file-list" }],
+                dragDrop: [{ dragSelector: ".item", dropSelector: ".items-list" }, { dragSelector: ".item", dropSelector: ".files-list" }],
                 tabs: [{ navSelector: '.tabs[data-group="triggers"]', contentSelector: '.tab[data-tab="triggers"]', initial: "trigger-setup" }]
             });
             data.tabs[0].navSelector = ".sheet-tabs:not(.trigger-tabs)";
@@ -190,10 +190,11 @@ export const WithActiveTileConfig = (TileConfig) => {
 
         _onDragStart(event) {
             let li = event.currentTarget.closest(".item");
+            let list = event.currentTarget.closest(".items-list");
             const dragData = {
                 type: this.object.constructor.documentName,
                 tileId: this.object.id,
-                collection: li.dataset.collection,
+                collection: list.dataset.collection,
                 id: li.dataset.id
             };
             event.dataTransfer.setData("text/plain", JSON.stringify(dragData));
@@ -217,32 +218,39 @@ export const WithActiveTileConfig = (TileConfig) => {
             }
 
             // Identify the drop target
-            const target = event.target.closest(".item") || null;
+            let target = event.target.closest(".item") || null;
+            const list = event.target.closest(".items-list") || null;
 
             if (data.tileId != this.object.id) {
-                if (data.collection == target.dataset.collection) {
+                if (data.collection == list.dataset.collection) {
                     let src = canvas.scene.tiles.get(data.tileId);
                     let action = getProperty(src, "flags.monks-active-tiles.actions")?.find(a => a.id == data.id);
 
                     if (action) {
                         let newAction = duplicate(action);
                         newAction.id = makeid();
-                        let items = duplicate(this[target.dataset.collection]);
-                        let to = items.findIndex(a => a.id == target.dataset.id);
+                        let items = duplicate(this[list.dataset.collection]);
+                        if (items.length && !target)
+                            target = $(`li[data-id="${items[0].id}"]`, this.element).get(0);
+                        let to = items.findIndex(a => a.id == target?.dataset.id) || 0;
                         items.splice(to, 0, newAction);
-                        this.object.flags["monks-active-tiles"][target.dataset.collection] = items;
+                        this.object.flags["monks-active-tiles"][list.dataset.collection] = items;
 
                         let element = $(`.action-items li[data-id="${data.id}"]`).clone();
-                        $(element).attr('data-id', newAction.id).insertBefore(target);
+                        if (target)
+                            $(element).attr('data-id', newAction.id).insertBefore(target);
+                        else
+                            $('.item-list', list).append(element);
                         $('.action-edit', element).click(this._editAction.bind(this));
-                        $('.action-delete', element).click(this._deleteAction.bind(this));;
+                        $('.action-delete', element).click(this._deleteAction.bind(this));
+                        element[0].addEventListener("dragstart", this._onDragStart.bind(this));
                         this.setPosition({ height: 'auto' });
                     }
                 }
             } else {
                 // Call the drop handler
                 if (target && target.dataset.id) {
-                    let items = duplicate(this[target.dataset.collection]);
+                    let items = duplicate(this[list.dataset.collection]);
 
                     if (data.id === target.dataset.id) return; // Don't drop on yourself
 
@@ -251,7 +259,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                     log('from', from, 'to', to);
                     items.splice(to, 0, items.splice(from, 1)[0]);
 
-                    this.object.flags["monks-active-tiles"][target.dataset.collection] = items;
+                    this.object.flags["monks-active-tiles"][list.dataset.collection] = items;
                     if (from < to)
                         $('.item[data-id="' + data.id + '"]', this.element).insertAfter(target);
                     else

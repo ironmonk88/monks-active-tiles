@@ -146,7 +146,7 @@ export let getValue = async (val = "", args, entity, options = {operation:'assig
                         val = (val.startsWith("==") ? val.substring(2) : (val.startsWith("=") ? val.substring(1) : val));
                         val = eval(`[${Array.from(options.prop).map(v => typeof v == 'string' ? '"' + v + '"' : v).join(',')}].includes(${val})`);
                     } else {
-                        val = (val.startsWith("=") && !val.startsWith("==") ? "=" + val : (val.startsWith("==") || val.startsWith(">") || val.startsWith("<") ? val : "== " + val));
+                        val = (val.startsWith("=") && !val.startsWith("==") ? "=" + val : (val.startsWith("==") || val.startsWith(">") || val.startsWith("<") || val.indexOf("==") >= 0 ? val : "== " + val));
                         val = eval((typeof options.prop == 'string' ? `"${options.prop}"` : options.prop) + ' ' + val);
                     }
                 }
@@ -394,7 +394,8 @@ export class MonksActiveTiles {
         return name;
     }
 
-    static async getLocation(_location, value, args = {}) {
+    static async getLocation(_location, args = {}) {
+        let value = args.value;
         let location = duplicate(_location);
 
         if (location.id == 'previous')
@@ -469,9 +470,11 @@ export class MonksActiveTiles {
                 } else
                     location[i] = null;
             } else {
+                let x = await getValue(l.x, args);
+                let y = await getValue(l.y, args);
                 location[i] = {
-                    x: l.x,
-                    y: l.y,
+                    x: x,
+                    y: y,
                     scale: l.scale,
                     scene: l.sceneId || canvas.scene.id
                 };
@@ -842,7 +845,7 @@ export class MonksActiveTiles {
                     const form = html[0].querySelector("form");
                     if (form) {
                         const fd = new FormDataExtended(form);
-                        data = foundry.utils.mergeObject(data, fd.toObject());
+                        data = foundry.utils.mergeObject(data, fd.object);
                     }
 
                     return data;
@@ -1015,7 +1018,7 @@ export class MonksActiveTiles {
             alpha: (entity.document.hidden ? (game.user.isGM ? 0.5 : 0) : entity.document.alpha ?? 1),
             hidden: entity.document.hidden
         };
-        if (!(entity instanceof Tile || entity instanceof AmbientSound)) {
+        if (entity instanceof Tile || entity instanceof Drawing) {
             to.x += ((entity.document.width || entity.document.shape?.width || 0) / 2);
             to.y += ((entity.document.height || entity.document.shape?.height || 0) / 2);
         }
@@ -1033,15 +1036,15 @@ export class MonksActiveTiles {
         let animations = {};
         // Define attributes
         let attributes = [];
-        //let positionChange = false;
+        let positionChange = false;
 
         if (from.x != undefined && to.x != undefined && from.x != to.x) {
             attributes.push({ parent: object, attribute: 'x', from: from.x, to: to.x });
-            //positionChange = true;
+            positionChange = true;
         }
         if (from.y != undefined && to.y != undefined && from.y != to.y) {
             attributes.push({ parent: object, attribute: 'y', from: from.y, to: to.y });
-            //positionChange = true;
+            positionChange = true;
         }
         if (attributes.length)
             animations["movement"] = attributes;
@@ -1753,6 +1756,26 @@ export class MonksActiveTiles {
             const oldTileCreatePreview = Tile.prototype.constructor.createPreview;
             Tile.prototype.constructor.createPreview = function (event) {
                 return tileCreatePreview.call(this, oldTileCreatePreview.bind(this), ...arguments);
+            }
+        }
+
+        let clickMacro = function (wrapped, ...args) {
+            let waitingType = MonksActiveTiles.waitingInput?.waitingfield?.data('type');
+            if (waitingType == 'entity') {
+                let event = args[0];
+                const macroId = $(event.currentTarget).closest('.macro').data('macroId');
+                let macro = game.macros.get(macroId);
+                MonksActiveTiles.controlEntity(macro);
+            } else
+                return wrapped(...args);
+        }
+
+        if (game.modules.get("lib-wrapper")?.active) {
+            libWrapper.register("monks-active-tiles", "Hotbar.prototype._onClickMacro", clickMacro, "MIXED");
+        } else {
+            const oldClickMacro = Hotbar.prototype._onClickMacro;
+            Hotbar.prototype._onClickMacro = function (event) {
+                return clickMacro.call(this, oldClickMacro.bind(this), ...arguments);
             }
         }
 
@@ -2784,7 +2807,7 @@ export class MonksActiveTiles {
                             if (entity.parent)
                                 entity.parent.ownership[game.user.id] = CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER;
                         }
-                        entity.sheet.render(true, { force: !data.permission, pageId: data.page, anchor: data.subsection?.slugify() });
+                        entity.sheet.render(true, { force: !data.permission, pageId: data.page, anchor: data.subsection?.slugify().replace(/["']/g, "").substring(0, 64) });
                         if (!data.permission) {
                             if (entity._source.ownership[game.user.id] == undefined)
                                 delete entity.ownership[game.user.id];

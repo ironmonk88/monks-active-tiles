@@ -1,3 +1,29 @@
+## Version 10.21
+
+Added support for using handlebars with destination values
+
+Fixed isses with finding the appropriate teleport and move location when using randome within or relative
+
+Fixed issues with how the anchor links are slugified when opening a journal entry.
+
+Fixed issue when increasing or decreasing a variable, if the variable hasn't been set yet.
+
+Fixed issue with the custom Dialog adding a button will no longer fill with the old values.
+
+Fixed issue with dragging and dropping actions between tiles when there are no actions on the rdestinatin tile.
+
+Fixed issue with the Tile Directory, when importing a tile to a tile within a directory.
+
+Fixed issue with using the modulus operator in values.
+
+Fixed warning about deprecation of the toObject function.
+
+Fixed issues with animating the movement of Tiles.
+
+Added the option to click on Macros on the hotbar to use when selecting as an entity for running a macro.
+
+Fixed issues that v11 was having with tabs.  This may cause issues with other modules in v10 unfortunately.
+
 ## Version 10.20
 
 Fixed issue if Hurt/Heal action is run against a Token that isn't linked to an Actor.

@@ -704,7 +704,7 @@ export class TileTemplates extends SidebarDirectory {
                                             const preserve = Object.fromEntries(["_id", "sort", "ownership"].map(k => {
                                                 return [k, foundry.utils.getProperty(document, k)];
                                             }));
-                                            preserve.folder = document.folder?.id;
+                                            preserve.folder = document.folder;
                                             foundry.utils.mergeObject(data, preserve);
 
                                             if (importData instanceof Array)

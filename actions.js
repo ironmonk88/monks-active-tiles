@@ -141,7 +141,7 @@ export class ActionManager {
                     const { tile, action, userid, value } = args;
                     let panfor = action.data.panfor || 'trigger';
 
-                    let dests = await MonksActiveTiles.getLocation.call(tile, action.data.location, value, { userid });
+                    let dests = await MonksActiveTiles.getLocation.call(tile, action.data.location, args);
 
                     for (let dest of dests) {
                         if (dest.scene != undefined && dest.scene != canvas.scene.id)
@@ -294,7 +294,7 @@ export class ActionManager {
                         y: tile.y + (Math.abs(tile.height) / 2)
                     }
 
-                    let dests = await MonksActiveTiles.getLocation.call(tile, action.data.location, value);
+                    let dests = await MonksActiveTiles.getLocation.call(tile, action.data.location, args);
                     for (let tokendoc of entities) {
                         let midX = ((tokendoc.parent.dimensions.size * Math.abs(tokendoc.width)) / 2);
                         let midY = ((tokendoc.parent.dimensions.size * Math.abs(tokendoc.height)) / 2);
@@ -356,29 +356,41 @@ export class ActionManager {
                                 entDest.y = dest.dest.y + (dest.dest.height / 2);
                             } else if (destpos == "relative") {
                                 let usePt = duplicate(pt);
-                                if (method != "enter" && method != "exit" && tile.pointWithin(pt))
+                                if (!["enter", "exit", "click", "dblclick", "rightclick"].includes(method) && tile.pointWithin(pt))
                                     usePt = duplicate(oldPos);
+
+                                let deltaX = (usePt.x - oldTile.x);
+                                let deltaY = (usePt.y - oldTile.y);
+
+                                let destW = Math.abs(dest.dest.width);
+                                let destH = Math.abs(dest.dest.width);
+
+                                if (method == "enter" || method == "exit") {
+                                    let hW = ((scene.dimensions.size * Math.abs(tokendoc.width)) / 2);
+                                    let hH = ((scene.dimensions.size * Math.abs(tokendoc.height)) / 2);
+
+                                    destW -= (method == "enter" ? hW : -hW);
+                                    destH -= (method == "enter" ? hH : -hH);
+                                }
+
+                                deltaX = deltaX * (destW / Math.abs(tile.width));
+                                deltaY = deltaY * (destH / Math.abs(tile.height));
+
                                 let midDestX = dest.dest.x + (Math.abs(dest.dest.width) / 2);
                                 let midDestY = dest.dest.y + (Math.abs(dest.dest.height) / 2);
-                                let deltaX = (usePt.x - oldTile.x) * (Math.abs(dest.dest.width) / Math.abs(tile.width));
-                                let deltaY = (usePt.y - oldTile.y) * (Math.abs(dest.dest.height) / Math.abs(tile.height));
-
-                                entDest.x = Math.clamped(midDestX + deltaX, dest.dest.x, dest.dest.x + dest.dest.width) - (Math.sign(deltaX) * ((scene.dimensions.size * Math.abs(tokendoc.width)) / 2));
-                                entDest.y = Math.clamped(midDestY + deltaY, dest.dest.y, dest.dest.y + dest.dest.height) - (Math.sign(deltaY) * ((scene.dimensions.size * Math.abs(tokendoc.height)) / 2));
+                                
+                                entDest.x = Math.clamped(midDestX + deltaX, dest.dest.x, dest.dest.x + dest.dest.width);
+                                entDest.y = Math.clamped(midDestY + deltaY, dest.dest.y, dest.dest.y + dest.dest.height);
                             } else {
                                 // Find a random location within this Tile
-                                let w = Math.abs(dest.dest.width) - (action.data.snap ? 0 : (Math.abs(tokendoc.width) * scene.dimensions.size));
-                                let h = Math.abs(dest.dest.height) - (action.data.snap ? 0 : (Math.abs(tokendoc.height) * scene.dimensions.size));
-                                entDest.x = dest.dest.x + Math.floor((Math.random() * w));
-                                entDest.y = dest.dest.y + Math.floor((Math.random() * h));
+                                entDest.x = dest.dest.x + Math.floor((Math.random() * Math.abs(dest.dest.width)));
+                                entDest.y = dest.dest.y + Math.floor((Math.random() * Math.abs(dest.dest.height)));
                             }
 
                             if (!dest.dest.pointWithin(entDest)) {
                                 // If this dest is not within the Tile, then find a random point
-                                let w = Math.abs(dest.dest.width) - (action.data.snap ? 0 : (Math.abs(tokendoc.width) * scene.dimensions.size));
-                                let h = Math.abs(dest.dest.height) - (action.data.snap ? 0 : (Math.abs(tokendoc.height) * scene.dimensions.size));
-                                entDest.x = dest.dest.x + Math.floor((Math.random() * w));
-                                entDest.y = dest.dest.y + Math.floor((Math.random() * h));
+                                entDest.x = dest.dest.x + Math.floor((Math.random() * Math.abs(dest.dest.width)));
+                                entDest.y = dest.dest.y + Math.floor((Math.random() * Math.abs(dest.dest.height)));
                             }
                         }
 
@@ -406,13 +418,13 @@ export class ActionManager {
                             if (action.data.avoidtokens)
                                 newPos = MonksActiveTiles.findVacantSpot(newPos, tokendoc, tokendoc.parent, newTokens, entDest, action.data.remotesnap);
 
-                            newPos.x -= midX;
-                            newPos.y -= midY;
-
                             if (action.data.remotesnap) {
                                 let [y, x] = canvas.grid.grid.getGridPositionFromPixels(newPos.x, newPos.y);
                                 newPos.x = x * tokendoc.parent.dimensions.size;
                                 newPos.y = y * tokendoc.parent.dimensions.size;
+                            } else {
+                                newPos.x -= midX;
+                                newPos.y -= midY;
                             }
 
                             let offset = { dx: oldPos.x - newPos.x, dy: oldPos.y - newPos.y };
@@ -453,13 +465,13 @@ export class ActionManager {
                             if (action.data.avoidtokens)
                                 newPos = MonksActiveTiles.findVacantSpot(newPos, tokendoc, scene, newTokens, entDest, action.data.remotesnap);
 
-                            newPos.x -= ((scene.dimensions.size * Math.abs(tokendoc.width)) / 2);
-                            newPos.y -= ((scene.dimensions.size * Math.abs(tokendoc.height)) / 2);
-
                             if (action.data.remotesnap) {
                                 let gs = scene.dimensions.size;
                                 newPos.x = Math.floor(newPos.x / gs) * gs;
                                 newPos.y = Math.floor(newPos.y / gs) * gs;
+                            } else {
+                                newPos.x -= ((scene.dimensions.size * Math.abs(tokendoc.width)) / 2);
+                                newPos.y -= ((scene.dimensions.size * Math.abs(tokendoc.height)) / 2);
                             }
 
                             let td = mergeObject(await tokendoc.toObject(), { x: newPos.x, y: newPos.y, 'flags.monks-active-tiles.teleporting': true, 'flags.monks-active-tiles.current': true });
@@ -610,7 +622,7 @@ export class ActionManager {
                     }
                 },
                 fn: async (args = {}) => {
-                    const { tile, tokens, action, value, pt } = args;
+                    const { tile, tokens, action, value, pt, method } = args;
 
                     let oldTile = {
                         x: tile.x + (Math.abs(tile.width) / 2),
@@ -632,8 +644,8 @@ export class ActionManager {
 
                             let object = entity.object;
 
-                            let midX = ((Math.abs(entity.width) * entity.parent.dimensions.size) / 2);
-                            let midY = ((Math.abs(entity.height) * entity.parent.dimensions.size) / 2);
+                            let midX = entity instanceof TokenDocument ? ((Math.abs(entity.width) * entity.parent.dimensions.size) / 2) : Math.abs(entity.width || entity.shape?.width || 0) / 2;
+                            let midY = entity instanceof TokenDocument ? ((Math.abs(entity.height) * entity.parent.dimensions.size) / 2) : Math.abs(entity.height || entity.shape?.height || 0) / 2;
 
                             let oldPos = {
                                 x: entity.x + midX,
@@ -641,7 +653,7 @@ export class ActionManager {
                             }
 
                             let location = duplicate(action.data.location);
-                            let dests = await MonksActiveTiles.getLocation.call(tile, location, value, { pt: { x: pt?.x - midX, y: pt?.y - midY } });
+                            let dests = await MonksActiveTiles.getLocation.call(tile, location, Object.assign({}, args, { pt: { x: pt?.x - midX, y: pt?.y - midY } }));
                             let dest = dests.pickRandom(); //[Math.floor(Math.random() * dests.length)];
 
                             let entDest = duplicate(dest);
@@ -682,28 +694,45 @@ export class ActionManager {
 
                             if (dest.dest instanceof TileDocument) {
                                 if (action.data.position == "center") {
-                                    entDest.x = dest.dest.x + (dest.dest.width / 2) - midX;
-                                    entDest.y = dest.dest.y + (dest.dest.height / 2) - midY;
+                                    entDest.x = dest.dest.x + (dest.dest.width / 2);
+                                    entDest.y = dest.dest.y + (dest.dest.height / 2);
                                 } else if (action.data.position == "relative") {
+                                    let usePt = duplicate(pt);
+                                    if (!["enter", "exit", "click", "dblclick", "rightclick"].includes(method) && tile.pointWithin(pt))
+                                        usePt = duplicate(oldPos);
+
+                                    let deltaX = (usePt.x - oldTile.x);
+                                    let deltaY = (usePt.y - oldTile.y);
+
+                                    let destW = Math.abs(dest.dest.width);
+                                    let destH = Math.abs(dest.dest.width);
+
+                                    if (method == "enter" || method == "exit") {
+                                        let hW = ((entity.parent.dimensions.size * Math.abs(entity.width)) / 2);
+                                        let hH = ((entity.parent.dimensions.size * Math.abs(entity.height)) / 2);
+
+                                        destW -= (method == "enter" ? hW : -hW);
+                                        destH -= (method == "enter" ? hH : -hH);
+                                    }
+
+                                    deltaX = deltaX * (destW / Math.abs(tile.width));
+                                    deltaY = deltaY * (destH / Math.abs(tile.height));
+
                                     let midDestX = dest.dest.x + (Math.abs(dest.dest.width) / 2);
                                     let midDestY = dest.dest.y + (Math.abs(dest.dest.height) / 2);
-                                    let deltaX = (pt.x - oldTile.x) * (Math.abs(dest.dest.width) / Math.abs(tile.width));
-                                    let deltaY = (pt.y - oldTile.y) * (Math.abs(dest.dest.height) / Math.abs(tile.height));
 
-                                    entDest.x = Math.clamped(midDestX + deltaX, dest.dest.x, dest.dest.x + dest.dest.width) - (Math.sign(pt.x - oldTile.x) * midX);
-                                    entDest.y = Math.clamped(midDestY + deltaY, dest.dest.y, dest.dest.y + dest.dest.height) - (Math.sign(pt.y - oldTile.y) * midY);
+                                    entDest.x = Math.clamped(midDestX + deltaX, dest.dest.x, dest.dest.x + dest.dest.width);
+                                    entDest.y = Math.clamped(midDestY + deltaY, dest.dest.y, dest.dest.y + dest.dest.height);
                                 } else {
                                     // Find a random location within this Tile
-                                    let w = Math.abs(dest.dest.width) - (action.data.snap ? 0 : (Math.abs(entity.width) * entity.parent.dimensions.size));
-                                    let h = Math.abs(dest.dest.height) - (action.data.snap ? 0 : (Math.abs(entity.height) * entity.parent.dimensions.size));
-                                    entDest.x = dest.dest.x + Math.floor((Math.random() * w));
-                                    entDest.y = dest.dest.y + Math.floor((Math.random() * h));
+                                    entDest.x = dest.dest.x + Math.floor((Math.random() * Math.abs(dest.dest.width)));
+                                    entDest.y = dest.dest.y + Math.floor((Math.random() * Math.abs(dest.dest.height)));
                                 }
                             }
 
                             let newPos = {
-                                x: entDest.x,// - (location?.id == "origin" || !(entity instanceof TokenDocument) ? 0 : ((object.w || object.width) / 2)),
-                                y: entDest.y// - (location?.id == "origin" || !(entity instanceof TokenDocument) ? 0 : ((object.h || object.height) / 2))
+                                x: entDest.x,
+                                y: entDest.y
                             };
 
                             if (!canvas.dimensions.rect.contains(newPos.x, newPos.y)) {
@@ -715,6 +744,9 @@ export class ActionManager {
                                 let gs = entity.parent.dimensions.size;
                                 newPos.x = Math.floor(newPos.x / gs) * gs;
                                 newPos.y = Math.floor(newPos.y / gs) * gs;
+                            } else {
+                                newPos.x -= midX;
+                                newPos.y -= midY;
                             }
 
                             let ray = new Ray({ x: entity.x, y: entity.y }, { x: newPos.x, y: newPos.y });
@@ -728,26 +760,7 @@ export class ActionManager {
                                 duration = action.data?.duration * 1000;
                             let time = new Date().getTime() + duration;
 
-                            if (object instanceof Token) {
-                                //if (action.data.wait) {
-                                //promises.push(object.setPosition(newPos.x, newPos.y));
-                                //batch.add("update", entity, { x: newPos.x, y: newPos.y }, { bypass: !action.data.trigger, animate: false });
-                                //await object.setPosition(newPos.x, newPos.y);
-                                //await entity.update({ x: newPos.x, y: newPos.y }, { bypass: !action.data.trigger, animate: false });
-                                //} else
-                                batch.add("update", entity, { x: newPos.x, y: newPos.y }, { bypass: !action.data.trigger, originaltile: tile.id, animate: true, animation: { duration, time } });
-                                //entity.update({ x: newPos.x, y: newPos.y }, { bypass: !action.data.trigger, animate: true });
-                            } else {
-                                //promises.push(MonksActiveTiles.moveEntity(entity, { x: newPos.x, y: newPos.y }, time));
-                                //MonksActiveTiles.emit("move", { entityid: entity.uuid, x: newPos.x, y: newPos.y, time: time });
-
-                                //if (action.data.wait)
-                                //    await animate().then(async () => { await entity.update({ x: newPos.x, y: newPos.y }); });
-                                //else
-                                //     animate().then(async () => { await entity.update({ x: newPos.x, y: newPos.y }); });
-
-                                batch.add("update", entity, { x: newPos.x, y: newPos.y }, { bypass: !action.data.trigger, originaltile: tile.id, animate: true, animation: { duration, time } });
-                            }
+                            batch.add("update", entity, { x: newPos.x, y: newPos.y }, { bypass: !action.data.trigger, originaltile: tile.id, animate: true, animation: { duration, time } });
 
                             MonksActiveTiles.addToResult(entity, result);
                         }
@@ -1052,7 +1065,7 @@ export class ActionManager {
                     let entities = await MonksActiveTiles.getEntities(args, action.data?.collection || 'actors', (action.data?.entity?.id == "players" && action.data?.activetoken ? { id: "players:active" } : null));
 
                     if (entities && entities.length > 0) {
-                        let dests = await MonksActiveTiles.getLocation.call(tile, action.data.location, value);
+                        let dests = await MonksActiveTiles.getLocation.call(tile, action.data.location, args);
 
                         const actors = [];
                         for (let entity of entities) {
@@ -1333,7 +1346,7 @@ export class ActionManager {
                         let batch = new BatchManager();
                         const cls = getDocumentClass("Note");
                         for (let entity of entities) {
-                            let dests = await MonksActiveTiles.getLocation.call(tile, action.data.location, value);
+                            let dests = await MonksActiveTiles.getLocation.call(tile, action.data.location, args);
 
                             let result = { continue: true, entities: [] };
                             if (!dests.length)
@@ -1724,7 +1737,7 @@ export class ActionManager {
                         onBlur: (app) => {
                             app.checkConditional();
                         },
-                        help: "If you want to increase the value use '+ 10', if you want to have the value rolled use '[[1d4]]'"
+                        help: "If you want to increase the value use '+10', if you want to have the value rolled use '-[[1d4]]'"
                     },
                     {
                         id: "chatMessage",
@@ -3382,7 +3395,7 @@ export class ActionManager {
                                 permission: action.data.permission,
                                 enhanced: action.data.enhanced,
                                 page: action.data.page,
-                                subsection: action.data.subsection?.slugify()
+                                subsection: action.data.subsection?.slugify().replace(/["']/g, "").substring(0, 64)
                             });
                         }
 
@@ -5766,7 +5779,8 @@ export class ActionManager {
                             */
 
                             let variables = getProperty(tile, "flags.monks-active-tiles.variables") || {};
-                            let val = await getValue(action.data.value, args, entity, { timestamp: new Date().toLocaleString(), prop: variables[name] });
+                            let prop = variables[name] == undefined ? (action.data.value.startsWith("+") || action.data.value.startsWith("-") ? 0 : "") : variables[name];
+                            let val = await getValue(action.data.value, args, entity, { timestamp: new Date().toLocaleString(), prop });
 
                             /*
                             if (val.includes("{{")) {
