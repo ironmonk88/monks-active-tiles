@@ -1,6 +1,6 @@
 # V11, PLEASE READ
 **DO NOT post issues that just say "Support v11".  We're working on it, and those kinds of tickets do not help in any way, and will be immediately closed.**
-If you have encountered a bug in v11, please see the discord channel to report it, and to see if your issue has already been reported.
+If you have encountered a bug in v11, please see the discord channel to report it, or to see if your issue has already been reported.
 
 # Monk's Active Tile Triggers
 Add-On Module for Foundry VTT
