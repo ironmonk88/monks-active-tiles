@@ -1,4 +1,4 @@
-﻿import { registerSettings } from "./settings.js";
+import { registerSettings } from "./settings.js";
 import { WithActiveTileConfig } from "./apps/active-tile-config.js"
 import { ActionConfig } from "./apps/action-config.js";
 import { TileTemplates } from "./apps/tile-templates.js";
@@ -1997,9 +1997,9 @@ export class MonksActiveTiles {
         }
 
         if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "PlaylistDirectory.prototype._onPlaylistCollapse", playlistCollapse, "MIXED");
+            libWrapper.register("monks-active-tiles", "PlaylistDirectory.prototype._onClickEntryName", playlistCollapse, "MIXED");
         } else {
-            const oldPlaylistCollapse = PlaylistDirectory.prototype._onPlaylistCollapse;
+            const oldPlaylistCollapse = PlaylistDirectory.prototype._onClickEntryName;
             PlaylistDirectory.prototype._onPlaylistCollapse = function (event) {
                 return playlistCollapse.call(this, oldPlaylistCollapse.bind(this), ...arguments);
             }
@@ -2174,45 +2174,45 @@ export class MonksActiveTiles {
         }
 
         if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "ActorDirectory.prototype._onClickDocumentName", clickDocumentName, "MIXED");
+            libWrapper.register("monks-active-tiles", "ActorDirectory.prototype._onClickEntryName", clickDocumentName, "MIXED");
         } else {
-            const oldClickActorName = ActorDirectory.prototype._onClickDocumentName;
+            const oldClickActorName = ActorDirectory.prototype._onClickEntryName;
             ActorDirectory.prototype._onClickDocumentName = function (event) {
                 return clickDocumentName.call(this, oldClickActorName.bind(this), ...arguments);
             }
         }
 
         if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "ItemDirectory.prototype._onClickDocumentName", clickDocumentName, "MIXED");
+            libWrapper.register("monks-active-tiles", "ItemDirectory.prototype._onClickEntryName", clickDocumentName, "MIXED");
         } else {
-            const oldClickItemName = ItemDirectory.prototype._onClickDocumentName;
+            const oldClickItemName = ItemDirectory.prototype._onClickEntryName;
             ItemDirectory.prototype._onClickDocumentName = function (event) {
                 return clickDocumentName.call(this, oldClickItemName.bind(this), ...arguments);
             }
         }
 
         if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "JournalDirectory.prototype._onClickDocumentName", clickDocumentName, "MIXED");
+            libWrapper.register("monks-active-tiles", "JournalDirectory.prototype._onClickEntryName", clickDocumentName, "MIXED");
         } else {
-            const oldClickJournalName = JournalDirectory.prototype._onClickDocumentName;
+            const oldClickJournalName = JournalDirectory.prototype._onClickEntryName;
             JournalDirectory.prototype._onClickDocumentName = function (event) {
                 return clickDocumentName.call(this, oldClickJournalName.bind(this), ...arguments);
             }
         }
 
         if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "SceneDirectory.prototype._onClickDocumentName", clickDocumentName, "MIXED");
+            libWrapper.register("monks-active-tiles", "SceneDirectory.prototype._onClickEntryName", clickDocumentName, "MIXED");
         } else {
-            const oldClickJournalName = SceneDirectory.prototype._onClickDocumentName;
+            const oldClickJournalName = SceneDirectory.prototype._onClickEntryName;
             SceneDirectory.prototype._onClickDocumentName = function (event) {
                 return clickDocumentName.call(this, oldClickJournalName.bind(this), ...arguments);
             }
         }
 
         if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "MacroDirectory.prototype._onClickDocumentName", clickDocumentName, "MIXED");
+            libWrapper.register("monks-active-tiles", "MacroDirectory.prototype._onClickEntryName", clickDocumentName, "MIXED");
         } else {
-            const oldClickJournalName = MacroDirectory.prototype._onClickDocumentName;
+            const oldClickJournalName = MacroDirectory.prototype._onClickEntryName;
             MacroDirectory.prototype._onClickDocumentName = function (event) {
                 return clickDocumentName.call(this, oldClickJournalName.bind(this), ...arguments);
             }
@@ -2226,9 +2226,9 @@ export class MonksActiveTiles {
         }
 
         if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "SidebarDirectory.prototype._onClickDocumentName", checkClickDocumentName, "MIXED");
+            libWrapper.register("monks-active-tiles", "SidebarDirectory.prototype._onClickEntryName", checkClickDocumentName, "MIXED");
         } else {
-            const oldClickJournalName = SidebarDirectory.prototype._onClickDocumentName;
+            const oldClickJournalName = SidebarDirectory.prototype._onClickEntryName;
             SidebarDirectory.prototype._onClickDocumentName = function (event) {
                 return checkClickDocumentName.call(this, oldClickJournalName.bind(this), ...arguments);
             }
@@ -2249,9 +2249,9 @@ export class MonksActiveTiles {
         }
 
         if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "Compendium.prototype._onClickEntry", clickCompendiumEntry, "MIXED");
+            libWrapper.register("monks-active-tiles", "Compendium.prototype._onClickEntryName", clickCompendiumEntry, "MIXED");
         } else {
-            const oldOnClickEntry = Compendium.prototype._onClickEntry;
+            const oldOnClickEntry = Compendium.prototype._onClickEntryName;
             Compendium.prototype._onClickEntry = function (event) {
                 return clickCompendiumEntry.call(this, oldOnClickEntry.bind(this), ...arguments);
             }
