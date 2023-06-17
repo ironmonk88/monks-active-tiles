@@ -2015,9 +2015,8 @@ export class MonksActiveTiles {
         let lastPosition = undefined;
         MonksActiveTiles.hoveredTiles = new Set();
 
-        document.body.addEventListener("mousemove", function () {
-
-            let mouse = canvas?.app?.renderer?.plugins?.interaction?.mouse;
+        let mouseMove = function(event){
+            let mouse = event;
             if (!mouse) return;
 
             const currentPosition = mouse.getLocalPosition(canvas.app.stage);
@@ -2089,7 +2088,13 @@ export class MonksActiveTiles {
             }
 
             lastPosition = currentPosition;
-        });
+        }
+
+        let _onMouseMove = function (wrapped, ...args) {
+            let event = args[0];
+            mouseMove.call(this, event);
+            wrapped(...args);
+        }
 
         let _onLeftClick = function (wrapped, ...args) {
             let event = args[0];
@@ -2129,6 +2134,15 @@ export class MonksActiveTiles {
             }
         }
 
+        if (game.modules.get("lib-wrapper")?.active) {
+            libWrapper.register("monks-active-tiles", "Canvas.prototype._onMouseMove", _onMouseMove, "WRAPPER");
+        } else {
+            const oldMouseMove = Canvas.prototype._onMouseMove;
+            Canvas.prototype._onClickLeft = function (event) {
+                return _onMouseMove.call(this, oldMouseMove.bind(this), ...arguments);
+            }
+        }
+        
         if (game.modules.get("lib-wrapper")?.active) {
             libWrapper.register("monks-active-tiles", "Canvas.prototype._onClickLeft", _onLeftClick, "WRAPPER");
         } else {
