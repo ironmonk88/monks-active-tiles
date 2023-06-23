@@ -294,6 +294,8 @@ export class ActionManager {
                         y: tile.y + (Math.abs(tile.height) / 2)
                     }
 
+                    let tokenTransfers = {};
+
                     let dests = await MonksActiveTiles.getLocation.call(tile, action.data.location, args);
                     for (let tokendoc of entities) {
                         let midX = ((tokendoc.parent.dimensions.size * Math.abs(tokendoc.width)) / 2);
@@ -442,7 +444,7 @@ export class ActionManager {
 
                             newTokens.push({ data: { x: newPos.x, y: newPos.y, width: tokendoc.width, height: tokendoc.height } });
 
-                            batch.add("update", tokendoc, { x: newPos.x, y: newPos.y, 'flags.monks-active-tiles.teleporting': true, 'flags.monks-active-tiles.current': true }, { bypass: true, animate: false, teleport: true, animation: { duration: 0 } })
+                            batch.add("update", tokendoc, { x: newPos.x, y: newPos.y, 'flags.monks-active-tiles.teleporting': true, 'flags.monks-active-tiles.current': true }, { bypass: true, animate: false, teleport: true, animation: { duration: 0 } });
                             //await tokendoc.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false, teleport: true });
                         } else {
                             result.tokens = [];
@@ -501,12 +503,19 @@ export class ActionManager {
                                 switchViews.push({ userid: [owners], sceneid: scene.id, newpos: newPos, oldpos: oldPos })
                                 //MonksActiveTiles.emit('switchview', { userid: [owners], sceneid: scene.id, newpos: newPos, oldpos: oldPos });
                             }
-                            ui.notifications.warn(`${tokendoc.name} has teleported to ${scene.name}`);
-
+                            if (!tokenTransfers[scene.id])
+                                tokenTransfers[scene.id] = { name: scene.name, tokens: [] };
+                            tokenTransfers[scene.id].tokens.push(tokendoc.name);
                             //result.tokens.push(newtoken);
                         }
                         //if (tokendoc && (samescene || !action.data.deletesource))
                         //    await tokendoc.unsetFlag('monks-active-tiles', 'teleporting');
+                    }
+
+                    if (Object.keys(tokenTransfers).length) {
+                        for (let scene of Object.values(tokenTransfers)) {
+                            ui.notifications.warn(`${scene.tokens.join(", ")} has teleported to ${scene.name}`);
+                        }
                     }
 
                     if (timeout)
@@ -515,24 +524,25 @@ export class ActionManager {
                     for (let offsetPan of offsetPans)
                         MonksActiveTiles.emit('offsetpan', offsetPan);
 
-                    await batch.execute().then((results) => {
-                        let merged = batch.mergeResults(results);
-                        let tokens = merged.filter(t => { return t.flags["monks-active-tiles"]?.teleporting; });
-                        tokens.forEach((t) => {
-                            batch.add("update", t, { "flags.monks-active-tiles.-=teleporting": null });
-                        });
+                    let results = await batch.execute();
 
-                        result.tokens = merged.filter(t => { return t.flags["monks-active-tiles"]?.current; });
-                        result.tokens.forEach((t) => {
-                            batch.add("update", t, { "flags.monks-active-tiles.-=current": null });
-                        });
+                    let merged = batch.mergeResults(results);
 
-                        batch.execute();
-
-                        for (let switchView of switchViews) {
-                            MonksActiveTiles.emit('switchview', switchView);
-                        }
+                    let tokens = merged.filter(t => { return t.flags["monks-active-tiles"]?.teleporting; });
+                    tokens.forEach((t) => {
+                        batch.add("update", t, { "flags.monks-active-tiles.-=teleporting": null });
                     });
+
+                    result.tokens = merged.filter(t => { return t.flags["monks-active-tiles"]?.current; });
+                    result.tokens.forEach((t) => {
+                        batch.add("update", t, { "flags.monks-active-tiles.-=current": null });
+                    });
+
+                    await batch.execute();
+
+                    for (let switchView of switchViews) {
+                        MonksActiveTiles.emit('switchview', switchView);
+                    }
 
                     window.setTimeout(async function () {
                         let batch = new BatchManager();
@@ -542,7 +552,7 @@ export class ActionManager {
                         }
                         await batch.execute();
                     }, 2000);
-
+                    
                     return result;
                 },
                 content: async (trigger, action) => {
@@ -1359,6 +1369,11 @@ export class ActionManager {
                                 entity = entity.entry;
                             }
                             if (entity instanceof JournalEntry) {
+                                if (entity?.compendium) {
+                                    const journalData = game.journal.fromCompendium(entity);
+                                    entity = await JournalEntry.implementation.create(journalData);
+                                }
+
                                 let dest = dests.pickRandom(tile.id);
 
                                 if (dest.dest instanceof TileDocument) {
@@ -1393,7 +1408,7 @@ export class ActionManager {
                                 // Validate the final position
                                 if (!canvas.dimensions.rect.contains(data.x, data.y)) return;
 
-                                // Submit the Token creation request and activate the Tokens layer (if not already active)
+
                                 batch.add("create", cls, data, { parent: tile.parent });
                                 MonksActiveTiles.addToResult(entity, result);
                             }
@@ -2149,7 +2164,7 @@ export class ActionManager {
                                 await entity.playAll();
                         } else {
                             if (action.data?.play == "stop")
-                                batch.add("update", entity, { playing: false });
+                                batch.add("update", entity, { playing: false, pausedTime: 0 });
                             else if (action.data?.play == "pause")
                                 batch.add("update", entity, { playing: false, pausedTime: entity.sound.currentTime });
                             else {
@@ -3027,8 +3042,8 @@ export class ActionManager {
                                 conditions = game.pf2e.ConditionManager.conditions;
                                 conditions = [...conditions].map(e => { return { id: e[0], label: e[1].name }; }).filter((value, index, array) => array.findIndex(a => a.label === value.label) === index);
                             }
-                            for (let effect of conditions.sort((a, b) => { return String(a.label).localeCompare(b.label) })) { //(i18n(a.label) > i18n(b.label) ? 1 : (i18n(a.label) < i18n(b.label) ? -1 : 0))
-                                result[effect.id] = i18n(effect.label);
+                            for (let effect of conditions.sort((a, b) => { return String(a.label || a.name).localeCompare(b.label || b.name) })) { //(i18n(a.label) > i18n(b.label) ? 1 : (i18n(a.label) < i18n(b.label) ? -1 : 0))
+                                result[effect.id] = i18n(effect.label || effect.name);
                             }
                             return result;
                         },
@@ -6095,7 +6110,12 @@ export class ActionManager {
                             app.checkConditional();
                         },
                         options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
-                        restrict: (entity) => { return (entity instanceof Token); }
+                        restrict: (entity) => { return (entity instanceof Token); },
+                        help: '<span style="color: #FF0000;">This should probably be using the Current Tokens <i class="fas fa-history fa-sm"></i> instead of the Triggering Tokens</span>',
+                        helpConditional: (app) => {
+                            let entity = JSON.parse($('input[name="data.entity"]', app.element).val() || "{}");
+                            return entity?.id == "token";
+                        }
                     },
                     {
                         id: "collection",

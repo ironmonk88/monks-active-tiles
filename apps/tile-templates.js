@@ -1,19 +1,23 @@
 import { MonksActiveTiles, log, error, setting, i18n, makeid } from '../monks-active-tiles.js';
 import { TemplateConfig } from '../apps/template-config.js';
 
-export class TileTemplates extends SidebarDirectory {
+export class TileTemplates extends DocumentDirectory {
     constructor(options = {}) {
         super(options);
         this._original = {};
 
+        const sortingModes = game.settings.get("core", "collectionSortingModes");
+        this.sortingMode = sortingModes["Tiles"] || "m";
+
+        this.folders = setting("tile-template-folders") || [];
+
         // Fix any folders that have no ids
-        let folders = setting("tile-template-folders") || [];
-        let checkFolders = folders.filter(f => {
+        let checkFolders = this.folders.filter(f => {
             if (f.folder == "") f.folder = null;
-            if (!folders.find(t => t._id == f.folder)) f.folder = null;
+            if (!this.folders.find(t => t._id == f.folder)) f.folder = null;
             return f._id;
         });
-        if (checkFolders.length != folders.length)
+        if (checkFolders.length != this.folders.length)
             game.settings.set("monks-active-tiles", "tile-template-folders", checkFolders);
     }
 
@@ -28,7 +32,8 @@ export class TileTemplates extends SidebarDirectory {
             scrollY: ["ol.directory-list"],
             dragDrop: [{ dragSelector: ".directory-item", dropSelector: ".directory-list" }],
             filters: [{ inputSelector: 'input[name="search"]', contentSelector: ".directory-list" }],
-            contextMenuSelector: ".document",
+            contextMenuSelector: ".directory-item.document",
+            entryClickSelector: ".entry-name",
             tabs: [],
             popOut: true,
             width: 300,
@@ -80,6 +85,7 @@ export class TileTemplates extends SidebarDirectory {
         }
         data.get = (id) => {
             let tile = data.find(t => t._id === id);
+            if (!tile) return null;
             tile.canUserModify = () => { return true; };
             tile.toObject = () => { return duplicate(tile); };
             tile.toCompendium = () => {
@@ -100,45 +106,157 @@ export class TileTemplates extends SidebarDirectory {
             }
             return tile;
         }
+        data.folders = this.folders;
+        data.toggleSortingMode = () => {
+            this.sortingMode = this.sortingMode === "a" ? "m" : "a";
+            const sortingModes = game.settings.get("core", "collectionSortingModes");
+            sortingModes["Tiles"] = this.sortingMode;
+            game.settings.set("core", "collectionSortingModes", sortingModes);
+        };
+        data.toggleSearchMode = () => {
+        }
         return data;
+    }
+
+    get collection() {
+        return this.constructor.collection;
     }
 
     static get folders() {
         return setting("tile-template-folders") || [];
     }
 
+    get maxFolderDepth() {
+        return CONST.FOLDER_MAX_DEPTH;
+    }
+
     initialize() {
-        let checkExpanded = function () {
-            return game.folders._expanded[this.id] || false;
-        }
+        this.folders = setting("tile-template-folders") || [];
 
         // Assign Folders
-        this.folders = this.constructor.folders;
         for (let folder of this.folders) {
-            folder.expanded = checkExpanded.bind(folder);
+            if (folder.uuid === undefined) {
+                Object.defineProperty(folder, 'uuid', {
+                    get: function () { return `Folder.${this.id}`; }
+                });
+            }
+            if (folder.expanded === undefined) {
+                Object.defineProperty(folder, 'expanded', {
+                    get: function () { return game.folders._expanded[this.uuid] || false; }
+                });
+            }
         }
 
         // Assign Documents
-        this.documents = this.constructor.collection;
+        this.documents = this.collection;
 
         // Build Tree
-        this.tree = this.constructor.setupFolders(this.folders, this.documents);
+        this.tree = this.buildTree(this.folders, this.documents);
+    }
+
+    buildTree(folders, entries) {
+        const handled = new Set();
+        const createNode = (root, folder, depth) => {
+            return { root, folder, depth, visible: false, children: [], entries: [] };
+        };
+
+        // Create the tree structure
+        const tree = createNode(true, null, 0);
+        const depths = [[tree]];
+
+        // Iterate by folder depth, populating content
+        for (let depth = 1; depth <= this.maxFolderDepth + 1; depth++) {
+            const allowChildren = depth <= this.maxFolderDepth;
+            depths[depth] = [];
+            const nodes = depths[depth - 1];
+            if (!nodes.length) break;
+            for (const node of nodes) {
+                const folder = node.folder;
+                if (!node.root) { // Ensure we don't encounter any infinite loop
+                    if (handled.has(folder.id)) continue;
+                    handled.add(folder.id);
+                }
+
+                // Classify content for this folder
+                const classified = this._classifyFolderContent(folder, folders, entries, { allowChildren });
+                node.entries = classified.entries;
+                node.children = classified.folders.map(folder => createNode(false, folder, depth));
+                depths[depth].push(...node.children);
+
+                // Update unassigned content
+                folders = classified.unassignedFolders;
+                entries = classified.unassignedEntries;
+            }
+        }
+
+        // Populate left-over folders at the root level of the tree
+        for (const folder of folders) {
+            const node = createNode(false, folder, 1);
+            const classified = this._classifyFolderContent(folder, folders, entries, { allowChildren: false });
+            node.entries = classified.entries;
+            entries = classified.unassignedEntries;
+            depths[1].push(node);
+        }
+
+        // Populate left-over entries at the root level of the tree
+        if (entries.length) {
+            tree.entries.push(...entries);
+        }
+
+        // Sort the top level entries and folders
+        const sort = this.sortingMode === "a" ? this.constructor._sortAlphabetical : this.constructor._sortStandard;
+        tree.entries.sort(sort);
+        tree.children.sort((a, b) => sort(a.folder, b.folder));
+
+        // Recursively filter visibility of the tree
+        const filterChildren = node => {
+            node.children = node.children.filter(child => {
+                filterChildren(child);
+                return child.visible;
+            });
+            node.visible = node.root || game.user.isGM || ((node.children.length + node.entries.length) > 0);
+
+            // Populate some attributes of the Folder document
+            if (node.folder) {
+                node.folder.displayed = node.visible;
+                node.folder.depth = node.depth;
+                node.folder.children = node.children;
+            }
+        };
+        filterChildren(tree);
+        return tree;
     }
 
     //  Need to override this as we don't use proper folders so it won't find them properly
-    static _classifyFolderContent(folder, folders, documents, { allowChildren = true } = {}) {
-        const sort = folder?.sorting === "a" ? this._sortAlphabetical : this._sortStandard;
+    _classifyFolderContent(folder, folders, entries, { allowChildren = true } = {}) {
+        const sort = folder?.sorting === "a" ? this.constructor._sortAlphabetical : this.constructor._sortStandard;
+
+        // Determine whether an entry belongs to a folder, via folder ID or folder reference
+        function folderMatches(entry) {
+            if (entry.folder?._id) return entry.folder._id === folder?._id;
+            return (entry.folder === folder) || (entry.folder === folder?._id);
+        }
 
         // Partition folders into children and unassigned folders
-        const [unassignedFolders, subfolders] = folders.partition(f => allowChildren && (f.folder === folder?._id || f.folder == undefined && folder == undefined));
+        const [unassignedFolders, subfolders] = folders.partition(f => allowChildren && folderMatches(f));
         subfolders.sort(sort);
 
-        // Partition documents into folder contents and unassigned documents
-        const [unassignedDocuments, contents] = documents.partition(e => e.folder === folder?._id || e.folder == undefined && folder == undefined);
+        // Partition entries into folder contents and unassigned entries
+        const [unassignedEntries, contents] = entries.partition(e => folderMatches(e));
         contents.sort(sort);
 
         // Return the classified content
-        return { folders: subfolders, documents: contents, unassignedFolders, unassignedDocuments };
+        return { folders: subfolders, entries: contents, unassignedFolders, unassignedEntries };
+    }
+
+    static _sortAlphabetical(a, b) {
+        if (a.name === undefined) throw new Error(`Missing name property for ${a.constructor.name} ${a.id}`);
+        if (b.name === undefined) throw new Error(`Missing name property for ${b.constructor.name} ${b.id}`);
+        return a.name.localeCompare(b.name);
+    }
+
+    static _sortStandard(a, b) {
+        return (a.sort || 0) - (b.sort || 0);
     }
 
     async getData(options) {
@@ -151,16 +269,21 @@ export class TileTemplates extends SidebarDirectory {
         const cfg = CONFIG["Tile"];
         const cls = cfg.documentClass;
         return foundry.utils.mergeObject(context, {
+            canCreateEntry: true,
+            canCreateFolder: true,
             tree: this.tree,
-            canCreate: true,
             documentCls: cls.documentName.toLowerCase(),
             tabName: cls.metadata.collection,
             sidebarIcon: "fa-solid fa-cube",
             folderIcon: CONFIG.Folder.sidebarIcon,
             label: game.i18n.localize(cls.metadata.label),
             labelPlural: game.i18n.localize(cls.metadata.labelPlural),
-            documentPartial: this.constructor.documentPartial,
-            folderPartial: this.constructor.folderPartial
+            entryPartial: this.constructor.entryPartial,
+            folderPartial: this.constructor.folderPartial,
+            searchIcon: "fa-search",
+            searchTooltip: "SIDEBAR.SearchModeName",
+            sortIcon: this.sortingMode === "a" ? "fa-arrow-down-a-z" : "fa-arrow-down-short-wide",
+            sortTooltip: this.sortingMode === "a" ? "SIDEBAR.SortModeAlpha" : "SIDEBAR.SortModeManual",
         });
     }
 
@@ -178,7 +301,7 @@ export class TileTemplates extends SidebarDirectory {
     }*/
 
     async updateTile(data) {
-        let templates = duplicate(TileTemplates.collection);
+        let templates = duplicate(this.collection);
 
         if (!data.id)
             return;
@@ -193,9 +316,9 @@ export class TileTemplates extends SidebarDirectory {
         this.render(true);
     }
 
-    _onClickDocumentName(event) {
+    _onClickEntryName(event) {
         let li = event.currentTarget.closest("li");
-        let templates = this.constructor.collection;
+        let templates = this.collection;
         const document = templates.find(t => t._id == li.dataset.documentId);
 
         new TemplateConfig(document, this).render(true);
@@ -280,13 +403,14 @@ export class TileTemplates extends SidebarDirectory {
             sorting: "m"
         };
         folder.toObject = () => { return folder; };
+        folder.getFlag = () => { return null; };
         const button = event.currentTarget;
         folder.folder = button.dataset.parentFolder || null;
         const options = { top: button.offsetTop, left: window.innerWidth - 310 - FolderConfig.defaultOptions.width, editable: true };
         let fc = new FolderConfig(folder, options).render(true, { editable: true });
         fc._updateObject = async (event, formData) => {
             if (!formData.name?.trim()) formData.name = Folder.implementation.defaultName();
-            let folders = this.constructor.folders;
+            let folders = this.folders;
             formData._id = randomID();
             formData.id = formData._id;
             formData.visible = true;
@@ -364,8 +488,8 @@ export class TileTemplates extends SidebarDirectory {
         const documentName = this.constructor.documentName;
         const isFolder = li.classList.contains("folder");
         const doc = isFolder
-            ? this.constructor.folders.find(f => f._id == li.dataset.folderId)
-            : this.constructor.collection.find(t => t._id == li.dataset.documentId);
+            ? this.folders.find(f => f._id == li.dataset.folderId)
+            : this.collection.find(t => t._id == li.dataset.documentId);
 
         if (!doc)
             return;
@@ -377,17 +501,17 @@ export class TileTemplates extends SidebarDirectory {
         event.dataTransfer.setData("text/plain", JSON.stringify(dragData));
     }
 
-    async _handleDroppedDocument(target, data) {
+    async _handleDroppedEntry(target, data) {
 
         // Determine the closest Folder
         const closestFolder = target ? target.closest(".folder") : null;
         if (closestFolder) closestFolder.classList.remove("droptarget");
-        let folder = closestFolder ? this.constructor.folders.find(f => f._id == closestFolder.dataset.folderId)?._id : null;
+        let folder = closestFolder ? this.folders.find(f => f._id == closestFolder.dataset.folderId)?._id : null;
 
         // Obtain the dropped Document
-        const collection = duplicate(this.constructor.collection);
+        const collection = duplicate(this.collection);
         let document = data.data;
-        if (!document) document = this.constructor.collection.get(data.uuid.replace("Tile.", "")); // Should technically be fromUuid
+        if (!document) document = this.collection.get(data.uuid.replace("Tile.", "")); // Should technically be fromUuid
         if (!document) return;
 
         // Sort relative to another Document
@@ -427,7 +551,7 @@ export class TileTemplates extends SidebarDirectory {
         if (data.documentName !== this.constructor.documentName) return;
         const folder = data.data;
 
-        let folders = duplicate(this.constructor.folders);
+        let folders = duplicate(this.folders);
 
         // Determine the closest folder ID
         const closestFolder = target ? target.closest(".folder") : null;
@@ -496,7 +620,7 @@ export class TileTemplates extends SidebarDirectory {
     }
 
     async deleteFolder(folders, folder, options, userId) {
-        const templates = duplicate(this.constructor.collection || []);
+        const templates = duplicate(this.collection || []);
         const parentFolder = folder.folder;
         const { deleteSubfolders, deleteContents } = options;
 
@@ -533,7 +657,7 @@ export class TileTemplates extends SidebarDirectory {
                 condition: game.user.isGM,
                 callback: header => {
                     const li = header.parent()[0];
-                    const folders = duplicate(this.constructor.folders);
+                    const folders = duplicate(this.folders);
                     let folder = folders.find(t => t._id == li.dataset.folderId);
                     const options = { top: li.offsetTop, left: window.innerWidth - 310 - FolderConfig.defaultOptions.width };
                     let fld = new Folder(mergeObject(folder, { type: "JournalEntry" }, { inplace: false }));
@@ -554,7 +678,7 @@ export class TileTemplates extends SidebarDirectory {
                 condition: game.user.isGM,
                 callback: header => {
                     const li = header.parent()[0];
-                    const folders = duplicate(this.constructor.folders);
+                    const folders = duplicate(this.folders);
                     const folder = folders.find(t => t._id == li.dataset.folderId);
                     return Dialog.confirm({
                         title: `${game.i18n.localize("FOLDER.Remove")} ${folder.name}`,
@@ -579,7 +703,7 @@ export class TileTemplates extends SidebarDirectory {
                 condition: game.user.isGM,
                 callback: header => {
                     const li = header.parent()[0];
-                    const folders = duplicate(this.constructor.folders);
+                    const folders = duplicate(this.folders);
                     const folder = folders.find(t => t._id == li.dataset.folderId);
                     return Dialog.confirm({
                         title: `${game.i18n.localize("FOLDER.Delete")} ${folder.name}`,
@@ -607,11 +731,11 @@ export class TileTemplates extends SidebarDirectory {
                 name: "FOLDER.Clear",
                 icon: '<i class="fas fa-folder"></i>',
                 condition: li => {
-                    const document = this.constructor.collection.find(t => t._id == li.data("documentId"));
+                    const document = this.collection.find(t => t._id == li.data("documentId"));
                     return game.user.isGM && !!document?.folder;
                 },
                 callback: li => {
-                    const templates = duplicate(this.constructor.collection);
+                    const templates = duplicate(this.collection);
                     const document = templates.find(t => t._id == li.data("documentId"));
                     document.folder = null;
                     game.settings.set("monks-active-tiles", "tile-templates", templates);
@@ -622,7 +746,7 @@ export class TileTemplates extends SidebarDirectory {
                 icon: '<i class="fas fa-trash"></i>',
                 condition: () => game.user.isGM,
                 callback: li => {
-                    const templates = duplicate(this.constructor.collection);
+                    const templates = duplicate(this.collection);
                     const id = li.data("documentId");
                     const document = templates.find(t => t._id == id || (t._id == undefined && id == ""));
                     if (!document) return;
@@ -646,7 +770,7 @@ export class TileTemplates extends SidebarDirectory {
                 icon: '<i class="fas fa-file-export"></i>',
                 condition: li => game.user.isGM,
                 callback: li => {
-                    const templates = this.constructor.collection;
+                    const templates = this.collection;
                     const document = templates.find(t => t._id == li.data("documentId"));
                     if (!document) return;
                     const data = deepClone(document);
@@ -669,7 +793,7 @@ export class TileTemplates extends SidebarDirectory {
                 icon: '<i class="fas fa-file-import"></i>',
                 condition: li => game.user.isGM,
                 callback: async (li) => {
-                    const templates = duplicate(this.constructor.collection);
+                    const templates = duplicate(this.collection);
                     const replaceId = li.data("documentId");
                     const document = templates.find(t => t._id == replaceId);
                     if (!document) return;

@@ -120,7 +120,7 @@ export let getValue = async (val = "", args, entity, options = {operation:'assig
             }
         }
 
-        if (options.prop != undefined && typeof val == "string") {
+        if (options.hasOwnProperty("prop") && typeof val == "string") {
             try {
                 if (val.startsWith('+ ') || val.startsWith('- ')) {
                     if (options.prop instanceof Array) {
@@ -194,6 +194,14 @@ export class MonksActiveTiles {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    static getWorldTime() {
+        let currentWorldTime = game.time.worldTime + MonksActiveTiles.TimeOffset;
+        let dayTime = Math.abs(Math.trunc((currentWorldTime % 86400) / 60));
+        if (currentWorldTime < 0) dayTime = 1440 - dayTime;
+
+        return dayTime;
+    }
+
     static emit(action, args = {}) {
         args.action = action;
         args.senderId = game.user.id
@@ -223,7 +231,9 @@ export class MonksActiveTiles {
             'combatend': i18n("MonksActiveTiles.mode.combatend"),
             'ready': i18n("MonksActiveTiles.mode.canvasready"),
             'manual': i18n("MonksActiveTiles.mode.manual"),
-            'door': i18n("MonksActiveTiles.mode.door")
+            'door': i18n("MonksActiveTiles.mode.door"),
+            'darkness': i18n("MonksActiveTiles.mode.darkness"),
+            'time': i18n("MonksActiveTiles.mode.time")
         }
     };
 
@@ -1586,11 +1596,13 @@ export class MonksActiveTiles {
         //MonksActiveTiles.triggerActions = Object.assign(otherTriggers, MonksActiveTiles.triggerActions);
 
         if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.ignore_conflicts("monks-active-tiles", "monks-enhanced-journal", "JournalDirectory.prototype._onClickDocumentName");
-            libWrapper.ignore_conflicts("monks-active-tiles", "multiple-document-selection", "JournalDirectory.prototype._onClickDocumentName");
-            libWrapper.ignore_conflicts("monks-active-tiles", "monks-enhanced-journal", "Compendium.prototype._onClickEntry");
-            libWrapper.ignore_conflicts("monks-active-tiles", "monks-scene-navigation", "SceneDirectory.prototype._onClickDocumentName");
-            libWrapper.ignore_conflicts("monks-active-tiles", "df-scene-enhance", "SceneDirectory.prototype._onClickDocumentName");
+            libWrapper.ignore_conflicts("monks-active-tiles", "monks-enhanced-journal", "JournalDirectory.prototype._onClickEntryName");
+            libWrapper.ignore_conflicts("monks-active-tiles", "multiple-document-selection", "JournalDirectory.prototype._onClickEntryName");
+            libWrapper.ignore_conflicts("monks-active-tiles", "multiple-document-selection", "ActorDirectory.prototype._onClickEntryName");
+            libWrapper.ignore_conflicts("monks-active-tiles", "monks-common-display", "ActorDirectory.prototype._onClickEntryName");
+            libWrapper.ignore_conflicts("monks-active-tiles", "monks-scene-navigation", "SceneDirectory.prototype._onClickEntryName");
+            libWrapper.ignore_conflicts("monks-active-tiles", "df-scene-enhance", "SceneDirectory.prototype._onClickEntryName");
+            libWrapper.ignore_conflicts("monks-active-tiles", "monks-enhanced-journal", "Compendium.prototype._onClickEntryName");
             libWrapper.ignore_conflicts("monks-active-tiles", "monks-little-details", "TilesLayer.prototype._onDropData");
         }
 
@@ -1919,7 +1931,8 @@ export class MonksActiveTiles {
                                 if (docs.length) {
                                     let results = {};
                                     for (let doc of docs) {
-                                        let triggerData = doc.flags["monks-active-tiles"];
+                                        if (!doc) continue;
+                                        let triggerData = getProperty(doc, "flags.monks-active-tiles");
                                         if (triggerData?.active) {
                                             if (setting("prevent-when-paused") && game.paused && !game.user.isGM && triggerData.allowpaused !== true)
                                                 return;
@@ -1988,7 +2001,7 @@ export class MonksActiveTiles {
             let waitingType = MonksActiveTiles.waitingInput?.waitingfield?.data('type');
             if (waitingType == 'entity') {
                 let event = args[0];
-                const playlistId = $(event.currentTarget).closest('.playlist-header').data('documentId');
+                const playlistId = $(event.currentTarget).closest('.playlist').data('documentId');
                 const playlist = game.playlists.get(playlistId);
                 if (playlist)
                     MonksActiveTiles.controlEntity(playlist);
@@ -1996,28 +2009,13 @@ export class MonksActiveTiles {
                 return wrapped(...args);
         }
 
-        if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "PlaylistDirectory.prototype._onPlaylistCollapse", playlistCollapse, "MIXED");
-        } else {
-            const oldPlaylistCollapse = PlaylistDirectory.prototype._onPlaylistCollapse;
-            PlaylistDirectory.prototype._onPlaylistCollapse = function (event) {
-                return playlistCollapse.call(this, oldPlaylistCollapse.bind(this), ...arguments);
-            }
-        }
-
-        let contains = (position, tile) => {
-            return position.x >= tile.x
-                && position.y >= tile.y
-                && position.x <= (tile.x + Math.abs(tile.width))
-                && position.y <= (tile.y + Math.abs(tile.height));
-        };
+        patchFunc("PlaylistDirectory.prototype._onClickEntryName", playlistCollapse, "MIXED");
 
         let lastPosition = undefined;
         MonksActiveTiles.hoveredTiles = new Set();
 
         document.body.addEventListener("mousemove", function () {
-
-            let mouse = canvas?.app?.renderer?.plugins?.interaction?.mouse;
+            let mouse = canvas?.app?.renderer?.events?.pointer;
             if (!mouse) return;
 
             const currentPosition = mouse.getLocalPosition(canvas.app.stage);
@@ -2125,7 +2123,7 @@ export class MonksActiveTiles {
 
             if (canvas.activeLayer instanceof TokenLayer) {
                 //check to see if there are any Tiles that can be activated with a click
-                MonksActiveTiles.checkClick(event.data.origin, clicktype, event);
+                MonksActiveTiles.checkClick(event.interactionData.origin, clicktype, event);
             }
         }
 
@@ -2173,66 +2171,19 @@ export class MonksActiveTiles {
                 wrapped(...args);
         }
 
-        if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "ActorDirectory.prototype._onClickDocumentName", clickDocumentName, "MIXED");
-        } else {
-            const oldClickActorName = ActorDirectory.prototype._onClickDocumentName;
-            ActorDirectory.prototype._onClickDocumentName = function (event) {
-                return clickDocumentName.call(this, oldClickActorName.bind(this), ...arguments);
-            }
-        }
-
-        if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "ItemDirectory.prototype._onClickDocumentName", clickDocumentName, "MIXED");
-        } else {
-            const oldClickItemName = ItemDirectory.prototype._onClickDocumentName;
-            ItemDirectory.prototype._onClickDocumentName = function (event) {
-                return clickDocumentName.call(this, oldClickItemName.bind(this), ...arguments);
-            }
-        }
-
-        if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "JournalDirectory.prototype._onClickDocumentName", clickDocumentName, "MIXED");
-        } else {
-            const oldClickJournalName = JournalDirectory.prototype._onClickDocumentName;
-            JournalDirectory.prototype._onClickDocumentName = function (event) {
-                return clickDocumentName.call(this, oldClickJournalName.bind(this), ...arguments);
-            }
-        }
-
-        if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "SceneDirectory.prototype._onClickDocumentName", clickDocumentName, "MIXED");
-        } else {
-            const oldClickJournalName = SceneDirectory.prototype._onClickDocumentName;
-            SceneDirectory.prototype._onClickDocumentName = function (event) {
-                return clickDocumentName.call(this, oldClickJournalName.bind(this), ...arguments);
-            }
-        }
-
-        if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "MacroDirectory.prototype._onClickDocumentName", clickDocumentName, "MIXED");
-        } else {
-            const oldClickJournalName = MacroDirectory.prototype._onClickDocumentName;
-            MacroDirectory.prototype._onClickDocumentName = function (event) {
-                return clickDocumentName.call(this, oldClickJournalName.bind(this), ...arguments);
-            }
-        }
-
         let checkClickDocumentName = async function (wrapped, ...args) {
-            if (this.constructor.name == "MacroSidebarDirectory") {
+            if (this.constructor.name == "MacroDirectory") {
                 return clickDocumentName.call(this, wrapped.bind(this), ...args);
             } else
                 return wrapped(...args);
         }
 
-        if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "SidebarDirectory.prototype._onClickDocumentName", checkClickDocumentName, "MIXED");
-        } else {
-            const oldClickJournalName = SidebarDirectory.prototype._onClickDocumentName;
-            SidebarDirectory.prototype._onClickDocumentName = function (event) {
-                return checkClickDocumentName.call(this, oldClickJournalName.bind(this), ...arguments);
-            }
-        }
+        patchFunc("ActorDirectory.prototype._onClickEntryName", clickDocumentName, "MIXED");
+        patchFunc("ItemDirectory.prototype._onClickEntryName", clickDocumentName, "MIXED");
+        patchFunc("JournalDirectory.prototype._onClickEntryName", clickDocumentName, "MIXED");
+        patchFunc("SceneDirectory.prototype._onClickEntryName", clickDocumentName, "MIXED");
+        patchFunc("MacroDirectory.prototype._onClickEntryName", clickDocumentName, "MIXED");
+        patchFunc("DocumentDirectory.prototype._onClickEntryName", checkClickDocumentName, "MIXED");
 
         let clickCompendiumEntry = async function (wrapped, ...args) {
             let event = args[0];
@@ -2248,14 +2199,7 @@ export class MonksActiveTiles {
                 wrapped(...args);
         }
 
-        if (game.modules.get("lib-wrapper")?.active) {
-            libWrapper.register("monks-active-tiles", "Compendium.prototype._onClickEntry", clickCompendiumEntry, "MIXED");
-        } else {
-            const oldOnClickEntry = Compendium.prototype._onClickEntry;
-            Compendium.prototype._onClickEntry = function (event) {
-                return clickCompendiumEntry.call(this, oldOnClickEntry.bind(this), ...arguments);
-            }
-        }
+        patchFunc("Compendium.prototype._onClickEntryName", clickCompendiumEntry, "MIXED");
 
         let leftClick = async function (wrapped, ...args) {
             MonksActiveTiles.controlEntity(this);
@@ -3344,7 +3288,7 @@ export class MonksActiveTiles {
 
                 // Render the sprite to the texture and extract its pixels
                 // Destroy sprite and texture when they are no longer needed
-                canvas.app.renderer.render(sprite, tex);
+                canvas.app.renderer.render(sprite, { renderTexture: tex });
                 sprite.destroy(false);
                 const pixels = canvas.app.renderer.extract.pixels(tex);
                 tex.destroy(true);
@@ -3565,7 +3509,7 @@ export class MonksActiveTiles {
 
                 // Render the sprite to the texture and extract its pixels
                 // Destroy sprite and texture when they are no longer needed
-                canvas.app.renderer.render(sprite, tex);
+                canvas.app.renderer.render(sprite, { renderTexture: tex });
                 sprite.destroy(false);
                 const pixels = canvas.app.renderer.extract.pixels(tex);
                 tex.destroy(true);
@@ -3729,11 +3673,11 @@ export class MonksActiveTiles {
             let segments = MonksActiveTiles.getTileSegments(this).filter(s => foundry.utils.lineSegmentIntersects(tokenRay.A, tokenRay.B, s.a, s.b));
 
             if (triggerData.usealpha) {
-                !(tokenRay.A.x <= 0 || tokenRay.A.x >= Math.abs(this.width) || tokenRay.A.y <= 0 || tokenRay.A.y >= Math.abs(this.height))
+                //!(tokenRay.A.x <= 0 || tokenRay.A.x >= Math.abs(this.width) || tokenRay.A.y <= 0 || tokenRay.A.y >= Math.abs(this.height))
                 // only need to check the polygon if there are segments, or if both points are within the rectangle
                 if (segments.length || 
-                    !(tokenRay.A.x <= 0 || tokenRay.A.x >= Math.abs(this.width) || tokenRay.A.y <= 0 || tokenRay.A.y >= Math.abs(this.height)) || 
-                    !(tokenRay.B.x <= 0 || tokenRay.B.x >= Math.abs(this.width) || tokenRay.B.y <= 0 || tokenRay.B.y >= Math.abs(this.height))) {
+                    !(tokenRay.A.x < 0 || tokenRay.A.x > Math.abs(this.width) || tokenRay.A.y < 0 || tokenRay.A.y > Math.abs(this.height)) || 
+                    !(tokenRay.B.x < 0 || tokenRay.B.x > Math.abs(this.width) || tokenRay.B.y < 0 || tokenRay.B.y > Math.abs(this.height))) {
                     segments = MonksActiveTiles.getTileSegments(this, true).filter(s => foundry.utils.lineSegmentIntersects(tokenRay.A, tokenRay.B, s.a, s.b));
                 }
             }
@@ -3973,6 +3917,12 @@ export class MonksActiveTiles {
                             } else if (rotation != undefined && anchor.data.tag == `_rotation${rotation}`) {
                                 start = actions.findIndex(a => a.id == anchor.id) + 1;
                                 break;
+                            } else if (anchor.data.tag == `_darkness${(options.darkness ?? canvas.darknessLevel) * 100}`) {
+                                start = actions.findIndex(a => a.id == anchor.id) + 1;
+                                break;
+                            } else if (anchor.data.tag == `_time${options.time ?? MonksActiveTiles.getWorldTime()}`) {
+                                start = actions.findIndex(a => a.id == anchor.id) + 1;
+                                break;
                             }
                         }
                     }
@@ -4020,7 +3970,7 @@ export class MonksActiveTiles {
                     context.tokens = resume.tokens || context.tokens;
                 let fn = trigger.fn;
                 if (fn) {
-                    //If there are batch actiosn to complete and this function is not batchable, then execute the changes
+                    //If there are batch actions to complete and this function is not batchable, then execute the changes
                     if (!trigger.batch)
                         await MonksActiveTiles.batch.execute();
 
@@ -4204,8 +4154,7 @@ export class MonksActiveTiles {
                     refreshSounds: true,
                     initializeVision: true,
                     refreshVision: true,
-                    refreshTiles: true,
-                    forceUpdateFog: true
+                    refreshTiles: true
                 }, true);
             } catch {}
         }
@@ -4427,6 +4376,12 @@ Hooks.on('init', async () => {
 Hooks.on('ready', () => {
     game.socket.on(MonksActiveTiles.SOCKET, MonksActiveTiles.onMessage);
 
+    MonksActiveTiles.TimeOffset = 0;
+    if (game.system.id === 'pf2e') {
+        let createTime = game.pf2e.worldClock.worldCreatedOn.c;
+        MonksActiveTiles.TimeOffset = (createTime.hour * 3600) + (createTime.minute * 60) + createTime.second + (createTime.millisecond * 0.001);
+    }
+
     MonksActiveTiles._oldSheetClass = CONFIG.Tile.sheetClasses.base['core.TileConfig'].cls;
     CONFIG.Tile.sheetClasses.base['core.TileConfig'].cls = WithActiveTileConfig(CONFIG.Tile.sheetClasses.base['core.TileConfig'].cls);
 
@@ -4487,11 +4442,14 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
         }
 
         //log('triggering for', token.id);
-        let gr = new PIXI.Graphics();
-        if (MonksActiveTiles.debugGr)
-            canvas.tokens.removeChild(MonksActiveTiles.debugGr);
-        MonksActiveTiles.debugGr = gr;
-        canvas.tokens.addChild(gr);
+        let gr;
+        if (CONFIG.debug.tiletriggers) {
+            gr = new PIXI.Graphics();
+            if (MonksActiveTiles.debugGr)
+                canvas.tokens.removeChild(MonksActiveTiles.debugGr);
+            MonksActiveTiles.debugGr = gr;
+            canvas.tokens.addChild(gr);
+        }
 
         //Does this cross a tile
         for (let tile of document.parent.tiles) {
@@ -5118,6 +5076,48 @@ Hooks.on("refreshToken", (token) => {
     }
 });
 
+Hooks.on("updateScene", (scene, data, options) => {
+    for (let tile of canvas.scene.tiles) {
+        let triggerData = tile.flags["monks-active-tiles"];
+        let triggers = MonksActiveTiles.getTrigger(triggerData?.trigger);
+        if (triggerData?.active && triggers.includes('darkness')) {
+            if (setting("prevent-when-paused") && game.paused && !game.user.isGM && triggerData.allowpaused !== true)
+                return;
+
+            let tokens = canvas.tokens.controlled.map(t => t.document);
+
+            if (triggerData.pertoken)
+                tokens = tokens.filter(t => !this.object.document.hasTriggered(t.id));
+
+            //Trigger this Tile
+            tile.trigger({ tokens: tokens, method: 'darkness', options: { darkness: data.darkness } }) || {};
+        }
+    }
+});
+
+Hooks.on('updateWorldTime', async (worldTime) => {
+    let currentWorldTime = worldTime + MonksActiveTiles.TimeOffset;
+    let dayTime = Math.abs(Math.trunc((currentWorldTime % 86400) / 60));
+    if (currentWorldTime < 0) dayTime = 1440 - dayTime;
+
+    for (let tile of canvas.scene.tiles) {
+        let triggerData = tile.flags["monks-active-tiles"];
+        let triggers = MonksActiveTiles.getTrigger(triggerData?.trigger);
+        if (triggerData?.active && triggers.includes('time')) {
+            if (setting("prevent-when-paused") && game.paused && !game.user.isGM && triggerData.allowpaused !== true)
+                return;
+
+            let tokens = canvas.tokens.controlled.map(t => t.document);
+
+            if (triggerData.pertoken)
+                tokens = tokens.filter(t => !this.object.document.hasTriggered(t.id));
+
+            //Trigger this Tile
+            tile.trigger({ tokens: tokens, method: 'time', options: { time: dayTime } }) || {};
+        }
+    }
+});
+
 Hooks.on("getSceneControlButtons", (controls) => {
     if (game.user.isGM) {
         let tileControls = controls.find(control => control.name === "tiles")
@@ -5147,4 +5147,15 @@ Hooks.on("renderJournalPageSheet", (sheet, html, data) => {
 
 Hooks.on("renderItemSheet", (sheet, html, data) => {
     $("a.tile-trigger-link", html).unbind("click").click(MonksActiveTiles._onClickTileLink.bind(sheet));
+});
+
+Hooks.on("renderSceneDirectory", (app, html, options) => {
+    $(".document.scene h3.document-name:not(.entry-name)", html).addClass("entry-name");
+});
+
+Hooks.on("clickPlaylistSound", (sound) => {
+    let waitingType = MonksActiveTiles.waitingInput?.waitingfield?.data('type');
+    if (waitingType == 'entity') {
+        return false;
+    }
 });

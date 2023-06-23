@@ -1,15 +1,15 @@
 {
   "title": "Monk's Active Tile Triggers",
   "description": "Want to teleport, or open doors, or hide characters, or display a message, or play a sound, or change a token's elevation when a token walks over a tile... now you can",
-  "version": "10.21",
+  "version": "11.01",
   "authors": [
     {
       "name": "IronMonk",
       "discord": "ironmonk88#4075",
 	  "flags": {
-		  "github": "https://github.com/ironmonk88",
-		  "patreon": "https://www.patreon.com/ironmonk",
-		  "ko-fi": "https://ko-fi.com/ironmonk88"
+		  "github": "ironmonk88",
+		  "patreon": "ironmonk",
+		  "ko-fi": "ironmonk88"
 	  }
     }
   ],
@@ -51,16 +51,16 @@
     "css/monks-active-tiles.css"
   ],
   "url": "https://github.com/ironmonk88/monks-active-tiles",
-  "download": "https://github.com/ironmonk88/monks-active-tiles/archive/10.21.zip",
+  "download": "https://github.com/ironmonk88/monks-active-tiles/archive/11.01.zip",
   "manifest": "https://github.com/ironmonk88/monks-active-tiles/releases/latest/download/module.json",
   "bugs": "https://github.com/ironmonk88/monks-active-tiles/issues",
   "allowBugReporter": true,
   "id": "monks-active-tiles",
   "compatibility": {
-    "minimum": "10",
-    "verified": "10"
+    "minimum": "11",
+    "verified": "11"
   },
   "name": "monks-active-tiles",
-  "minimumCoreVersion": "10",
-  "compatibleCoreVersion": "10"
+  "minimumCoreVersion": "11",
+  "compatibleCoreVersion": "11"
 }

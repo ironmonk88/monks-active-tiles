@@ -1,3 +1,27 @@
+## Version 11.01
+
+Adding support for v11
+
+Fixed issue that was preventing tokens from teleporting between scenes.
+
+Fixed issue creating a Note from a compendium journal
+
+Fixed issue when trying to stop a sound from playing.
+
+Fixed issue when sorting active effects and displaying the text in the drop down list.
+
+Added a new conditional help to an action to provide dynamic help when selecting certain options.
+
+Fixed issues with the Tile Templates, making sure folders stay expanded when refreshing the directory, and that folders are sorted as requested.
+
+Fixed issues with altering values if the value is an object but the value is null.
+
+Added a trigger when the darkness level changes.
+
+Added a trigger when the world time changes.
+
+Fixed issue when triggering a door if the tile document attached is no longer valid.
+
 ## Version 10.21
 
 Added support for using handlebars with destination values

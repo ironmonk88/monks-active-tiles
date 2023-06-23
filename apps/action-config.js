@@ -792,7 +792,13 @@ export class ActionConfig extends FormApplication {
         for (let elem of $('.form-group', this.element)) {
             if ($(elem).data('conditional')) {
                 let cond = await $(elem).data('conditional').call(this, this);
-                $(elem).toggle(cond).next("p.notes").toggle(cond);
+                $(elem).toggle(cond);
+                if (!$(elem).data('helpcond'))
+                    $(elem).next("p.notes").toggle(cond);
+            }
+            if ($(elem).data('helpcond')) {
+                let cond = await $(elem).data('helpcond').call(this, this);
+                $(elem).next("p.notes").toggle(cond);
             }
         }
         this.setPosition({ height: 'auto' });
@@ -983,6 +989,8 @@ export class ActionConfig extends FormApplication {
 
                 if (typeof ctrl.conditional == 'function')
                     div.data('conditional', ctrl.conditional);
+                if (typeof ctrl.helpConditional == 'function')
+                    div.data('helpcond', ctrl.helpConditional);
                 if (typeof ctrl.check == 'function')
                     div.addClass('check').data('check', ctrl.check);
 
@@ -1001,8 +1009,10 @@ export class ActionConfig extends FormApplication {
 
                 div.appendTo($('.action-controls', this.element));
 
-                if (ctrl.help && setting("show-help"))
-                    $('.action-controls', this.element).append($('<p>').addClass("notes").html(ctrl.help).toggle(cond));
+                if (ctrl.help && setting("show-help")) {
+                    let helpcond = ctrl.helpConditional == undefined || (typeof ctrl.helpConditional == 'function' ? await ctrl.helpConditional.call(this, this) : ctrl.helpConditional);
+                    $('.action-controls', this.element).append($('<p>').addClass("notes").html(ctrl.help).toggle(ctrl.helpConditional ? helpcond : cond));
+                }
 
                 if ((ctrl.id == "attribute" && ctrl.id == 'attribute') || (ctrl.id == "tag" && command == "anchor")) {
                     this.attributes = this.tokenAttr;
