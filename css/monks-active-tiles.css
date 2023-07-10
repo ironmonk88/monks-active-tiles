@@ -481,6 +481,11 @@ body.system-CoC7 .multiple-dropdown .multiple-dropdown-option {
     width: unset;
 }
 
+#trigger-action.action-sheet .action-controls .matt-code {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 0px 3px;
+}
+
 .monks-active-tiles.sheet .action-items .landing-marker {
     flex: 0 0 4px;
     display: block;

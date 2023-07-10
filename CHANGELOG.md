@@ -1,3 +1,25 @@
+## Version 11.02
+
+Fixing issue with getting the original destination of a token.
+
+Fixed movement issues when using relative distances
+
+Added additional help messages to the Alter action
+
+Fixed issue when using wildcards for multiple Play Sound actions in the same Tile.
+
+Fixed issue when using html tag in a chat message when it displays in the action editor.
+
+Added finer control of the darkness level when using the Change Scene Lighting action.
+
+Added new action flow to redirect based ot he current trigger method.
+
+Added the option to right click and insert an action above or below another action.
+
+Fixed issue where clicking on a Tile to change the scene, would lock up the canvas and prevent further interactions with the canvas.
+
+Fixed issues showing a Journal Entry if the player doesn't have permission.
+
 ## Version 11.01
 
 Adding support for v11

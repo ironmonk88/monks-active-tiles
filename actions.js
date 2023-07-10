@@ -141,7 +141,8 @@ export class ActionManager {
                     const { tile, action, userid, value } = args;
                     let panfor = action.data.panfor || 'trigger';
 
-                    let dests = await MonksActiveTiles.getLocation.call(tile, action.data.location, args);
+                    let _args = action.data.location?.id === "token" ? Object.assign({}, args, { pt: null }) : args;
+                    let dests = await MonksActiveTiles.getLocation.call(tile, action.data.location, _args);
 
                     for (let dest of dests) {
                         if (dest.scene != undefined && dest.scene != canvas.scene.id)
@@ -699,6 +700,8 @@ export class ActionManager {
                                 (typeof entDest.y == "string" && (entDest.y.startsWith("+") || entDest.y.startsWith("-")))) {
                                 location.id = "origin";
                             }*/
+                            let relX = (typeof entDest.x == "string" && (entDest.x.startsWith("+") || entDest.x.startsWith("-")));
+                            let relY = (typeof entDest.x == "string" && (entDest.y.startsWith("+") || entDest.y.startsWith("-")));
                             entDest.x = parseInt(await getValue(entDest.x, args, entity, { prop: entity.x }));
                             entDest.y = parseInt(await getValue(entDest.y, args, entity, { prop: entity.y }));
 
@@ -755,8 +758,10 @@ export class ActionManager {
                                 newPos.x = Math.floor(newPos.x / gs) * gs;
                                 newPos.y = Math.floor(newPos.y / gs) * gs;
                             } else {
-                                newPos.x -= midX;
-                                newPos.y -= midY;
+                                if (!relX)
+                                    newPos.x -= midX;
+                                if(!relY)
+                                    newPos.y -= midY;
                             }
 
                             let ray = new Ray({ x: entity.x, y: entity.y }, { x: newPos.x, y: newPos.y });
@@ -1552,7 +1557,7 @@ export class ActionManager {
                         onBlur: (app) => {
                             app.checkConditional();
                         },
-                        help: "If you want to increase the value use '+ 10', if you want to have the value rolled use '[[1d4]]'"
+                        help: `* Use a space to increase the value <span class="matt-code">+ 1</span>. <br/>* Leave the space out to set the value <span class="matt-code">-10</span>. <br/>* Accepts random numbers <span class="matt-code">[[1d4]]</span>. <br/> * For strings, place them inside quotation marks <span class="matt-code">= "Name"</span>.`
                     },
                     {
                         id: "chatMessage",
@@ -1979,7 +1984,9 @@ export class ActionManager {
                         }
 
                         if (!audiofile.includes('*')) return [audiofile];
-                        if (tile._sounds && tile._sounds.length) return tile._sounds;
+                        tile._sounds = (tile._sounds || {});
+                        let sounds = tile._sounds[action.id]
+                        if (sounds && sounds.length) return sounds;
                         let source = "data";
                         let pattern = audiofile;
                         const browseOptions = { wildcard: true };
@@ -2001,12 +2008,12 @@ export class ActionManager {
                         // Retrieve wildcard content
                         try {
                             const content = await FilePicker.browse(source, pattern, browseOptions);
-                            tile._sounds = content.files;
+                            tile._sounds[action.id] = content.files;
                         } catch (err) {
-                            tile._sounds = [];
+                            tile._sounds[action.id] = [];
                             ui.notifications.error(err);
                         }
-                        return tile._sounds;
+                        return tile._sounds[action.id];
                     }
 
                     let volume = Math.clamped((action.data.volume.value ?? action.data.volume ?? 1), 0, 1);
@@ -2613,7 +2620,7 @@ export class ActionManager {
                         }
                         */
 
-                        if (content.startsWith('/')) {
+                        if (typeof content == "string" && content.startsWith('/')) {
                             ui.chat.processMessage(content);
                         } else {
                             let tokenOwners = [];
@@ -2668,7 +2675,7 @@ export class ActionManager {
                 },
                 content: async (trigger, action) => {
                     let syslang = CONFIG[game.system.id.toUpperCase()]?.languages || {};
-                    let msg = (action.data.text.length <= 15 ? action.data.text : action.data.text.substr(0, 15) + "...");
+                    let msg = $('<div>').text(action.data.text.length <= 15 ? action.data.text : action.data.text.substr(0, 15) + "...").html();
                     return `<span class="action-style">${i18n(trigger.name)}</span> for <span class="value-style">&lt;${i18n(trigger.values.for[action.data?.for])}&gt;</span>${(action.data.language != '' && game.modules.get("polyglot")?.active ? ` in <span class="details-style">"${i18n(syslang[action.data.language])}"</span>` : '')}${(action.data?.incharacter ? ' <i class="fas fa-user" title="In Character"></i>' : '')}${(action.data?.chatbubble != "false" ? ' <i class="fas fa-comment" title="Chat Bubble"></i>' : '')} "${msg}"`;
                 }
             },
@@ -4164,7 +4171,7 @@ export class ActionManager {
                         if (game.user.id == userid || action.data.activate) {
                             let oldPing = game.user.permissions["PING_CANVAS"];
                             game.user.permissions["PING_CANVAS"] = false;
-                            await (action.data.activate ? scene.activate() : scene.view());
+                            (action.data.activate ? scene.activate() : scene.view());
                             window.setTimeout(() => {
                                 if (oldPing == undefined)
                                     delete game.user.permissions["PING_CANVAS"];
@@ -5163,7 +5170,8 @@ export class ActionManager {
                         id: "darkness",
                         name: "MonksActiveTiles.ctrl.darkness",
                         type: "slider",
-                        defvalue: 1
+                        defvalue: 1,
+                        step: "0.05"
                     },
                     {
                         id: "speed",
@@ -6821,6 +6829,37 @@ export class ActionManager {
                     let gmredirect = (action.data.gm ? `<span class="entity-style">GM</span> to <span class="value-style">&lt;${action.data.gm}&gt;</span>` : "");
                     let playerredirect = (action.data.player ? `<span class="entity-style">Player</span> to <span class="value-style">&lt;${action.data.player}&gt;</span>` : "");
                     return `<span class="filter-style">Redirect player</span> ${gmredirect} ${playerredirect}`;
+                }
+            },
+            'method': {
+                name: "MonksActiveTiles.logic.method",
+                ctrls: [
+                    {
+                        id: "method",
+                        name: "MonksActiveTiles.ctrl.method",
+                        type: "list",
+                        list: () => { return MonksActiveTiles.triggerModes }
+                    },
+                    {
+                        id: "goto",
+                        name: "MonksActiveTiles.ctrl.redirect",
+                        type: "text",
+                    }
+                ],
+                group: "logic",
+                fn: async (args = {}) => {
+                    let { action, method } = args;
+
+                    if (method !== action.data.method) {
+                        if (action.data.goto)
+                            return { goto: action.data.goto };
+                        else
+                            return { continue: false };
+                    }
+                },
+                content: async (trigger, action) => {
+                    let redirect = (action.data.goto ? `everything else to <span class="value-style">&lt;${action.data.goto}&gt;</span>` : "");
+                    return `<span class="filter-style">Continue when </span> <span class="entity-style">${MonksActiveTiles.triggerModes[action.data.method]}</span> ${redirect}`;
                 }
             },
             /*

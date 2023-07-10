@@ -738,7 +738,11 @@ export class ActionConfig extends FormApplication {
             mergeObject(this.object, formData);
             this.object.id = makeid();
             let actions = duplicate(this.options.parent.object.getFlag("monks-active-tiles", "actions") || []);
-            actions.push(this.object);
+            let append = this.options.index === -1 || this.options.index === actions.length;
+            if (append)
+                actions.push(this.object);
+            else
+                actions.splice(this.options.index, 0, this.object);
             mergeObject(this.options.parent.object.flags, {
                 "monks-active-tiles": { actions: actions }
             });
@@ -754,8 +758,11 @@ export class ActionConfig extends FormApplication {
                 .append($('<div>').addClass('item-name flexrow').append($('<h4>').css({ 'white-space': 'normal' }).html(content)))
                 .append($('<div>').addClass('item-controls flexrow')
                     .append($('<a>').addClass('item-control action-edit').attr('title', 'Edit Action').html('<i class="fas fa-edit"></i>').click(this.options.parent._editAction.bind(this.options.parent)))
-                    .append($('<a>').addClass('item-control action-delete').attr('title', 'Delete Action').html('<i class="fas fa-trash"></i>').click(this.options.parent._deleteAction.bind(this.options.parent))))
-                .appendTo($(`.action-items .item-list`, this.options.parent.element));
+                    .append($('<a>').addClass('item-control action-delete').attr('title', 'Delete Action').html('<i class="fas fa-trash"></i>').click(this.options.parent._deleteAction.bind(this.options.parent))));
+            if (append)
+                li.appendTo($(`.action-items .item-list`, this.options.parent.element));
+            else
+                $(`.action-items .item-list li`, this.options.parent.element).eq(this.options.index).before(li);
 
             li[0].ondragstart = this.options.parent._dragDrop[0]._handleDragStart.bind(this.options.parent._dragDrop[0]);
 
@@ -770,6 +777,9 @@ export class ActionConfig extends FormApplication {
                     if (action.data.entity) action.data.entity = {};
                     if (action.data.item) action.data.item = {};
                     if (action.data.actor) action.data.actor = {};
+                }
+                if (this.options.parent.object._sounds) {
+                    this.options.parent.object._sounds[this.object.id] = [];
                 }
                 mergeObject(action, formData);
                 this.options.parent.object.flags["monks-active-tiles"].actions = actions;

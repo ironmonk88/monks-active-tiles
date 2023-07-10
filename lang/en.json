@@ -127,6 +127,7 @@
   "MonksActiveTiles.logic.stop": "Stop remaining actions",
   "MonksActiveTiles.logic.playertype": "Redirect based on player type",
   "MonksActiveTiles.logic.loop": "Loop through Entities",
+  "MonksActiveTiles.logic.method": "Redirect based on Method",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
@@ -251,6 +252,8 @@
   "MonksActiveTiles.ctrl.width": "Width",
   "MonksActiveTiles.ctrl.height": "Height",
   "MonksActiveTiles.ctrl.chatcard": "Show Chat Card",
+  "MonksActiveTiles.ctrl.method": "Method",
+  "MonksActiveTiles.ctrl.redirect": "Redirect",
 
   "MonksActiveTiles.mode.enter": "Enter",
   "MonksActiveTiles.mode.exit": "Exit",

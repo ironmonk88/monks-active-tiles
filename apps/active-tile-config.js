@@ -325,7 +325,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             Hooks.call(`getActiveTileConfigContext`, html, contextOptions);
             new ActiveTileContextMenu($(html), ".action-items .item", contextOptions);
 
-            $('.action-create', html).click(this._createAction.bind(this));
+            $('.action-create', html).click(this._createAction.bind(this, -1));
             $('.action-edit', html).click(this._editAction.bind(this));
             $('.action-delete', html).click(this._deleteAction.bind(this));
             $('.action-stop', html).click(this._stopSound.bind(this));
@@ -465,11 +465,11 @@ export const WithActiveTileConfig = (TileConfig) => {
             this.setPosition({ height: 'auto' });
         }
 
-        _createAction(event) {
+        _createAction(index, event) {
             let action = { };
             //if (this.object.getFlag("monks-active-tiles", "actions") == undefined)
             //    this.object.setFlag("monks-active-tiles", "actions", []);
-            new ActionConfig(action, {parent: this}).render(true);
+            new ActionConfig(action, { parent: this, index }).render(true);
         }
 
         _editAction(event) {
@@ -549,6 +549,26 @@ export const WithActiveTileConfig = (TileConfig) => {
 
         _getContextOptions() {
             return [
+                {
+                    name: "Insert Above",
+                    icon: '<i class="far fa-objects-align-top"></i>',
+                    condition: () => game.user.isGM,
+                    callback: elem => {
+                        let li = $(elem).closest('.item');
+                        let idx = li.index();
+                        this._createAction.call(this, idx);
+                    }
+                },
+                {
+                    name: "Insert Below",
+                    icon: '<i class="far fa-objects-align-bottom"></i>',
+                    condition: () => game.user.isGM,
+                    callback: elem => {
+                        let li = $(elem).closest('.item');
+                        let idx = li.index();
+                        this._createAction.call(this, idx + 1);
+                    }
+                },
                 {
                     name: "SIDEBAR.Duplicate",
                     icon: '<i class="far fa-copy"></i>',
