@@ -40,6 +40,9 @@ export class ActionConfig extends FormApplication {
             "_movement",
             "_stop",
             "_elevation",
+            "_rotation",
+            "_darkness",
+            "_time",
             "_click",
             "_rightclick",
             "_dblclick",
@@ -288,6 +291,8 @@ export class ActionConfig extends FormApplication {
             field.val('{"id":"token","name":"' + i18n("MonksActiveTiles.TriggeringToken") + '"}').next().html(i18n("MonksActiveTiles.TriggeringToken"));
         else if (btn.attr('data-type') == 'players')
             field.val('{"id":"players","name":"' + i18n("MonksActiveTiles.PlayerTokens") + '"}').next().html(i18n("MonksActiveTiles.PlayerTokens"));
+        else if (btn.attr('data-type') == 'users')
+            field.val('{"id":"users","name":"' + i18n("MonksActiveTiles.Players") + '"}').next().html(i18n("MonksActiveTiles.Players"));
         else if (btn.attr('data-type') == 'within') {
             let collection = $(event.currentTarget).closest(".trigger-action").find('[name="data.collection"]').val();
             let displayName = game.i18n.format("MonksActiveTiles.WithinTile", { collection: (collection || field.data("deftype") || "tokens").capitalize() });
@@ -936,6 +941,7 @@ export class ActionConfig extends FormApplication {
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'token', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetoken") }).toggle(options.show.includes('token')).addClass('entity-picker').html('<i class="fas fa-user-alt fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'within', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usewithin") }).toggle(options.show.includes('within')).addClass('entity-picker').html('<i class="fas fa-street-view fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').css({ "padding-left": "5px" }).attr({ 'type': 'button', 'data-type': 'players', 'data-target': id, 'title': (command == "openjournal" ? i18n("MonksActiveTiles.msg.useplayersjournal") : i18n("MonksActiveTiles.msg.useplayers")) }).toggle(options.show.includes('players')).addClass('entity-picker').html('<i class="fas fa-users fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
+                            .append($('<button>').css({ "padding-left": "5px" }).attr({ 'type': 'button', 'data-type': 'users', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useusers") }).toggle(options.show.includes('users')).addClass('entity-picker').html('<i class="fas fa-user fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'previous', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useprevious") }).toggle(options.show.includes('previous')).addClass('entity-picker').html('<i class="fas fa-history fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'controlled', 'data-target': id, 'title': ctrl.defaultType == "playlists" ? i18n("MonksActiveTiles.msg.currentlyplaying") : i18n("MonksActiveTiles.msg.usecontrolled") }).toggle(options.show.includes('controlled')).addClass('entity-picker').html('<i class="fas fa-bullhorn fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'tagger', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetagger") }).toggle(options.show.includes('tagger') && game.modules.get('tagger')?.active).addClass('entity-picker').html('<i class="fas fa-tag fa-sm"></i>').click(ActionConfig.addTag.bind(this)));

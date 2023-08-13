@@ -80,9 +80,9 @@ export let getValue = async (val = "", args, entity, options = {operation:'assig
     let originalVal = val;
 
     if (val == 'true') {
-        val = (options.prop == undefined ? true : options.prop === true);
+        val = (options.prop == undefined ? true : options.operation == "assign" ? options.prop === true : options.prop);
     } else if (val == 'false') {
-        val = (options.prop == undefined ? false : options.prop === false);
+        val = (options.prop == undefined ? false : options.operation == "assign" ? options.prop === false : options.prop);
     } else {
         let context = Object.assign({
             actor: tokens[0]?.actor,
@@ -186,6 +186,8 @@ export class MonksActiveTiles {
     //static _rejectRemaining = {};
     static savestate = {};
     static debugEnabled = 1;
+
+    static _dialogs = {};
 
     static _slotmachine = {};
 
@@ -299,6 +301,9 @@ export class MonksActiveTiles {
                 });
             }
         }
+        else if (id && id.startsWith('users')) {
+            entities = game.users.map(u => (u.active || !id.endsWith('active')) ? u : null).filter(t => !!t);
+        }
         else if (id == 'within') {
             if (action.action == "activate") {
                 entities = tile.entitiesWithin(defaultType);
@@ -371,6 +376,8 @@ export class MonksActiveTiles {
             name = i18n("MonksActiveTiles.TriggeringToken");
         else if (entity?.id == 'players')
             name = i18n("MonksActiveTiles.PlayerTokens");
+        else if (entity?.id == 'users')
+            name = i18n("MonksActiveTiles.Players");
         else if (entity?.id == 'within')
             name = game.i18n.format("MonksActiveTiles.WithinTile", { collection: (defaultType || "tokens").capitalize() });
         else if (entity?.id == 'controlled')
@@ -543,7 +550,7 @@ export class MonksActiveTiles {
         }
 
         let scene = game.scenes.find(s => s.id == sceneId);
-        return `${(scene?.id != canvas.scene.id ? 'Scene: ' + scene.name + ', ' : '')}${name}`;
+        return `${(scene?.id != canvas.scene.id ? 'Scene: ' + scene?.name + ', ' : '')}${name}`;
     }
 
     static testVisibility(point, { tolerance = 2, object = null } = {}) {
@@ -777,11 +784,11 @@ export class MonksActiveTiles {
         }
     }
 
-    static async _showDialog(tile, token, value, type, title, content, options, yes, no, closeNo, buttons) {
+    static async _showDialog({ tile, token, value, type, title, id, content, options, yes, no, closeNo, buttons } = {}) {
         let context = {
-            actor: token?.actor?.toObject(false),
-            token: token?.toObject(false),
-            tile: tile.toObject(false),
+            actor: token?.actor?.toObject(),
+            token: token?.toObject(),
+            tile: tile.toObject(),
             variable: getProperty(tile, "flags.monks-active-tiles.variables") || {},
             user: game.user,
             value: value,
@@ -793,82 +800,105 @@ export class MonksActiveTiles {
         content = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
 
         if (type == 'confirm') {
-            return Dialog.confirm({
-                title: title,
-                content: content,
-                yes: (html) => {
-                    let data = {};
-
-                    const form = html[0].querySelector("form");
-                    if (form) {
-                        const fd = new FormDataExtended(form);
-                        data = foundry.utils.mergeObject(data, fd.object);
-                        context.value = foundry.utils.mergeObject(context.value, fd.object);
-                    }
-
-                    if (yes) {
-                        if (yes.includes("{{")) {
-                            const compiled = Handlebars.compile(yes);
-                            data.goto = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
-                        } else
-                            data.goto = yes;
-                    }
-
-                    if (!data.goto)
-                        data.continue = false;
-
-                    return data;
+            return MonksActiveTiles.createDialog(id, {
+                title,
+                content,
+                focus: true,
+                default: "yes",
+                close: () => {
+                    return;
                 },
-                no: (html) => {
-                    let data = {}
+                buttons: {
+                    yes: {
+                        icon: '<i class="fas fa-check"></i>',
+                        label: game.i18n.localize("Yes"),
+                        callback: (html) => {
+                            let data = {};
 
-                    const form = html[0].querySelector("form");
-                    if (form) {
-                        const fd = new FormDataExtended(form);
-                        data = foundry.utils.mergeObject(data, fd.object);
-                        context.value = foundry.utils.mergeObject(context.value, fd.object);
+                            const form = html[0].querySelector("form");
+                            if (form) {
+                                const fd = new FormDataExtended(form);
+                                data = foundry.utils.mergeObject(data, fd.object);
+                                context.value = foundry.utils.mergeObject(context.value, fd.object);
+                            }
+
+                            if (yes) {
+                                if (yes.includes("{{")) {
+                                    const compiled = Handlebars.compile(yes);
+                                    data.goto = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
+                                } else
+                                    data.goto = yes;
+                            }
+
+                            if (!data.goto)
+                                data.continue = false;
+
+                            return data;
+                        }
+                    },
+                    no: {
+                        icon: '<i class="fas fa-times"></i>',
+                        label: game.i18n.localize("No"),
+                        callback: (html) => {
+                            let data = {}
+
+                            const form = html[0].querySelector("form");
+                            if (form) {
+                                const fd = new FormDataExtended(form);
+                                data = foundry.utils.mergeObject(data, fd.object);
+                                context.value = foundry.utils.mergeObject(context.value, fd.object);
+                            }
+
+                            if (no) {
+                                if (no.includes("{{")) {
+                                    const compiled = Handlebars.compile(no);
+                                    data.goto = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
+                                } else
+                                    data.goto = no;
+                            }
+
+                            if (!data.goto)
+                                data.continue = false;
+
+                            return data;
+                        }
                     }
-
-                    if (no) {
-                        if (no.includes("{{")) {
-                            const compiled = Handlebars.compile(no);
-                            data.goto = compiled(context, { allowProtoMethodsByDefault: true, allowProtoPropertiesByDefault: true }).trim();
-                        } else
-                            data.goto = no;
-                    }
-
-                    if (!data.goto)
-                        data.continue = false;
-
-                    return data;
-                },
-                options: options,
-                rejectClose: true,
-            }).catch(() => {
+                }
+            },
+            options,
+            ).catch(() => {
                 return closeNo ? { goto: no } : {};
             });
         } else if (type == 'alert') {
-            return Dialog.prompt({
-                title: title,
-                content: content,
-                callback: (html) => {
-                    let data = {};
-                    const form = html[0].querySelector("form");
-                    if (form) {
-                        const fd = new FormDataExtended(form);
-                        data = foundry.utils.mergeObject(data, fd.object);
-                    }
+            let callback = (html) => {
+                let data = {};
+                const form = html[0].querySelector("form");
+                if (form) {
+                    const fd = new FormDataExtended(form);
+                    data = foundry.utils.mergeObject(data, fd.object);
+                }
 
-                    return data;
+                return data;
+            };
+            return MonksActiveTiles.createDialog(id, {
+                title,
+                content,
+                callback,
+                rejectClose: true,
+                default: "ok",
+                close: () => {
+                    if (rejectClose) return;
+                    return null;
                 },
-                options: options,
-                rejectClose: true
-            }).catch(() => { return {}; });
+                buttons: {
+                    ok: { icon: '<i class="fas fa-check"></i>', label, callback }
+                }
+            }, options).catch(() => { return {}; });
         } else {
             let _html;
             let _submit = false;
-            return Dialog.wait({
-                title, content,
+            return MonksActiveTiles.createDialog(id, {
+                title, content, id,
                 close: () => {
                     let data = {};
 
@@ -917,6 +947,36 @@ export class MonksActiveTiles {
                 }), {})
             }, options);
         }
+    }
+
+    static async createDialog(id, data = {}, options = {}, renderOptions = {}) {
+        return new Promise((resolve, reject) => {
+
+            // Wrap buttons with Promise resolution.
+            const buttons = foundry.utils.deepClone(data.buttons);
+            for (const [id, button] of Object.entries(buttons)) {
+                const cb = button.callback;
+                function callback(html, event) {
+                    const result = cb instanceof Function ? cb.call(this, html, event) : undefined;
+                    resolve(result === undefined ? id : result);
+                }
+                button.callback = callback;
+            }
+
+            // Wrap close with Promise resolution or rejection.
+            const originalClose = data.close;
+            const close = () => {
+                const result = originalClose instanceof Function ? originalClose() : undefined;
+                if (result !== undefined) resolve(result);
+                else reject(new Error("The Dialog was closed without a choice being made."));
+                delete MonksActiveTiles._dialogs[id];
+            };
+
+            // Construct the dialog.
+            const dialog = new Dialog({ ...data, buttons, close }, options);
+            dialog.render(true, renderOptions);
+            MonksActiveTiles._dialogs[id] = dialog;
+        });
     }
 
     static async rollSlot(entity, files, oldIdx, newIdx, spins, time) {
@@ -1218,16 +1278,36 @@ export class MonksActiveTiles {
 
         //load the sprites
         t._textures = t._textures || {};
+        let fromTex;
+        let toTex;
 
-        if (!t._textures[from])
-            t._textures[from] = await loadTexture(from);
+        if (!t._textures[from]) {
+            try {
+                fromTex = await loadTexture(from);
+            } catch { }
+            if (!fromTex) {
+                console.warn(`Transition texture [from] invalid, ${from}`);
+                fromTex = await loadTexture("/modules/monks-active-tiles/img/1x1.png");
+            } else
+                t._textures[from] = fromTex;
+        } else
+            fromTex = t._textures[from];
         
-        if (!t._textures[to])
-            t._textures[to] = await loadTexture(to);
+        if (!t._textures[to]) {
+            try {
+                toTex = await loadTexture(to);
+            } catch { }
+            if (!toTex) {
+                console.warn(`Transition texture [to] invalid, ${to}`);
+                toTex = await loadTexture("/modules/monks-active-tiles/img/1x1.png");
+            } else
+                t._textures[to] = toTex;
+        } else
+            toTex = t._textures[to];
 
         let sprites = [
-            { sprite: new PIXI.Sprite(t._textures[from]), texture: t._textures[from] },
-            { sprite: new PIXI.Sprite(t._textures[to]), texture: t._textures[to] }
+            { sprite: new PIXI.Sprite(fromTex), texture: fromTex },
+            { sprite: new PIXI.Sprite(toTex), texture: toTex }
         ]
 
         //add them to the tile
@@ -1249,8 +1329,8 @@ export class MonksActiveTiles {
 
         //hide the actual image
         t.mesh.visible = false;
-        t.texture = t._textures[to];
-        t.mesh.texture = t._textures[to];
+        t.texture = toTex;
+        t.mesh.texture = toTex;
         t.mesh.scale.x = t.width / t.texture.width;
         t.mesh.scale.y = t.height / t.texture.height;
 
@@ -1325,7 +1405,7 @@ export class MonksActiveTiles {
         }).then(() => {
             canvas.primary.removeChild(container);
             delete t._transition;
-            t.texture = t._textures[to];
+            t.texture = toTex;
             t.texture.x = 0;
             t.texture.y = 0;
             t.mesh.visible = true;
@@ -1516,48 +1596,50 @@ export class MonksActiveTiles {
         if (!entity)
             return;
 
-        if (entity instanceof TokenDocument) {
-            if (result.tokens == undefined) result.tokens = [];
-            result.tokens.push(entity);
-        } else if (entity instanceof Actor) {
-            if (result.actors == undefined) result.actors = [];
-            result.actors.push(entity);
-        } else if (entity instanceof TileDocument) {
-            if (result.tiles == undefined) result.tiles = [];
-            result.tiles.push(entity);
-        } else if (entity instanceof DrawingDocument) {
-            if (result.drawings == undefined) result.drawings = [];
-            result.drawings.push(entity);
-        } else if (entity instanceof AmbientLightDocument) {
-            if (result.lights == undefined) result.lights = [];
-            result.lights.push(entity);
-        } else if (entity instanceof AmbientSoundDocument) {
-            if (result.sounds == undefined) result.sounds = [];
-            result.sounds.push(entity);
-        } else if (entity instanceof WallDocument) {
-            if (result.walls == undefined) result.walls = [];
-            result.walls.push(entity);
-        } else if (entity instanceof JournalEntry) {
-            if (result.journal == undefined) result.journal = [];
-            result.journal.push(entity);
-        } else if (entity instanceof Scene) {
-            if (result.scenes == undefined) result.scenes = [];
-            result.scenes.push(entity);
-        } else if (entity instanceof Macro) {
-            if (result.macros == undefined) result.macros = [];
-            result.macros.push(entity);
-        } else if (entity instanceof Item) {
-            if (result.items == undefined) result.items = [];
-            result.items.push(entity);
-        } else if (entity instanceof RollTable) {
-            if (result.rolltables == undefined) result.rolltables = [];
-            result.rolltables.push(entity);
-        } else if (entity instanceof Playlist) {
-            if (result.playlists == undefined) result.playlists = [];
-            result.playlists.push(entity);
-        } else if (entity instanceof User) {
-            if (result.users == undefined) result.users = [];
-            result.users.push(entity);
+        for (let e of entity instanceof Array ? entity : [entity]) {
+            if (e instanceof TokenDocument) {
+                if (result.tokens == undefined) result.tokens = [];
+                result.tokens.push(e);
+            } else if (e instanceof Actor) {
+                if (result.actors == undefined) result.actors = [];
+                result.actors.push(e);
+            } else if (e instanceof TileDocument) {
+                if (result.tiles == undefined) result.tiles = [];
+                result.tiles.push(e);
+            } else if (e instanceof DrawingDocument) {
+                if (result.drawings == undefined) result.drawings = [];
+                result.drawings.push(e);
+            } else if (e instanceof AmbientLightDocument) {
+                if (result.lights == undefined) result.lights = [];
+                result.lights.push(e);
+            } else if (e instanceof AmbientSoundDocument) {
+                if (result.sounds == undefined) result.sounds = [];
+                result.sounds.push(e);
+            } else if (e instanceof WallDocument) {
+                if (result.walls == undefined) result.walls = [];
+                result.walls.push(e);
+            } else if (e instanceof JournalEntry) {
+                if (result.journal == undefined) result.journal = [];
+                result.journal.push(e);
+            } else if (e instanceof Scene) {
+                if (result.scenes == undefined) result.scenes = [];
+                result.scenes.push(e);
+            } else if (e instanceof Macro) {
+                if (result.macros == undefined) result.macros = [];
+                result.macros.push(e);
+            } else if (e instanceof Item) {
+                if (result.items == undefined) result.items = [];
+                result.items.push(e);
+            } else if (e instanceof RollTable) {
+                if (result.rolltables == undefined) result.rolltables = [];
+                result.rolltables.push(e);
+            } else if (e instanceof Playlist) {
+                if (result.playlists == undefined) result.playlists = [];
+                result.playlists.push(e);
+            } else if (e instanceof User) {
+                if (result.users == undefined) result.users = [];
+                result.users.push(e);
+            }
         }
     }
 
@@ -1698,7 +1780,7 @@ export class MonksActiveTiles {
             if (hasAlpha) {
                 initial.alpha = (changed["hidden"] === false ? (game.user.isGM ? 0.5 : 0) : object.alpha);
             }
-            log("Initial", initial);
+            //log("Initial", initial);
 
             let result = wrapped(...args);
 
@@ -2563,23 +2645,23 @@ export class MonksActiveTiles {
                     //let oldPos = canvas.scene._viewPosition;
                     let offset = { dx: (canvas.scene._viewPosition.x - data.oldpos?.x), dy: (canvas.scene._viewPosition.y - data.oldpos?.y) };
                     let scene = game.scenes.get(data.sceneid);
-                    if (canvas.scene.id != scene.id) {
+                    if (!canvas.loading && canvas.scene.id != scene.id) {
                         let oldPing = game.user.permissions["PING_CANVAS"];
                         game.user.permissions["PING_CANVAS"] = false;
                         await scene.view();
+                        if (data.oldpos && data.newpos) {
+                            let changeTo = { x: data.newpos.x + offset.dx, y: data.newpos.y + offset.dy };
+                            canvas.pan(changeTo);
+                        }
                         window.setTimeout(() => {
                             if (oldPing == undefined)
                                 delete game.user.permissions["PING_CANVAS"];
                             else
                                 game.user.permissions["PING_CANVAS"] = oldPing;
                         }, 500);
-                    }
-                    //let scale = oldSize / canvas.scene.dimensions.size;
-                    if (data.oldpos && data.newpos) {
+                    } else if (data.oldpos && data.newpos) {
                         let changeTo = { x: data.newpos.x + offset.dx, y: data.newpos.y + offset.dy };
-                        //log('change pos', oldPos, data.oldpos, data.newpos, offset, canvas.scene._viewPosition, changeTo);
                         canvas.pan(changeTo);
-                        //log('changed', canvas.scene._viewPosition);
                     }
                 }
             } break;
@@ -2640,9 +2722,23 @@ export class MonksActiveTiles {
                     let tile = (data?.tileid ? await fromUuid(data.tileid) : null);
                     let token = (data?.tokenid ? await fromUuid(data.tokenid) : null);
 
-                    MonksActiveTiles._showDialog(tile, token, data.value, data.type, data.title, data.content, data.options, data.yes, data.no, data.closeNo, data.buttons).then((results) => {
+                    let options = this.mergeArray(data, {tile, token});
+
+                    MonksActiveTiles._showDialog(options).then((results) => {
                         MonksActiveTiles.emit("returndialog", { _id: data._id, tileid: data?.tileid, results: results });
                     });
+                }
+            } break;
+            case 'closedialog': {
+                if (!data.userid || game.user.id == data.userid) {
+                    let dialog = MonksActiveTiles._dialogs[data.id];
+
+                    if (dialog) {
+                        if (data.trigger == "yes" || data.trigger == "no")
+                            $(`.dialog-buttons .dialog-button.${data.trigger}`, dialog[0].element).click();
+                        else
+                            dialog.close();
+                    }
                 }
             } break;
             case 'returndialog': {
@@ -3010,6 +3106,11 @@ export class MonksActiveTiles {
                         canvas.hud.bubbles.say(token, data.content);
                     }
                 } 
+            } break;
+            case 'openurl': {
+                if (data.userid == game.user.id) {
+                    window.open(data.url, "_target");
+                }
             } break;
         }
     }
@@ -3924,6 +4025,11 @@ export class MonksActiveTiles {
                     rotation = options.rotation ?? tokens[0].rotation;
                 }
 
+                let elevation = null;
+                if (tokens.length) {
+                    elevation = options.elevation ?? tokens[0].elevation;
+                }
+
                 let actions = triggerData?.actions || [];
                 let start = 0;
 
@@ -3956,6 +4062,9 @@ export class MonksActiveTiles {
                                 start = actions.findIndex(a => a.id == anchor.id) + 1;
                                 break;
                             } else if (rotation != undefined && anchor.data.tag == `_rotation${rotation}`) {
+                                start = actions.findIndex(a => a.id == anchor.id) + 1;
+                                break;
+                            } else if (elevation != undefined && anchor.data.tag == `_elevation${elevation}`) {
                                 start = actions.findIndex(a => a.id == anchor.id) + 1;
                                 break;
                             } else if (anchor.data.tag == `_darkness${(options.darkness ?? canvas.darknessLevel) * 100}`) {
@@ -4441,7 +4550,7 @@ Hooks.on('ready', () => {
         game.settings.set("monks-active-tiles", "fix-imagecycle", true);
     }
 
-    document.getElementById("board").addEventListener("click", function (event) {
+    document.getElementById("board").addEventListener("pointerdown", function (event) {
         MonksActiveTiles.canvasClick.call(this, event, 'click');
     });
     document.getElementById("board").addEventListener("contextmenu", function (event) {
@@ -4552,7 +4661,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                 if (availableTriggers.includes('enter') || availableTriggers.includes('exit') || availableTriggers.includes('movement') || availableTriggers.includes('stop')) {
                     if (contains) {
                         availableTriggers.findSplice(t => t == "enter");
-                        availableTriggers.findSplice(t => t == "stop");
+                        //availableTriggers.findSplice(t => t == "stop");
                     }
 
                     if (availableTriggers.length == 0)
@@ -4563,7 +4672,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
                         if (collisions.length == 0) {
                             availableTriggers.findSplice(t => t == "enter");
                             availableTriggers.findSplice(t => t == "exit");
-                            availableTriggers.findSplice(t => t == "stop");
+                            //availableTriggers.findSplice(t => t == "stop");
                             if (!contains)
                                 availableTriggers.findSplice(t => t == "movement");
                         } else {
@@ -4854,6 +4963,15 @@ Hooks.on('renderTileHUD', (app, html, data) => {
         }))
         .click(MonksActiveTiles.manuallyTrigger.bind(app))
         .insertAfter($('.control-icon[data-action="locked"]', html));
+});
+
+Hooks.on('renderActorSheet', (app, html, data) => {
+    let waitingType = MonksActiveTiles.waitingInput?.waitingfield?.data('type');
+    if (waitingType == "entity") {
+        MonksActiveTiles.controlEntity(app.object);
+        $(app.element).hide();
+        window.setTimeout(() => { app.close(); }, 1000);
+    }
 });
 
 Hooks.on('controlToken', (token, control) => {

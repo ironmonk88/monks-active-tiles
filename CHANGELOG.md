@@ -1,3 +1,57 @@
+## Version 11.03
+
+Fixing issue where moving to a token wasn't defaulting to the token collection
+
+Fixed issue with the display name of the Create Entity, Alter, Entity Count, Filter by Inventory, Filter by Condition action.  It will now default to the correct collection.
+
+Fixed issue with getting the correct data to pass to handlebars in the Hurt Heal action.
+
+Added additional options when using the Change Wall/Door action to actually be able to change wall details and not just door details.
+
+Added the option to select current users to send a chant message to in case you want to customise who gets the chat message.
+
+Fixed issue with rendering the icon on roll table requests when the item rolled comes from a compendium
+
+Added a new action Close Dialog, to be used to close dialogs opend using the Open Dialog action.
+
+Added the option to use wildcards when setting variable values.
+
+Added the option to delete variables
+
+Added the option to set the current collection based on users.
+
+Added an action to open an external url.
+
+Fixed issue with Entity Count filter not setting the collection correctly.
+
+Added users to the collections that can be filteres by attribute
+
+Fixed issue with filter by attribute that was actually setting a value instead of just checking it.
+
+Added an action to simplify checking a variable value
+
+Added the option to use handlebar notation in the limit field for the Jump to Landing action.
+
+Added the entity field to the Loop action, so you can specify what collection to loop through.
+
+Added rotation, darkness and time to the list of typeahead landings.
+
+Fixed issue with the Tile config when attempting to drag somewhere on the dialog that wasn't in the actions list.
+
+Fixed issue with trying to compare a boolean value vs when it should be assigning to a boolean value.
+
+Added additional error checking for animating image changes to make sure that the images selected are valid.
+
+Preventing a scene change if the scene is in the middle of changing.
+
+Added auto anchor for specifying an elevation to trigger on.
+
+Changed canvas clicks to use a pointerdown event instead of a click, because the click was registering where the mouse ended up, not where the click started.  And to support touch screens.
+
+Fixed the Stop Within Tile trigger to fire whenever a token stops within the Tile, not just when it comes in from the outside.
+
+Fixed issue with selecting an actor from the PF2E compendium search.
+
 ## Version 11.02
 
 Fixing issue with getting the original destination of a token.

@@ -191,14 +191,16 @@ export const WithActiveTileConfig = (TileConfig) => {
         _onDragStart(event) {
             let li = event.currentTarget.closest(".item");
             let list = event.currentTarget.closest(".items-list");
-            const dragData = {
-                type: this.object.constructor.documentName,
-                tileId: this.object.id,
-                collection: list.dataset.collection,
-                id: li.dataset.id
-            };
-            event.dataTransfer.setData("text/plain", JSON.stringify(dragData));
-            this._dragType = dragData.type;
+            if (list) {
+                const dragData = {
+                    type: this.object.constructor.documentName,
+                    tileId: this.object.id,
+                    collection: list.dataset.collection,
+                    id: li.dataset.id
+                };
+                event.dataTransfer.setData("text/plain", JSON.stringify(dragData));
+                this._dragType = dragData.type;
+            }
         }
 
         _canDragStart(selector) {

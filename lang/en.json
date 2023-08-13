@@ -50,6 +50,7 @@
   "MonksActiveTiles.AllowWhenPaused": "Allow When Paused",
   "MonksActiveTiles.ShownImage": "Shown Image",
   "MonksActiveTiles.TileTemplates": "Tile Templates",
+  "MonksActiveTiles.Players": "Players",
 
   "MonksActiveTiles.actiontext.pause": "<action>{pause} game</action>",
   "MonksActiveTiles.actiontext.delay": "<action>Wait</action> for <detail>\"{delay} seconds\"</detail>",
@@ -110,6 +111,8 @@
   "MonksActiveTiles.action.writetojournal": "Write to Journal",
   "MonksActiveTiles.action.setvariable": "Set Active Tiles Variable",
   "MonksActiveTiles.action.setcurrent": "Set Active Tiles Current Collection",
+  "MonksActiveTiles.action.closedialog": "Close Dialog",
+  "MonksActiveTiles.action.url": "Open URL",
 
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
   "MonksActiveTiles.filter.exists": "Check entity count",
@@ -121,6 +124,7 @@
   "MonksActiveTiles.filter.condition": "Filter by condition",
   "MonksActiveTiles.filter.random": "Random Number",
   "MonksActiveTiles.filter.visibility": "Filter by visibility",
+  "MonksActiveTiles.filter.variable": "Check variable",
 
   "MonksActiveTiles.logic.anchor": "Landing",
   "MonksActiveTiles.logic.goto": "Jump to Landing",
@@ -254,6 +258,11 @@
   "MonksActiveTiles.ctrl.chatcard": "Show Chat Card",
   "MonksActiveTiles.ctrl.method": "Method",
   "MonksActiveTiles.ctrl.redirect": "Redirect",
+  "MonksActiveTiles.ctrl.variablename": "Variable Name",
+  "MonksActiveTiles.ctrl.activeuser": "Active User",
+  "MonksActiveTiles.ctrl.owners": "Owners",
+  "MonksActiveTiles.ctrl.id": "ID",
+  "MonksActiveTiles.ctrl.trigger": "Trigger",
 
   "MonksActiveTiles.mode.enter": "Enter",
   "MonksActiveTiles.mode.exit": "Exit",
@@ -307,6 +316,7 @@
   "MonksActiveTiles.for.token": "Token Owner",
   "MonksActiveTiles.for.player": "Triggering Player",
   "MonksActiveTiles.for.players": "Players Only",
+  "MonksActiveTiles.for.currentusers": "Current Users",
 
   "MonksActiveTiles.audiotype.all": "Ambient Sounds",
   "MonksActiveTiles.audiotype.tile": "Tile Sounds",
@@ -427,6 +437,7 @@
   "MonksActiveTiles.msg.itempiles": "The drop items feature of Active Tiles conflicts with Item Piles, the setting has been disabled.",
   "MonksActiveTiles.msg.useplayerlocation": "Use players token location",
   "MonksActiveTiles.msg.currentlyplaying": "Currently Playing",
+  "MonksActiveTiles.msg.useusers": "Use players",
 
   "MonksActiveTiles.allow-player.name": "Allow players",
   "MonksActiveTiles.allow-player.hint": "Allow players to activate Tiles if there is no GM present.",
