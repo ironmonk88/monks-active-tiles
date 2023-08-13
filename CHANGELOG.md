@@ -52,6 +52,8 @@ Fixed the Stop Within Tile trigger to fire whenever a token stops within the Til
 
 Fixed issue with selecting an actor from the PF2E compendium search.
 
+Fixed v11 deprecation warning with Tile Templates when creating a new tile.
+
 ## Version 11.02
 
 Fixing issue with getting the original destination of a token.

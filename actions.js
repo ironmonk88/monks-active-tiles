@@ -2371,118 +2371,135 @@ export class ActionManager {
                     },
                     {
                         id: "type",
-                        name: "Door Configuration",
+                        name: "Wall Configuration",
                         list: () => {
-                            let doorTypes = Object.keys(CONST.WALL_DOOR_TYPES).reduce((obj, key) => {
-                                let k = CONST.WALL_DOOR_TYPES[key];
-                                obj[k] = game.i18n.localize(`WALLS.DoorTypes.${key}`);
+                            let doorTypes = { nothing: "--No Change--", toggle: "--Toggle--" };
+                            doorTypes = Object.assign(doorTypes, Object.keys(CONST.WALL_DOOR_TYPES).reduce((obj, key) => {
+                                obj[key] = game.i18n.localize(`WALLS.DoorTypes.${key}`);
                                 return obj;
-                            }, {});
+                            }, {}));
                             return doorTypes;
                         },
-                        type: "list"
+                        type: "list",
+                        defvalue: "nothing"
                     },
                     {
                         id: "state",
                         name: "Door State",
                         list: () => {
-                            let doorStates = Object.keys(CONST.WALL_DOOR_STATES).reduce((obj, key) => {
-                                let k = CONST.WALL_DOOR_STATES[key];
-                                obj[k] = game.i18n.localize(`WALLS.DoorStates.${key}`);
+                            let doorStates = { nothing: "--No Change--", toggle: "--Toggle--" };
+                            doorStates = Object.assign(doorStates, Object.keys(CONST.WALL_DOOR_STATES).reduce((obj, key) => {
+                                obj[key] = game.i18n.localize(`WALLS.DoorStates.${key}`);
                                 return obj;
-                            }, {});
+                            }, {}));
                             return doorStates;
                         },
-                        type: "list"
+                        type: "list",
+                        defvalue: "nothing"
                     },
                     {
                         id: "movement",
                         name: "Movement Restriction",
                         list: () => {
-                            let moveTypes = Object.keys(CONST.WALL_MOVEMENT_TYPES).reduce((obj, key) => {
-                                let k = CONST.WALL_MOVEMENT_TYPES[key];
-                                obj[k] = game.i18n.localize(`WALLS.SenseTypes.${key}`);
+                            let moveTypes = { nothing: "--No Change--", toggle: "--Toggle--" };
+                            moveTypes = Object.assign(moveTypes, Object.keys(CONST.WALL_MOVEMENT_TYPES).reduce((obj, key) => {
+                                obj[key] = game.i18n.localize(`WALLS.SenseTypes.${key}`);
                                 return obj;
-                            }, {});
+                            }, {}));
                             return moveTypes;
                         },
-                        type: "list"
+                        type: "list",
+                        defvalue: "nothing"
                     },
                     {
                         id: "light",
                         name: "Light Restriction",
                         list: () => {
-                            let senseTypes = Object.keys(CONST.WALL_SENSE_TYPES).reduce((obj, key) => {
-                                let k = CONST.WALL_SENSE_TYPES[key];
-                                obj[k] = game.i18n.localize(`WALLS.SenseTypes.${key}`);
+                            let senseTypes = { nothing: "--No Change--", toggle: "--Toggle--" };
+                            senseTypes = Object.assign(senseTypes, Object.keys(CONST.WALL_SENSE_TYPES).reduce((obj, key) => {
+                                obj[key] = game.i18n.localize(`WALLS.SenseTypes.${key}`);
                                 return obj;
-                            }, {});
+                            }, {}));
                             return senseTypes;
                         },
-                        type: "list"
+                        type: "list",
+                        defvalue: "nothing"
                     },
                     {
                         id: "sight",
                         name: "Sight Restriction",
                         list: () => {
-                            let senseTypes = Object.keys(CONST.WALL_SENSE_TYPES).reduce((obj, key) => {
-                                let k = CONST.WALL_SENSE_TYPES[key];
-                                obj[k] = game.i18n.localize(`WALLS.SenseTypes.${key}`);
+                            let senseTypes = { nothing: "--No Change--", toggle: "--Toggle--" };
+                            senseTypes = Object.assign(senseTypes, Object.keys(CONST.WALL_SENSE_TYPES).reduce((obj, key) => {
+                                obj[key] = game.i18n.localize(`WALLS.SenseTypes.${key}`);
                                 return obj;
-                            }, {});
+                            }, {}));
                             return senseTypes;
                         },
-                        type: "list"
+                        type: "list",
+                        defvalue: "nothing"
                     },
                     {
                         id: "sound",
                         name: "Sound Restriction",
                         list: () => {
-                            let senseTypes = Object.keys(CONST.WALL_SENSE_TYPES).reduce((obj, key) => {
-                                let k = CONST.WALL_SENSE_TYPES[key];
-                                obj[k] = game.i18n.localize(`WALLS.SenseTypes.${key}`);
+                            let senseTypes = { nothing: "--No Change--", toggle: "--Toggle--" };
+                            senseTypes = Object.assign(senseTypes, Object.keys(CONST.WALL_SENSE_TYPES).reduce((obj, key) => {
+                                obj[key] = game.i18n.localize(`WALLS.SenseTypes.${key}`);
                                 return obj;
-                            }, {});
+                            }, {}));
                             return senseTypes;
                         },
-                        type: "list"
+                        type: "list",
+                        defvalue: "nothing"
                     },
                 ],
-                values: {
-                    'state': {
-                        'none': "",
-                        'open': "MonksActiveTiles.state.open",
-                        'close': "MonksActiveTiles.state.closed",
-                        'lock': "MonksActiveTiles.state.locked",
-                        'toggle': "MonksActiveTiles.state.toggle"
-                    },
-                    'type': {
-                        'none': "",
-                        'door': "MonksActiveTiles.doortype.door",
-                        'secret': "MonksActiveTiles.doortype.secret",
-                        'toggle': "MonksActiveTiles.doortype.toggle"
-                    }
-                },
                 fn: async (args = {}) => {
                     const { action } = args;
                     //Find the door in question, set the state to whatever value
+
+                    const updateProperty = (wall, key, prop, types, toggles) => {
+                        if (action.data[key] != "nothing") {
+                            let keyValue = action.data[key];
+                            let value = types[keyValue] ?? keyValue;
+                            if (keyValue == 'toggle') {
+                                let wallValue = wall[prop];
+                                let toggle = toggles.find(t => t.from == wallValue);
+                                if (toggle)
+                                    value = toggle.to;
+                                else
+                                    return {};
+                            }
+                            let update = {};
+                            update[prop] = value;
+                            return update;
+                        }
+
+                        return {};
+                    }
+
                     if (action.data.entity.id) {
+                        if (action.data.state == "none")
+                            action.data.state = "nothing";
+                        else
+                            action.data.state = (action.data.state == 'lock' ? "LOCKED" : (["open", "closed"].includes(action.data.state) ? action.data.state.toUpperCase() : action.data.state));
+
+                        if (action.data.type == "none")
+                            action.data.type = "nothing";
+                        else
+                            action.data.type = ["door", "secret"].includes(action.data.type) ? action.data.type.toUpperCase() : action.data.type;
+
                         let walls = await MonksActiveTiles.getEntities(args, 'walls');
                         for (let wall of walls) {
-                            if (wall && wall.door != 0) {
-                                let updates = {}
-                                if (action.data.state && action.data.state !== '' && action.data.state != "none") {
-                                    let state = (action.data.state == 'open' ? CONST.WALL_DOOR_STATES.OPEN : (action.data.state == 'lock' ? CONST.WALL_DOOR_STATES.LOCKED : CONST.WALL_DOOR_STATES.CLOSED));
-                                    if (action.data.state == 'toggle' && wall.ds != CONST.WALL_DOOR_STATES.LOCKED)
-                                        state = (wall.ds == CONST.WALL_DOOR_STATES.OPEN ? CONST.WALL_DOOR_STATES.CLOSED : CONST.WALL_DOOR_STATES.OPEN);
-                                    updates.ds = state;
-                                }
-                                if (action.data.type && action.data.type !== '' && action.data.type != "none") {
-                                    let type = (action.data.type == 'door' ? CONST.WALL_DOOR_TYPES.DOOR : CONST.WALL_DOOR_TYPES.SECRET);
-                                    if (action.data.type == 'toggle')
-                                        type = (wall.door == CONST.WALL_DOOR_TYPES.DOOR ? CONST.WALL_DOOR_TYPES.SECRET : CONST.WALL_DOOR_TYPES.DOOR);
-                                    updates.door = type;
-                                }
+                            if (wall instanceof WallDocument) {
+                                let updates = Object.assign({},
+                                    updateProperty(wall, "state", "ds", CONST.WALL_DOOR_STATES, [{ from: CONST.WALL_DOOR_STATES.CLOSED, to: CONST.WALL_DOOR_STATES.OPEN }, { from: CONST.WALL_DOOR_STATES.OPEN, to: CONST.WALL_DOOR_STATES.CLOSED }, { from: CONST.WALL_DOOR_STATES.LOCKED, to: CONST.WALL_DOOR_STATES.OPEN }]),
+                                    updateProperty(wall, "type", "door", CONST.WALL_DOOR_TYPES, [{ from: CONST.WALL_DOOR_TYPES.DOOR, to: CONST.WALL_DOOR_TYPES.SECRET }, { from: CONST.WALL_DOOR_TYPES.SECRET, to: CONST.WALL_DOOR_TYPES.DOOR }, { from: CONST.WALL_DOOR_TYPES.NONE, to: CONST.WALL_DOOR_TYPES.DOOR }]),
+                                    updateProperty(wall, "movement", "move", CONST.WALL_MOVEMENT_TYPES, [{ from: CONST.WALL_MOVEMENT_TYPES.NONE, to: CONST.WALL_MOVEMENT_TYPES.NORMAL }, { from: CONST.WALL_MOVEMENT_TYPES.NORMAL, to: CONST.WALL_MOVEMENT_TYPES.NONE }]),
+                                    updateProperty(wall, "light", "light", CONST.WALL_SENSE_TYPES, [{ from: CONST.WALL_SENSE_TYPES.NONE, to: CONST.WALL_SENSE_TYPES.NORMAL }, { from: CONST.WALL_SENSE_TYPES.LIMITED, to: CONST.WALL_SENSE_TYPES.NORMAL }, { from: CONST.WALL_SENSE_TYPES.NORMAL, to: CONST.WALL_SENSE_TYPES.NONE }, { from: CONST.WALL_SENSE_TYPES.PROXIMITY, to: CONST.WALL_SENSE_TYPES.NORMAL }, { from: CONST.WALL_SENSE_TYPES.DISTANCE, to: CONST.WALL_SENSE_TYPES.NORMAL }]),
+                                    updateProperty(wall, "sight", "sight", CONST.WALL_SENSE_TYPES, [{ from: CONST.WALL_SENSE_TYPES.NONE, to: CONST.WALL_SENSE_TYPES.NORMAL }, { from: CONST.WALL_SENSE_TYPES.LIMITED, to: CONST.WALL_SENSE_TYPES.NORMAL }, { from: CONST.WALL_SENSE_TYPES.NORMAL, to: CONST.WALL_SENSE_TYPES.NONE }, { from: CONST.WALL_SENSE_TYPES.PROXIMITY, to: CONST.WALL_SENSE_TYPES.NORMAL }, { from: CONST.WALL_SENSE_TYPES.DISTANCE, to: CONST.WALL_SENSE_TYPES.NORMAL }]),
+                                    updateProperty(wall, "sound", "sound", CONST.WALL_SENSE_TYPES, [{ from: CONST.WALL_SENSE_TYPES.NONE, to: CONST.WALL_SENSE_TYPES.NORMAL }, { from: CONST.WALL_SENSE_TYPES.LIMITED, to: CONST.WALL_SENSE_TYPES.NORMAL }, { from: CONST.WALL_SENSE_TYPES.NORMAL, to: CONST.WALL_SENSE_TYPES.NONE }, { from: CONST.WALL_SENSE_TYPES.PROXIMITY, to: CONST.WALL_SENSE_TYPES.NORMAL }, { from: CONST.WALL_SENSE_TYPES.DISTANCE, to: CONST.WALL_SENSE_TYPES.NORMAL }])
+                                );
                                 MonksActiveTiles.batch.add("update", wall, updates);
                             }
                         }
@@ -2490,13 +2507,21 @@ export class ActionManager {
                 },
                 content: async (trigger, action) => {
                     let entityName = await MonksActiveTiles.entityName(action.data?.entity, 'walls');
-                    let stateText = (action.data?.state != 'none' ? (action.data?.state == 'toggle' ?
-                        `, toggle <span class="details-style">"State"</span>` :
-                        `, set <span class="details-style">"State"</span> to <span class="value-style">&lt;${i18n(trigger.values.state[action.data?.state])}&gt;</span>`) : '');
-                    let typeText = (action.data?.type != undefined && action.data?.type != 'none' ? (action.data?.type == 'toggle' ?
-                        `, toggle <span class="details-style">"Type"</span>` :
-                        `, set <span class="details-style">"Type"</span> to <span class="value-style">&lt;${i18n(trigger.values.type[action.data?.type])}&gt;</span>`) : '');
-                    return `<span class="action-style">${i18n(trigger.name)}</span> <span class="entity-style">${entityName}</span>${stateText}${typeText}`;
+                    let values = [
+                        { key: "type", icon: "fa-block-brick", types: CONST.WALL_DOOR_TYPES, strings: "DoorTypes" },
+                        { key: "state", icon: "fa-door-open", types: CONST.WALL_DOOR_STATES, strings: "DoorStates" },
+                        { key: "movement", icon: "fa-person-running", types: CONST.WALL_MOVEMENT_TYPES, strings: "SenseTypes" },
+                        { key: "light", icon: "fa-lightbulb", types: CONST.WALL_SENSE_TYPES, strings: "SenseTypes" },
+                        { key: "sight", icon: "fa-eye", types: CONST.WALL_SENSE_TYPES, strings: "SenseTypes" },
+                        { key: "sound", icon: "fa-volume-high", types: CONST.WALL_SENSE_TYPES, strings: "SenseTypes" }
+                    ];
+                    let valueText = values.map(v => {
+                        let value = action.data[v.key];
+                        if ((v.key == "state" && value == "none") || (v.key == "type" && value == "none") || value == "nothing") return "";
+                        let text = game.i18n.has(`WALLS.${v.strings}.${value}`) ? game.i18n.localize(`WALLS.${v.strings}.${value}`) : value;
+                        return `<span style="white-space:nowrap;"><i class="fas ${v.icon}"></i>:${text}</span>`;
+                    }).join(" ");
+                    return `<span class="action-style">${i18n(trigger.name)}</span> <span class="entity-style" style="margin-right: 8px;">${entityName}</span> ${valueText}`;
                 }
             },
             'notification': {
@@ -7237,6 +7262,10 @@ export class ActionManager {
 
                     if (action.data?.limit) {
                         let limit = await getValue(action.data?.limit, args, null, { prop: "" });
+                        limit = parseInt(limit);
+                        if (isNaN(limit))
+                            return { goto: goto };
+
                         let loop = args.value.loop || {};
                         let loopval = (loop[action.id] || 0) + 1;
                         loop[action.id] = loopval;

@@ -324,7 +324,7 @@ export class TileTemplates extends DocumentDirectory {
         new TemplateConfig(document, this).render(true);
     }
 
-    async _onCreateDocument(event) {
+    async _onCreateEntry(event) {
         event.preventDefault();
         event.stopPropagation();
         const button = event.currentTarget;
