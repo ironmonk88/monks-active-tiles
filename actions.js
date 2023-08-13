@@ -4099,11 +4099,11 @@ export class ActionManager {
                         user.targets.forEach(t => t.setTarget(false, { user, releaseOthers: true, groupSelection: false }));
                         for (let [k, v] of Object.entries(rollresults)) {
                             let entity = entities.find(e => e.id == k);
-                            if (entity && v.total >= entity.actor.system.attributes.ac.value || v.dice[0].total == 20) {
+                            if (entity && (v.total >= entity.actor.system.attributes.ac?.value || v.dice[0].total == 20)) {
                                 entity?.object?.setTarget(true, { user, releaseOthers: true });
                                 if (game.system.id == "pf2e") {
                                     if (act) {
-                                        if (v.total >= entity.actor.system.attributes.ac.value + 10 || v.dice[0].total == 20)
+                                        if (v.total >= entity.actor.system.attributes.ac?.value + 10 || v.dice[0].total == 20)
                                             await act.critical();
                                         else
                                             await act.damage();
