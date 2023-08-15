@@ -1,3 +1,13 @@
+## Version 11.04
+
+Fixed default entity of Set Value
+
+Compensated for Mass Edit when saving the tile sheet.
+
+Compensated for Foundry not setting up Dialog buttons properly in css.
+
+Fixed issue with opening an Alert Dialog.
+
 ## Version 11.03
 
 Fixing issue where moving to a token wasn't defaulting to the token collection

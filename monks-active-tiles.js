@@ -891,7 +891,7 @@ export class MonksActiveTiles {
                     return null;
                 },
                 buttons: {
-                    ok: { icon: '<i class="fas fa-check"></i>', label, callback }
+                    ok: { icon: '<i class="fas fa-check"></i>', label: "OK", callback }
                 }
             }, options).catch(() => { return {}; });
         } else {
@@ -971,6 +971,9 @@ export class MonksActiveTiles {
                 else reject(new Error("The Dialog was closed without a choice being made."));
                 delete MonksActiveTiles._dialogs[id];
             };
+
+            options.classes = (options.classes || []);
+            options.classes.push("monks-active-tiles-dialog");
 
             // Construct the dialog.
             const dialog = new Dialog({ ...data, buttons, close }, options);

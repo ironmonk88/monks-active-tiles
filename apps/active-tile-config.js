@@ -299,7 +299,8 @@ export const WithActiveTileConfig = (TileConfig) => {
             if (data["flags.monks-active-tiles.fileindex"] != '')
                 data["flags.monks-active-tiles.fileindex"] = data["flags.monks-active-tiles.fileindex"] - 1;
 
-            data["flags.monks-active-tiles.trigger"] = data["flags.monks-active-tiles.trigger"].split(",");
+            if (typeof data["flags.monks-active-tiles.trigger"] == "string")
+                data["flags.monks-active-tiles.trigger"] = data["flags.monks-active-tiles.trigger"].split(",");
 
             return data;
         }

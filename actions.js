@@ -955,17 +955,6 @@ export class ActionManager {
                                 if (action.data?.fade) {
                                     let duration = (action.data?.fade ?? 5) * 1000;
                                     let time = new Date().getTime() + duration;
-                                    /*
-                                    MonksActiveTiles.fadeImage(entity, hide, time).then(() => {
-                                        if (hide)
-                                            entity.update({ hidden: hide }, { animation: { duration: 0 } });
-                                    });
-
-                                    MonksActiveTiles.emit("showhide", { entityid: entity.uuid, time: time, hide: hide });
-
-                                    if (!hide)
-                                        MonksActiveTiles.batch.add("update", entity, { hidden: hide }, { animation: { duration: 0 } });
-                                        */
                                     MonksActiveTiles.batch.add("update", entity, { hidden: hide }, { animation: { duration, time } });
                                 } else
                                     MonksActiveTiles.batch.add("update", entity, { hidden: hide }, { animation: { duration: 0 } });
@@ -7011,7 +7000,8 @@ export class ActionManager {
                         options: { show: ['tile', 'previous', 'tagger'] },
                         restrict: (entity) => {
                             return (entity instanceof Tile);
-                        }
+                        },
+                        defaultType: "tiles"
                     },
                     {
                         id: "type",

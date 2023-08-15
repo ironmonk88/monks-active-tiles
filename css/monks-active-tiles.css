@@ -477,6 +477,10 @@ a.tile-trigger-link i {
     margin-right: 2px;
 }
 
+.monks-active-tiles-dialog .dialog-buttons {
+    flex: 0;
+}
+
 body.system-CoC7 .multiple-dropdown .multiple-dropdown-option {
     width: unset;
 }
