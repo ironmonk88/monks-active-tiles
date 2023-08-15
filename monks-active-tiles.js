@@ -2724,7 +2724,7 @@ export class MonksActiveTiles {
                     let tile = (data?.tileid ? await fromUuid(data.tileid) : null);
                     let token = (data?.tokenid ? await fromUuid(data.tokenid) : null);
 
-                    let options = this.mergeArray(data, {tile, token});
+                    let options = mergeObject(data, {tile, token});
 
                     MonksActiveTiles._showDialog(options).then((results) => {
                         MonksActiveTiles.emit("returndialog", { _id: data._id, tileid: data?.tileid, results: results });

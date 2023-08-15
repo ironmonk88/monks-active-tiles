@@ -1,3 +1,7 @@
+## Version 11.06
+
+Fixed Dialog showing to players
+
 ## Version 11.05
 
 Fixed closing alert dialog
