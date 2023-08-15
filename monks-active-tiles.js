@@ -887,8 +887,7 @@ export class MonksActiveTiles {
                 rejectClose: true,
                 default: "ok",
                 close: () => {
-                    if (rejectClose) return;
-                    return null;
+                    return;
                 },
                 buttons: {
                     ok: { icon: '<i class="fas fa-check"></i>', label: "OK", callback }

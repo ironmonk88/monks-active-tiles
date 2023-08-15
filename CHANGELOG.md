@@ -1,3 +1,7 @@
+## Version 11.05
+
+Fixed closing alert dialog
+
 ## Version 11.04
 
 Fixed default entity of Set Value
