@@ -102,6 +102,13 @@
     </div>
 
     <div class="form-group">
+        <label>{{ localize "MonksActiveTiles.Cooldown" }}</label>
+        <div class="form-fields" style="flex:0 0 100px;">
+            <input type="number" style="text-align:right;" name="flags.monks-active-tiles.cooldown" min="0" value="{{data.flags.monks-active-tiles.cooldown}}">
+        </div>
+    </div>
+
+    <div class="form-group">
         <label>{{ localize "MonksActiveTiles.ChanceTrigger" }}</label>
         <div class="form-fields">
             {{ rangePicker name="flags.monks-active-tiles.chance" value=data.flags.monks-active-tiles.chance min="0" max="100" step="1" }}

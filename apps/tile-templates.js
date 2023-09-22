@@ -398,6 +398,7 @@ export class TileTemplates extends DocumentDirectory {
         event.preventDefault();
         let folder = {
             testUserPermission: () => { return game.user.isGM },
+            flags: {},
             apps: {},
             isOwner: game.user.isGM,
             sorting: "m"
@@ -405,7 +406,8 @@ export class TileTemplates extends DocumentDirectory {
         folder.toObject = () => { return folder; };
         folder.getFlag = () => { return null; };
         const button = event.currentTarget;
-        folder.folder = button.dataset.parentFolder || null;
+        const li = button.closest(".directory-item");
+        folder.folder = li?.dataset?.folderId || null;
         const options = { top: button.offsetTop, left: window.innerWidth - 310 - FolderConfig.defaultOptions.width, editable: true };
         let fc = new FolderConfig(folder, options).render(true, { editable: true });
         fc._updateObject = async (event, formData) => {

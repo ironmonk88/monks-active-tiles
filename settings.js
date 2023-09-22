@@ -148,6 +148,13 @@ export const registerSettings = function () {
 		type: Boolean
 	});
 
+	game.settings.register(modulename, "fix-variablename", {
+		scope: "world",
+		config: false,
+		default: false,
+		type: Boolean
+	});
+
 	game.settings.register(modulename, "tile-templates", {
 		scope: "world",
 		config: false,

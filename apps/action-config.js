@@ -8,7 +8,6 @@ export class ActionConfig extends FormApplication {
         this.tileAttr = [];
 
         //let's just grab the first player character we can find
-        log("Checking token");
         let token = canvas.scene.tokens?.contents[0];
         if (token) {
             try {
@@ -17,7 +16,6 @@ export class ActionConfig extends FormApplication {
                     this.tokenAttr = (this.tokenAttr || []).concat(attributes.value.concat(attributes.bar).map(a => a.join('.')));
             } catch { }
         }
-        log("Checking player");
         let player = game.actors.find(a => a.type == 'character');
         if (player) {
             try {
@@ -45,6 +43,7 @@ export class ActionConfig extends FormApplication {
             "_time",
             "_click",
             "_rightclick",
+            "_dblrightclick",
             "_dblclick",
             "_create",
             "_hoverin",
@@ -107,7 +106,11 @@ export class ActionConfig extends FormApplication {
         let availableActions = Object.entries(groups).map(([k, v]) => {
             return (v.length > 0 ? {
                 text: i18n(MonksActiveTiles.triggerGroups[k].name),
-                groups: v.sort((a, b) => { return (a.name > b.name ? 1 : (a.name < b.name ? -1 : 0)) }).reduce(function (result, item) {
+                groups: v.sort((a, b) => {
+                    // Sort by name
+                    return a.name.localeCompare(b.name);
+
+                }).reduce(function (result, item) {
                     result[item.id] = item.name;
                     return result;
                 }, {})
@@ -318,7 +321,7 @@ export class ActionConfig extends FormApplication {
             MonksActiveTiles.lasttab = null;
             let tab = ui.sidebar.tabs[field.data('deftype')];
             if (tab) {
-                if (tab.tabName !== ui.sidebar.tabs.activeTab) {
+                if (tab.tabName !== ui.sidebar.activeTab) {
                     MonksActiveTiles.lasttab = ui.sidebar.activeTab;
                     tab.activate();
                 }
@@ -711,9 +714,6 @@ export class ActionConfig extends FormApplication {
             delete data.buttons;
         }
 
-        if (data.delay == undefined)
-            delete data.delay;
-
         $('input.range-value', this.element).each(function () {
             if ($(this).val() == "") setProperty(data, $(this).prev().attr("name"), "");
         });
@@ -833,10 +833,10 @@ export class ActionConfig extends FormApplication {
         //$('.gmonly', this.element).toggle(action.requiresGM);
 
         for (let ctrl of (action.ctrls || [])) {
-            let options = mergeObject({ show: [] }, ctrl.options);
+            let options = mergeObject({ hide: [], show: [] }, ctrl.options);
             let field = $('<div>').addClass('form-fields').data('ctrl', ctrl);
             let id = 'data.' + ctrl.id + (ctrl.variation ? '.value' : '');
-            let val = data[ctrl.id] != undefined ? (data[ctrl.id].value != undefined ? data[ctrl.id].value : data[ctrl.id]) : ctrl.defvalue;
+            let val = data[ctrl.id] != undefined ? (data[ctrl.id].value != undefined ? data[ctrl.id].value : data[ctrl.id]) : (data[ctrl.id] === null ? "" : ctrl.defvalue);
 
             switch (ctrl.type) {
                 case 'line':
@@ -922,7 +922,7 @@ export class ActionConfig extends FormApplication {
                         field.addClass("select-field-group")
                             .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'hidden', name: id }).val(JSON.stringify(data[ctrl.id])).data({ 'type': ctrl.subtype, deftype: ctrl.defaultType }))
                             .append($('<span>').dblclick(this.editLocationId.bind(this)).addClass('display-value').html(await MonksActiveTiles.locationName(data[ctrl.id]) || `<span class="placeholder-style">${i18n(ctrl.placeholder) || 'Please select a location'}</style>`)) //(data[ctrl.id] ? (data[ctrl.id].name ? data[ctrl.id].name : 'x:' + data[ctrl.id].x + ', y:' + data[ctrl.id].y) + (scene ? ', scene:' + scene.name : '') : '')
-                            .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectlocation") }).addClass('location-picker').html('<i class="fas fa-crosshairs fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
+                            .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectlocation") }).toggle(!options.hide.includes('select')).addClass('location-picker').html('<i class="fas fa-crosshairs fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'position', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.setposition") }).toggle(ctrl.subtype == 'position').addClass('location-picker').html('<i class="fas fa-crop-alt fa-sm"></i>').click(this.selectPosition.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'tile', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetile") }).toggle(options.show.includes('tile')).addClass('entity-picker').html('<i class="fas fa-cubes fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'token', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetoken") }).toggle(options.show.includes('token')).addClass('entity-picker').html('<i class="fas fa-user-alt fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
@@ -936,7 +936,7 @@ export class ActionConfig extends FormApplication {
                         field.addClass("select-field-group")//.css({ 'flex-direction': 'row', 'align-items': 'flex-start' })
                             .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'hidden', name: id }).val(typeof data[ctrl.id] == 'object' ? JSON.stringify(data[ctrl.id]) : data[ctrl.id]).data({ 'restrict': ctrl.restrict, 'type': 'entity', deftype: ctrl.defaultType }))
                             .append($('<span>').dblclick(this.editEntityId.bind(this)).addClass('display-value').html(displayValue))
-                            .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectentity") }).addClass('entity-picker').html('<i class="fas fa-crosshairs fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
+                            .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectentity") }).toggle(!options.hide.includes('select')).addClass('entity-picker').html('<i class="fas fa-crosshairs fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'tile', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetile") }).toggle(options.show.includes('tile')).addClass('entity-picker').html('<i class="fas fa-cubes fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'token', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetoken") }).toggle(options.show.includes('token')).addClass('entity-picker').html('<i class="fas fa-user-alt fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'within', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usewithin") }).toggle(options.show.includes('within')).addClass('entity-picker').html('<i class="fas fa-street-view fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
@@ -1073,8 +1073,6 @@ export class ActionConfig extends FormApplication {
                 }
             }
         }
-
-        //$('[data-type="delay"]', this.element).toggle(!!this.object.delay && command != 'delay'); //action?.options?.allowDelay === true);
 
         if(this.rendered)
             this.setPosition();

@@ -16,8 +16,8 @@
 }
 </style>
 <script>
-	let checkingPassword = false;
-	let password = "12345";
+	var checkingPassword = false;
+	var password = "12345";
 	function addNumber(num) {
 		if (!checkingPassword)
 			$('#my-password').val($('#my-password').val() + num);
@@ -27,6 +27,8 @@
 			$('#my-password').val('');
 	}
 	function submitPassword() {
+		// This code is used to check the password while still viewing the dialog
+		// If you wish to wish to use the _failedlanding from within a Tile, you can remove this code
 		if ($('#my-password').val() != password) {
 			checkingPassword = true;
 			$('#my-password').val('UNAUTHORISED').addClass('password-error');
@@ -35,6 +37,7 @@
 				$('#my-password').val('').removeClass('password-error');
 			}, 3000);
 		} else
+		// This code is all you'll need if you want to use landings to check the password.
 			$('#my-form').submit();
 	}
 </script>

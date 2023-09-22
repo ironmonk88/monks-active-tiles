@@ -51,6 +51,7 @@
   "MonksActiveTiles.ShownImage": "Shown Image",
   "MonksActiveTiles.TileTemplates": "Tile Templates",
   "MonksActiveTiles.Players": "Players",
+  "MonksActiveTiles.Cooldown": "Cooldown (sec)",
 
   "MonksActiveTiles.actiontext.pause": "<action>{pause} game</action>",
   "MonksActiveTiles.actiontext.delay": "<action>Wait</action> for <detail>\"{delay} seconds\"</detail>",
@@ -125,6 +126,7 @@
   "MonksActiveTiles.filter.random": "Random Number",
   "MonksActiveTiles.filter.visibility": "Filter by visibility",
   "MonksActiveTiles.filter.variable": "Check variable",
+  "MonksActiveTiles.filter.value": "Check value",
 
   "MonksActiveTiles.logic.anchor": "Landing",
   "MonksActiveTiles.logic.goto": "Jump to Landing",
@@ -132,6 +134,7 @@
   "MonksActiveTiles.logic.playertype": "Redirect based on player type",
   "MonksActiveTiles.logic.loop": "Loop through Entities",
   "MonksActiveTiles.logic.method": "Redirect based on Method",
+  "MonksActiveTiles.logic.checkdata": "Check data",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
@@ -263,6 +266,9 @@
   "MonksActiveTiles.ctrl.owners": "Owners",
   "MonksActiveTiles.ctrl.id": "ID",
   "MonksActiveTiles.ctrl.trigger": "Trigger",
+  "MonksActiveTiles.ctrl.valuename": "Value Name",
+  "MonksActiveTiles.ctrl.action": "Action",
+  "MonksActiveTiles.ctrl.allowplayer": "Use Player",
 
   "MonksActiveTiles.mode.enter": "Enter",
   "MonksActiveTiles.mode.exit": "Exit",
@@ -271,6 +277,7 @@
   "MonksActiveTiles.mode.click": "Click",
   "MonksActiveTiles.mode.rightclick": "Right Click",
   "MonksActiveTiles.mode.dblclick": "Double Click",
+  "MonksActiveTiles.mode.dblrightclick": "Double Right Click",
   "MonksActiveTiles.mode.hover": "On Hover",
   "MonksActiveTiles.mode.hoverin": "Hover In",
   "MonksActiveTiles.mode.hoverout": "Hover Out",

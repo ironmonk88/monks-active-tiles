@@ -115,7 +115,6 @@ export const WithActiveTileConfig = (TileConfig) => {
                                 error(e);
                             }
                         }
-                        content += (a.delay > 0 ? ' after ' + a.delay + ' seconds' : '');
 
                         let result = {
                             id: a.id,

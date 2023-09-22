@@ -1,3 +1,95 @@
+## Version 11.07
+
+Added the tagger option as a location for Pan Canvas action.
+
+Added double right click trigger.
+
+Attempted to fix the move token action, again for the 100th time.  Maybe it'll work properly this time... but I'm not holding my breath.
+
+Added playlists to the collection of current objects to use witht he Alter action.
+
+Added the option to move to the next and previous track when using the Playlist action.
+
+Removed support for Better Roll Tables since Active Tiles handles the functionality that it previously added and prevents an error that the recent release was causing.
+
+Fixed issue with toggling an active effect that wasn't using the most up to date code.
+
+Fixed issue with playing Tile animation if the entity selected didn't have an attached object.
+
+Fixed issue with playing a Tile animation if the Tile animation is already playing.
+
+Added the option to tell the player to add an item to their character sheet instead of using the GM to help with automated animations.
+
+Fixed issue with Attack action if the damage roll had no results.
+
+Fixed issue with Triggering a Tile that's disabled even if you've allow disabled Tiles to be triggered.
+
+Added the option to use the triggering token when using the Change Scene action to bring other tokens to the triggering scene.
+
+Added an option for who gets the Scene Changed, just the triggering player, All Players, or Everyone.
+
+Added the player list to the values sent to the Dialog action.
+
+Fixed issue with using a Dialog html file that exists at a remote URL.
+
+Fixed issue with getting a variable from the entity in question rather than the triggering Tile.
+
+Fixed issue with setting current collection when the collection doesn't contain ownership information.
+
+Added a warning and confirmation when using the Open URL action to make sure the players know they are leaving the Foundry site.
+
+Added users tot he list of entities to use when checking for entity count.
+
+Updated Check Variable to use handlebar notation when setting the fail landing.
+
+Added a new action to check vale information.  Value information is the current state of all the values Active Tiles is tracking.  This can be used to check and see if a Click Trigger had the shift, Ctrl, or Alt keys pressed when triggered.
+
+Added action to check the data of the Triggering Tile.
+
+Removed the Select Entity option when looping over entities.
+
+Fixed issues with FXMaster actions
+
+Correcting issue with switching tabs when selecting an entity.
+
+Removed the delay property completely from the code.  If you're still using that and not the Delay action, apologies, but it should be updated.
+
+Fixed issue with defaulting a value in the action config, when the value is allowed to be blank.
+
+Fixed issue with getting the folder information correctly in the Tile Templates interface.
+
+Fixed some code and clarified some of the code int he KeyPad Dialog example.
+
+Fixed issue when trying to set a variable to a boolean.  You'll now have to use `= true` notation to specify the boolean if it's not working as expected.
+
+Added the option to use handlebar notaion with tagger tags
+
+Fixed issue where using tagger while the GM was on a different scene was causing it to incorrectly identiy the active scene.
+
+Fixed issues with the dialog buttons being stretched too tall.
+
+Added additional overrides to be ignored.
+
+Made sure that wall data was being sent when a door was triggering a Tile.
+
+Fixed an issue where using a hover over cursor would show even if the Tile was hidden in the fog of war.
+
+Added the option to set a cooldaown before a Tile becomes active again.
+
+Fixed an issue where going to a landing was losing colelcted value information.
+
+Fixed an issue where players were trying to update a Tile they had no access to.
+
+Fixed an issue where right clickign on the canvas was triggering twice.
+
+Fixed an issue where right clickign on the canvas was triggering a click action.
+
+Fixed an issue were the stop within tile trigger wasn't triggering appropriately.
+
+Fixed an issue getting end points if there was no triggering point.
+
+Added additional information to indicate what round and turn was activated with the combat triggers.
+
 ## Version 11.06
 
 Fixed Dialog showing to players
