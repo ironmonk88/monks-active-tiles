@@ -1,3 +1,11 @@
+## Version 11.08
+
+Fixed issue with changing scenes.
+
+Added option to use wildcards when filtering by inventory.
+
+Fixed issue with turn data being send when turn starts.
+
 ## Version 11.07
 
 Added the tagger option as a location for Pan Canvas action.
@@ -89,6 +97,10 @@ Fixed an issue were the stop within tile trigger wasn't triggering appropriately
 Fixed an issue getting end points if there was no triggering point.
 
 Added additional information to indicate what round and turn was activated with the combat triggers.
+
+Moved the Array prototype function for picking a random entry to it's own function.
+
+Fixed function that gets a random entry from an array.
 
 ## Version 11.06
 

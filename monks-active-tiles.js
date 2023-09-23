@@ -1707,17 +1707,6 @@ export class MonksActiveTiles {
             });
         } catch { }
 
-        Array.prototype.pickRandom = function (id) {
-            if (this.length == 0)
-                return null;
-            else if (this.length == 1)
-                return this[0];
-            else {
-                let results = this.filter(d => d.dest == undefined || d.dest.id != id);
-                return results[Math.floor(Math.random() * results.length)];
-            }
-        }
-
         CONFIG.TextEditor.enrichers.push({ id: 'MonksActiveTileTrigger', pattern: new RegExp(`@(Tile)\\[([^\\]]+)\\](?:{([^}]+)})?`, 'g'), enricher: MonksActiveTiles._createTileLink });
 
         //let otherGroups = {};
@@ -4996,7 +4985,7 @@ Hooks.on("preUpdateCombat", async function (combat, delta) {
             if (triggerData?.active && triggerData.actions?.length > 0 &&
                 ((delta.turn || delta.round) && triggers.includes('turnend'))) {
                 let tokens = [combat.combatant.token];
-                tile.trigger({ tokens: tokens, method: 'turnend' });
+                tile.trigger({ tokens: tokens, method: 'turnend', options: { turn: delta.turn } });
             }
         }
     }

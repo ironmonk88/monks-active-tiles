@@ -4324,8 +4324,9 @@ export class ActionManager {
                         scene = game.scenes.find(s => (action.data.sceneid == "_active" ? s.active : s.id == action.data.sceneid));
 
                     if (scene) {
+                        let oldPing;
                         if (game.user.id == userid) {
-                            let oldPing = game.user.permissions["PING_CANVAS"];
+                            oldPing = game.user.permissions["PING_CANVAS"];
                             game.user.permissions["PING_CANVAS"] = false;
                         }
                         if (action.data.for == "everyone" || (action.data.for == "trigger" && game.user.id == userid)) {
@@ -6952,28 +6953,31 @@ export class ActionManager {
                 fn: async (args = {}) => {
                     let { action, value, tokens, tile } = args;
 
-                    //let count = action.data?.count ?? "= 1";
-                    //if (count.startsWith("="))
-                    //    count = "=" + count;
-
                     let entities = await MonksActiveTiles.getEntities(args, action.data?.collection || "tokens");
 
                     let result = await asyncFilter(entities, async (entity) => {
                         if (!entity.actor)
                             return false;
-                        let items = entity.actor.items.filter(i => (i.name || "").trim().toLowerCase() == (action.data.item || "").trim().toLowerCase());
 
-                        let cando = await getValue(action.data?.count ?? "= 1", args, entity, { prop: items.length, operation: 'compare' });
+                        let name = await getValue(action.data.item, args, entity);
+                        name = (name || "").trim().toLowerCase();
+                        let items = entity.actor.items || [];
 
-                        /*
-                        let cando = false;
-                        try {
-                            cando = !!eval(items.length + " " + count);
-                        } catch {
-                        }*/
+                        let w = name.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+                        const re = new RegExp(`^${w.replace(/\*/g, '.*').replace(/\?/g, '.')}$`, 'i');
+                        let filteredItems = items.filter(i => {
+                            let itemName = (i.name || "").trim().toLowerCase();
+                            if (name.includes("*") || name.includes("?"))
+                                return re.test(itemName);
+                            else
+                                return itemName.localeCompare(name);
 
-                        if (!!cando && ["dnd5e"].includes(game.system.id) && action.data?.quantity && items.length) {
-                            items = await asyncFilter(items, async (item) => {
+                        });
+
+                        let cando = await getValue(action.data?.count ?? "= 1", args, entity, { prop: filteredItems.length, operation: 'compare' });
+
+                        if (!!cando && ["dnd5e"].includes(game.system.id) && action.data?.quantity && filteredItems.length) {
+                            filteredItems = await asyncFilter(filteredItems, async (item) => {
                                 try {
                                     switch (game.system.id) {
                                         case "dnd5e": let result = await getValue(action.data?.quantity, args, item, { prop: item.system.quantity, operation: 'compare' }); return result;
@@ -6981,7 +6985,7 @@ export class ActionManager {
                                 } catch { }
                                 return false;
                             });
-                            cando = (items.length > 0);
+                            cando = (filteredItems.length > 0);
                         }
 
                         return !!cando;
