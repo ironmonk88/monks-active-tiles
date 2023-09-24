@@ -6,6 +6,18 @@ export class ActionManager {
         if (typeof val == "string" && val.startsWith('"') && val.endsWith('"')) return val;
         return `"${val}"`;
     }
+
+    static pickRandom = (arr, id) => {
+        if (arr.length == 0)
+            return null;
+        else if (arr.length == 1)
+            return arr[0];
+        else {
+            let results = arr.filter(d => d.dest == undefined || d.dest.id != id);
+            let idx = Math.clamped(parseInt(Math.random() * results.length), 0, results.length - 1);
+            return results[idx];
+        }
+    }
     static get actions() {
         return {
             'pause': {
@@ -307,7 +319,7 @@ export class ActionManager {
                             y: tokendoc.y + midY
                         }
 
-                        let dest = dests.pickRandom(tile.id);
+                        let dest = ActionManager.pickRandom(dests, tile.id);
                         let entDest = duplicate(dest);
                         if (!entDest) {
                             console.warn("monks-active-tiles | Could not find a teleport destination", action.data.location);
@@ -665,7 +677,7 @@ export class ActionManager {
 
                             let location = duplicate(action.data.location);
                             let dests = await MonksActiveTiles.getLocation.call(tile, location, Object.assign({}, args, { pt: { x: pt?.x - midX, y: pt?.y - midY } }));
-                            let dest = dests.pickRandom(); //[Math.floor(Math.random() * dests.length)];
+                            let dest = ActionManager.pickRandom(dests); //[Math.floor(Math.random() * dests.length)];
 
                             let entDest = duplicate(dest);
                             if (!entDest)
@@ -1106,7 +1118,7 @@ export class ActionManager {
 
                                             for (let i = 0; i < (quantity || 1); i++) {
                                                 let tdests = (ea.location ? dests.filter(d => d.dest ? Tagger.hasTags(d.dest, ea.location) : d) : dests);
-                                                let dest = tdests.pickRandom(tile.id);
+                                                let dest = ActionManager.pickRandom(tdests, tile.id);
 
                                                 let entDest = duplicate(dest);
                                                 if (!entDest)
@@ -1365,7 +1377,7 @@ export class ActionManager {
                                     entity = await JournalEntry.implementation.create(journalData);
                                 }
 
-                                let dest = dests.pickRandom(tile.id);
+                                let dest = ActionManager.pickRandom(dests, tile.id);
 
                                 if (dest.dest instanceof TileDocument) {
                                     // Find a random location within this Tile
