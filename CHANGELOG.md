@@ -1,3 +1,17 @@
+## Version 11.10
+
+Fixed panning when teleporting on the same scene.
+
+Fixed timing issue when using transparent as the wash colour.
+
+Between those two now you should be able to teleport seamlessly on the same scene without the player detecting that they've teleported.
+
+Fixed issue with filter by item not checking the name properly.
+
+Added darkness and time to the standard set of values passed around.  So you can now automatically check those values when using handlebar notation.
+
+Fixed issue where hover over wasn't working on scenes where a token's vision isn't limited.
+
 ## Version 11.09
 
 Somehow some code got lost.  Adding it back.

@@ -215,8 +215,8 @@ export class MonksActiveTiles {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    static getWorldTime() {
-        let currentWorldTime = game.time.worldTime + MonksActiveTiles.TimeOffset;
+    static getWorldTime(worldTime = game.time.worldTime) {
+        let currentWorldTime = worldTime + MonksActiveTiles.TimeOffset;
         let dayTime = Math.abs(Math.trunc((currentWorldTime % 86400) / 60));
         if (currentWorldTime < 0) dayTime = 1440 - dayTime;
 
@@ -2191,7 +2191,7 @@ export class MonksActiveTiles {
 
                         let entities = game.canvas.tokens.controlled;
 
-                        if (game.user.isGM || (!tile.hidden && entities.some(t => {
+                        if (game.user.isGM || !canvas?.scene?.tokenVision || (!tile.hidden && entities.some(t => {
                             return canvas.effects.visibility.testVisibility({ x: midTarget.x, y: midTarget.y }, { tolerance: 1, object: t });
                         }))) {
                             $('#board').css({ cursor: 'pointer' });
@@ -4074,7 +4074,17 @@ export class MonksActiveTiles {
                 //A token has triggered this tile, what actions do we need to do
                 let values = [];
                 let value = Object.assign({ tokens: tokens }, options);
-                let context = Object.assign({ tile: this, tokens: tokens, userid: userid, values: values, value: value, method: method, pt: pt }, options);
+                let context = Object.assign({
+                    tile: this,
+                    tokens: tokens,
+                    userid: userid,
+                    values: values,
+                    value: value,
+                    method: method,
+                    pt: pt,
+                    darkness: canvas.darknessLevel,
+                    time: MonksActiveTiles.getWorldTime(),
+                }, options);
                 if (options.event)
                     context.event = options.event;
 
@@ -5362,10 +5372,6 @@ Hooks.on("updateScene", (scene, data, options) => {
 });
 
 Hooks.on('updateWorldTime', async (worldTime) => {
-    let currentWorldTime = worldTime + MonksActiveTiles.TimeOffset;
-    let dayTime = Math.abs(Math.trunc((currentWorldTime % 86400) / 60));
-    if (currentWorldTime < 0) dayTime = 1440 - dayTime;
-
     for (let tile of canvas.scene.tiles) {
         let triggerData = tile.flags["monks-active-tiles"];
         let triggers = MonksActiveTiles.getTrigger(triggerData?.trigger);
@@ -5379,7 +5385,7 @@ Hooks.on('updateWorldTime', async (worldTime) => {
                 tokens = tokens.filter(t => !this.object.document.hasTriggered(t.id));
 
             //Trigger this Tile
-            tile.trigger({ tokens: tokens, method: 'time', options: { time: dayTime } }) || {};
+            tile.trigger({ tokens: tokens, method: 'time', options: { time: MonksActiveTiles.getWorldTime(worldTime) } }) || {};
         }
     }
 });

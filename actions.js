@@ -442,17 +442,16 @@ export class ActionManager {
                                 newPos.y -= midY;
                             }
 
-                            let offset = { dx: oldPos.x - newPos.x, dy: oldPos.y - newPos.y };
+                            let offset = { dx: (oldPos.x - midX) - newPos.x, dy: (oldPos.y - midY) - newPos.y };
 
                             //fade in backdrop
                             if (userid != game.user.id) {
                                 if (setting('teleport-wash')) {
                                     MonksActiveTiles.emit('fade', { userid: userid, colour: action.data.colour || setting("teleport-colour") });
-                                    timeout = true;
+                                    timeout = action.data.colour != "transparent";
                                 }
 
-                                offsetPans.push({ userid: userid, animatepan: action.data.animatepan, x: offset.dx - (Math.abs(tokendoc.width) / 2), y: offset.dy - (Math.abs(tokendoc.height) / 2) });
-                                //MonksActiveTiles.emit('offsetpan', { userid: userid, animatepan: action.data.animatepan, x: offset.dx - (Math.abs(tokendoc.width) / 2), y: offset.dy - (Math.abs(tokendoc.height) / 2) });
+                                offsetPans.push({ userid: userid, animatepan: action.data.animatepan, x: offset.dx, y: offset.dy });
                             }
 
                             newTokens.push({ data: { x: newPos.x, y: newPos.y, width: tokendoc.width, height: tokendoc.height } });
@@ -6982,7 +6981,7 @@ export class ActionManager {
                             if (name.includes("*") || name.includes("?"))
                                 return re.test(itemName);
                             else
-                                return itemName.localeCompare(name);
+                                return itemName.localeCompare(name) == 0;
 
                         });
 
