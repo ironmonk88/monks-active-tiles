@@ -269,6 +269,7 @@
   "MonksActiveTiles.ctrl.valuename": "Value Name",
   "MonksActiveTiles.ctrl.action": "Action",
   "MonksActiveTiles.ctrl.allowplayer": "Use Player",
+  "MonksActiveTiles.ctrl.resetcollection": "Reset Collection",
 
   "MonksActiveTiles.mode.enter": "Enter",
   "MonksActiveTiles.mode.exit": "Exit",

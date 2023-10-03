@@ -1,3 +1,19 @@
+## Version 11.11
+
+Added the option to select tiles by tags when stopping a sound from playing
+
+Fixed issues with scene change.
+
+Fixed text when setting the current collection
+
+Added the option to select token roll results when selecting an item from a position.
+
+Added the option to reset the current collection when selecting an item from a position.
+
+Added the option to use `min` and `max` when selecting items from a position in a collection.
+
+Added handlebar support when generating a random chance to trigger.
+
 ## Version 11.10
 
 Fixed panning when teleporting on the same scene.

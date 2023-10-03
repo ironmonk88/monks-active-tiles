@@ -1623,54 +1623,49 @@ export class MonksActiveTiles {
     constructor() {
     }
 
-    static addToResult(entity, result) {
+    static addToResult(entity, result, reset = false) {
         if (!entity)
             return;
 
+        let typeList = {};
+        let addEntity = (type, entity) => {
+            if (result[type] == undefined || (reset === true && !typeList[type])) result[type] = [];
+            result[type].push(entity);
+            typeList[type] = true;
+        }
+
+        let index = 0;
         for (let e of entity instanceof Array ? entity : [entity]) {
             if (e instanceof TokenDocument) {
-                if (result.tokens == undefined) result.tokens = [];
-                result.tokens.push(e);
+                addEntity('tokens', e);
             } else if (e instanceof Actor) {
-                if (result.actors == undefined) result.actors = [];
-                result.actors.push(e);
+                addEntity('actors', e);
             } else if (e instanceof TileDocument) {
-                if (result.tiles == undefined) result.tiles = [];
-                result.tiles.push(e);
+                addEntity('tiles', e);
             } else if (e instanceof DrawingDocument) {
-                if (result.drawings == undefined) result.drawings = [];
-                result.drawings.push(e);
+                addEntity('drawings', e);
             } else if (e instanceof AmbientLightDocument) {
-                if (result.lights == undefined) result.lights = [];
-                result.lights.push(e);
+                addEntity('lights', e);
             } else if (e instanceof AmbientSoundDocument) {
-                if (result.sounds == undefined) result.sounds = [];
-                result.sounds.push(e);
+                addEntity('sounds', e);
             } else if (e instanceof WallDocument) {
-                if (result.walls == undefined) result.walls = [];
-                result.walls.push(e);
+                addEntity('walls', e);
             } else if (e instanceof JournalEntry) {
-                if (result.journal == undefined) result.journal = [];
-                result.journal.push(e);
+                addEntity('journal', e);
             } else if (e instanceof Scene) {
-                if (result.scenes == undefined) result.scenes = [];
-                result.scenes.push(e);
+                addEntity('scenes', e);
             } else if (e instanceof Macro) {
-                if (result.macros == undefined) result.macros = [];
-                result.macros.push(e);
+                addEntity('macros', e);
             } else if (e instanceof Item) {
-                if (result.items == undefined) result.items = [];
-                result.items.push(e);
+                addEntity('items', e);
             } else if (e instanceof RollTable) {
-                if (result.rolltables == undefined) result.rolltables = [];
-                result.rolltables.push(e);
+                addEntity('rolltables', e);
             } else if (e instanceof Playlist) {
-                if (result.playlists == undefined) result.playlists = [];
-                result.playlists.push(e);
+                addEntity('playlists', e);
             } else if (e instanceof User) {
-                if (result.users == undefined) result.users = [];
-                result.users.push(e);
+                addEntity('users', e);
             }
+            index++;
         }
     }
 
