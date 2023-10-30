@@ -29,8 +29,8 @@ export const WithActiveTileConfig = (TileConfig) => {
                         active: true,
                         trigger: setting('default-trigger'),
                         chance: 100,
-                        restriction: 'all',
-                        controlled: 'all',
+                        restriction: setting('default-restricted'),
+                        controlled: setting('default-controlled'),
                         actions: []
                     }
                 });

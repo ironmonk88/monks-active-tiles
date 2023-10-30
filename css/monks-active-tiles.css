@@ -37,8 +37,9 @@
     align-self: center;
 }
 
-.monks-active-tiles.sheet .items-list .items-header .item-controls {
-    flex: 0 0 80px;
+.monks-active-tiles.sheet .items-list .item-header .item-controls {
+    flex: 0 0 50px;
+    justify-content: center;
 }
 
 .monks-active-tiles.sheet .items-list .item-controls a {
@@ -79,7 +80,7 @@
     opacity: 0.7;
 }
 
-.monks-active-tiles.sheet .items-list .items-header {
+.monks-active-tiles.sheet .items-list .item-header {
     height: 28px;
     margin: 2px 0;
     padding: 0;
@@ -90,12 +91,12 @@
     color: #7a7971;
 }
 
-.monks-active-tiles.sheet .items-list .items-header > * {
+.monks-active-tiles.sheet .items-list .item-header > * {
     font-size: 12px;
     text-align: center;
 }
 
-.monks-active-tiles.sheet .items-list .items-header h3 {
+.monks-active-tiles.sheet .items-list .item-header h3 {
     padding-left: 5px;
     font-family: "Modesto Condensed", "Palatino Linotype", serif;
     font-size: 20px;
@@ -103,6 +104,14 @@
     text-align: left;
     font-size: 16px;
     border-bottom: 0px;
+}
+
+.monks-active-tiles.sheet .items-list .item-detail {
+    flex: 0 0 80px;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    display: flex;
 }
 
 .action-sheet form .form-group label {
@@ -259,9 +268,9 @@
     margin: 0px;
 }
 
-#trigger-action .files-list .items-header .item-controls,
-#trigger-action .buttons-list .items-header .item-controls,
-.monks-active-tiles .files-list .items-header .item-controls {
+#trigger-action .files-list .item-header .item-controls,
+#trigger-action .buttons-list .item-header .item-controls,
+.monks-active-tiles .files-list .item-header .item-controls {
     justify-content: flex-end;
     color: #7a7971;
     font-size: 12px;
@@ -300,7 +309,7 @@
     text-align: center;
 }
 
-#trigger-action .items-list .items-header {
+#trigger-action .items-list .item-header {
     height: 28px;
     margin: 2px 0;
     padding: 0;
@@ -310,12 +319,12 @@
     font-weight: bold;
 }
 
-#trigger-action .items-list .items-header > * {
+#trigger-action .items-list .item-header > * {
     font-size: 12px;
     text-align: center;
 }
 
-#trigger-action .items-list .items-header h3 {
+#trigger-action .items-list .item-header h3 {
     padding-left: 5px;
     font-family: "Modesto Condensed", "Palatino Linotype", serif;
     font-size: 20px;
@@ -343,7 +352,7 @@
     background: url(../../../systems/wfrp4e/ui/frames/parchment-texture.webp);
 }
 
-.system-wfrp4e .monks-active-tiles.sheet .items-header {
+.system-wfrp4e .monks-active-tiles.sheet .item-header {
     color: #d6d6d6;
     box-shadow: 0px 0px 10px inset black;
     background: #352516;
@@ -519,3 +528,9 @@ body.system-CoC7 .multiple-dropdown .multiple-dropdown-option {
 .monks-active-tiles.sheet .action-items .item .item-name[marker="6"] { border-top-color: #A52A2A; }
 .monks-active-tiles.sheet .action-items .item .item-name[marker="7"] { border-top-color: #008080; }
 .monks-active-tiles.sheet .action-items .item .item-name[marker="8"] { border-top-color: #FFFF00; }
+
+#trigger-action select option[custom="true"] {
+    border-bottom: 1px solid #808080;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+}

@@ -14,6 +14,26 @@ export const registerSettings = function () {
 		type: String,
 	});
 
+	game.settings.register(modulename, "default-restricted", {
+		name: i18n("MonksActiveTiles.default-restricted.name"),
+		hint: i18n("MonksActiveTiles.default-restricted.hint"),
+		scope: "world",
+		config: true,
+		default: "all",
+		choices: { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") },
+		type: String,
+	});
+
+	game.settings.register(modulename, "default-controlled", {
+		name: i18n("MonksActiveTiles.default-controlled.name"),
+		hint: i18n("MonksActiveTiles.default-controlled.hint"),
+		scope: "world",
+		config: true,
+		default: "all",
+		choices: { 'all': i18n("MonksActiveTiles.control.all"), 'player': i18n("MonksActiveTiles.control.player"), 'gm': i18n("MonksActiveTiles.control.gm") },
+		type: String,
+	});
+
 	game.settings.register(modulename, "use-core-macro", {
 		name: i18n("MonksActiveTiles.use-core-macro.name"),
 		hint: i18n("MonksActiveTiles.use-core-macro.hint"),
@@ -154,6 +174,27 @@ export const registerSettings = function () {
 		default: false,
 		type: Boolean
 	});
+
+	game.settings.register(modulename, "fix-forplayer", {
+		scope: "world",
+		config: false,
+		default: false,
+		type: Boolean
+	});
+
+	game.settings.register(modulename, "fix-rolltable", {
+		scope: "world",
+		config: false,
+		default: false,
+		type: Boolean
+	});
+
+	game.settings.register(modulename, "fix-scene", {
+        scope: "world",
+        config: false,
+        default: false,
+        type: Boolean
+    });
 
 	game.settings.register(modulename, "tile-templates", {
 		scope: "world",
