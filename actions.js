@@ -3514,7 +3514,7 @@ export class ActionManager {
                         id: "offset",
                         name: "MonksActiveTiles.ctrl.offset",
                         type: "number",
-                        step: 0.1,
+                        step: 1,
                         min: 0,
                         conditional: (app) => {
                             let play = $('select[name="data.play"]', app.element).val();

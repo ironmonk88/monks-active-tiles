@@ -282,7 +282,7 @@
   "MonksActiveTiles.ctrl.allowplayer": "Use Player",
   "MonksActiveTiles.ctrl.resetcollection": "Reset Collection",
   "MonksActiveTiles.ctrl.asimage": "As Image",
-  "MonksActiveTiles.ctrl.offset": "Offset",
+  "MonksActiveTiles.ctrl.offset": "Offset (ms)",
   "MonksActiveTiles.ctrl.pingstyle": "Ping Style",
   "MonksActiveTiles.ctrl.delayactions": "Delay Actions until finished",
 
@@ -499,8 +499,10 @@
   "MonksActiveTiles.prevent-when-paused.hint": "Prevent players from triggering Tiles when the game is paused.",
   "MonksActiveTiles.allow-door-passthrough.name": "Allow Door Click-through",
   "MonksActiveTiles.allow-door-passthrough.hint": "Allow Tiles underneath a door to still be triggered if the door is clicked on",
-  "MonksLittleDetails.drop-item-size.name": "Drop Item Size",
-  "MonksLittleDetails.drop-item-size.hint": "Set the size of the item dropped",
+  "MonksActiveTiles.drop-item-size.name": "Drop Item Size",
+  "MonksActiveTiles.drop-item-size.hint": "Set the size of the item dropped",
   "MonksActiveTiles.show-landing.name": "Show Landing Highlight",
-  "MonksActiveTiles.show-landing.hint": "Highlight the actions that happen within landings"
+  "MonksActiveTiles.show-landing.hint": "Highlight the actions that happen within landings",
+  "MonksActiveTiles.drop-macro.name": "Drop Macro on Canvas",
+  "MonksActiveTiles.drop-macro.hint": "Allow macros dropped on the canvas to be created as Active Tiles"
 }

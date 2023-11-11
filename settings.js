@@ -62,8 +62,8 @@ export const registerSettings = function () {
 	});
 
 	game.settings.register(modulename, "drop-item-size", {
-		name: i18n("MonksLittleDetails.drop-item-size.name"),
-		hint: i18n("MonksLittleDetails.drop-item-size.hint"),
+		name: i18n("MonksActiveTiles.drop-item-size.name"),
+		hint: i18n("MonksActiveTiles.drop-item-size.hint"),
 		scope: "world",
 		config: true,
 		range: {
@@ -78,6 +78,15 @@ export const registerSettings = function () {
 	game.settings.register(modulename, "drop-scene", {
 		name: i18n("MonksActiveTiles.drop-scene.name"),
 		hint: i18n("MonksActiveTiles.drop-scene.hint"),
+		scope: "world",
+		config: true,
+		default: true,
+		type: Boolean,
+	});
+
+	game.settings.register(modulename, "drop-macro", {
+		name: i18n("MonksActiveTiles.drop-macro.name"),
+		hint: i18n("MonksActiveTiles.drop-macro.hint"),
 		scope: "world",
 		config: true,
 		default: true,

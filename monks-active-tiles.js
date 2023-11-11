@@ -5550,7 +5550,7 @@ Hooks.on("dropCanvasData", async (canvas, data, options, test) => {
 
         const cls = getDocumentClass("Tile");
         await cls.create(td, { parent: canvas.scene });
-    } else if (data.type == 'Macro') {
+    } else if (data.type == 'Macro' && setting("drop-macro")) {
         let macro = await fromUuid(data.uuid);
 
         if (!macro)
