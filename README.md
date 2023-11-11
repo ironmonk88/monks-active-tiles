@@ -10,9 +10,8 @@ When a Tile is drawn on the scene, another tab will be added, called triggers.
 
 ![monks-active-tiles](/screenshots/main.png)
 
-You can set the triggering to be active or not.  If the tile is inactive, then nothing happens when a token walks over it.
-Triggering of the tile can also be set to be triggered by everyone, or restricted to GM only tokens, or player only tokens.
-You can specify the chance that a tile will be triggered, so if the trap only has a 50% of working at any given time this is an option.
+On this tab you have access to how the Tile is triggered.  There are many options to choose from, if you want actions to run when a Tile is clicked, or when a token enters the Tile.  You can also trigger the Tile when the scene lighting changes, combat starts, doors are opened, and more.
+You also have access to a list of actions that will be performed when the Tile is activated.  This list is quite extensive by now and requires it's own Wiki to fully describe what each action does.  
 
 ## Wiki
 
