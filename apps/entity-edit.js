@@ -1,33 +1,31 @@
 import { MonksActiveTiles, log, error, setting, i18n, makeid } from '../monks-active-tiles.js';
 
-export class LocationEdit extends FormApplication {
+export class EntityEdit extends FormApplication {
     constructor(object, options = {}) {
         super(object, options);
 
-        this.locationList = $(this.object).data("value") || [];
+        this.entityList = $(this.object).data("value");
+        if (typeof this.entityList == "string")
+            this.entityList = this.entityList.split(",");
+        else
+            this.entityList = [this.entityList];
     }
 
     static get defaultOptions() {
         return foundry.utils.mergeObject(super.defaultOptions, {
-            id: "edit-location",
-            classes: ["form", "edit-location-sheet", "monks-active-tiles", "sheet"],
+            id: "edit-entity",
+            classes: ["form", "edit-entity-sheet", "monks-active-tiles", "sheet"],
             title: "Edit location details",
-            template: "modules/monks-active-tiles/templates/location-dialog.html",
-            width: 700,
+            template: "modules/monks-active-tiles/templates/entity-dialog.html",
+            width: 500,
             height: 'auto',
         });
     }
 
     getData(options) {
-        let sceneList = { "": "" };
-        for (let scene of game.scenes) {
-            sceneList[scene.id] = scene.name;
-        }
-
         return mergeObject(super.getData(options), {
             action: this.options.action,
-            locations: this.locationList,
-            sceneList
+            entities: this.entityList
         });
     }
 
@@ -38,19 +36,19 @@ export class LocationEdit extends FormApplication {
         $('.item-delete', html).click((event) => {
             let row = $(event.currentTarget).closest('.item');
             let idx = row.index();
-            this.locationList.splice(idx, 1);
+            this.entityList.splice(idx, 1);
             this.render(true);
         });
 
-        $('input, select', html).change((event) => {
+        $('input', html).change((event) => {
             let row = $(event.currentTarget).closest('.item');
             let idx = row.index();
-            this.locationList[idx][event.currentTarget.name] = event.currentTarget.value;
+            this.entityList[idx][event.currentTarget.name] = event.currentTarget.value;
         });
 
         $('.item-add', html).click((event) => {
-            this.locationList = this.locationList || [];
-            this.locationList.push({ id: "", x: "", y: "", scale: "", sceneId: "" });
+            this.entityList = this.entityList || [];
+            this.entityList.push({ id: "" });
             this.render(true);
         });
 
@@ -60,8 +58,8 @@ export class LocationEdit extends FormApplication {
     }
 
     async _updateObject(event) {
-        let name = await MonksActiveTiles.locationName(this.locationList);
-        this.object.val(JSON.stringify(this.locationList)).data("value", this.locationList).next().html(name);
+        let name = await MonksActiveTiles.entityName(this.entityList);
+        this.object.val(JSON.stringify(this.entityList)).data("value", this.entityList).next().html(name);
         this.object.trigger('change');
     }
 }

@@ -28,6 +28,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                     'monks-active-tiles': {
                         active: true,
                         trigger: setting('default-trigger'),
+                        vision: true,
                         chance: 100,
                         restriction: setting('default-restricted'),
                         controlled: setting('default-controlled'),
@@ -93,89 +94,92 @@ export const WithActiveTileConfig = (TileConfig) => {
         async _renderInner(data) {
             let html = await super._renderInner(data);
 
-            $('.sheet-tabs', html).append($('<a>').addClass('item').attr('data-tab', "triggers").html(`<i class="fas fa-running"></i> ${i18n("MonksActiveTiles.Triggers")}`));
-            let tab = $('<div>').addClass('tab').attr('data-tab', "triggers").css({"position": "relative"}).insertAfter($('div[data-tab="animation"]', html));
+            if ($('.sheet-tabs a[data-tab="triggers"]', html).length == 0)
+                $('.sheet-tabs', html).append($('<a>').addClass('item').attr('data-tab', "triggers").html(`<i class="fas fa-running"></i> ${i18n("MonksActiveTiles.Triggers")}`));
+            if ($('.sheet-tabs .tab[data-tab="triggers"]', html).length == 0) {
+                let tab = $('<div>').addClass('tab').attr('data-tab', "triggers").css({ "position": "relative" }).insertAfter($('div[data-tab="animation"]', html));
 
-            let template = "modules/monks-active-tiles/templates/tile-config.html";
-            const tiledata = mergeObject({ 'data.flags.monks-active-tiles.minrequired': 0 }, data);
+                let template = "modules/monks-active-tiles/templates/tile-config.html";
+                const tiledata = mergeObject({ 'data.flags.monks-active-tiles.minrequired': 0 }, data);
 
-            tiledata.triggerModes = MonksActiveTiles.triggerModes;
-            tiledata.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
-            tiledata.triggerControlled = { 'all': i18n("MonksActiveTiles.control.all"), 'player': i18n("MonksActiveTiles.control.player"), 'gm': i18n("MonksActiveTiles.control.gm") };
+                tiledata.triggerModes = MonksActiveTiles.triggerModes;
+                tiledata.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
+                tiledata.triggerControlled = { 'all': i18n("MonksActiveTiles.control.all"), 'player': i18n("MonksActiveTiles.control.player"), 'gm': i18n("MonksActiveTiles.control.gm") };
 
-            tiledata.actions = await Promise.all((this.object.getFlag('monks-active-tiles', 'actions') || [])
-                .map(async (a) => {
-                    if (a) {
-                        let trigger = MonksActiveTiles.triggerActions[a.action];
-                        let content = (trigger == undefined ? 'Unknown' : i18n(trigger.name));
-                        if (trigger?.content) {
-                            try {
-                                content = await trigger.content(trigger, a);
-                            } catch (e) {
-                                error(e);
+                tiledata.actions = await Promise.all((this.object.getFlag('monks-active-tiles', 'actions') || [])
+                    .map(async (a) => {
+                        if (a) {
+                            let trigger = MonksActiveTiles.triggerActions[a.action];
+                            let content = (trigger == undefined ? 'Unknown' : i18n(trigger.name));
+                            if (trigger?.content) {
+                                try {
+                                    content = await trigger.content(trigger, a);
+                                } catch (e) {
+                                    error(e);
+                                }
                             }
+
+                            let result = {
+                                id: a.id,
+                                action: a.action,
+                                data: a.data,
+                                content: content,
+                                disabled: trigger?.visible === false
+                            }
+
+                            if (a.action == "activate" && a.data?.activate == "deactivate" && (a.data?.entity?.id == this.object.id || a.data?.entity == ""))
+                                result.deactivated = "on";
+                            if (a.action == "anchor")
+                                result.deactivated = "off";
+
+                            return result;
                         }
+                    }).filter(a => !!a));
 
-                        let result = {
-                            id: a.id,
-                            action: a.action,
-                            data: a.data,
-                            content: content,
-                            disabled: trigger?.visible === false
+                if (setting("show-landing")) {
+                    let landings = [];
+                    let currentLanding = 0;
+                    for (let a of tiledata.actions) {
+                        if (a.action == "anchor") {
+                            if (a.data.stop) {
+                                landings = [];
+                            }
+
+                            landings.push(++currentLanding);
+                            a.marker = currentLanding;
+                            a.landingStop = a.data.stop;
                         }
-
-                        if (a.action == "activate" && a.data?.activate == "deactivate" && (a.data?.entity?.id == this.object.id || a.data?.entity == ""))
-                            result.deactivated = "on";
-                        if (a.action == "anchor")
-                            result.deactivated = "off";
-
-                        return result;
+                        a.landings = duplicate(landings);
                     }
-                }).filter(a => !!a));
-
-            if (setting("show-landing")) {
-                let landings = [];
-                let currentLanding = 0;
-                for (let a of tiledata.actions) {
-                    if (a.action == "anchor") {
-                        if (a.data.stop) {
-                            landings = [];
-                        }
-
-                        landings.push(++currentLanding);
-                        a.marker = currentLanding;
-                        a.landingStop = a.data.stop;
-                    }
-                    a.landings = duplicate(landings);
                 }
+
+                let disabled = false;
+                for (let a of tiledata.actions) {
+                    if (a.deactivated == "off")
+                        disabled = false;
+                    if (disabled)
+                        a.disabled = true;
+                    if (a.deactivated == "on")
+                        disabled = true;
+                }
+
+                tiledata.sounds = Object.entries(this.object.soundeffect || {}).filter(([k, v]) => !!v.src).map(([k, v]) => {
+                    let filename = v.src.split('\\').pop().split('/').pop();
+                    return {
+                        id: k,
+                        name: filename
+                    };
+                });
+
+                let index = this.object.getFlag('monks-active-tiles', 'fileindex') || 0;
+                tiledata.files = (this.object.getFlag('monks-active-tiles', 'files') || []).map((f, idx) => {
+                    f.selected = (index == idx);
+                    return f;
+                });
+
+                let renderhtml = await renderTemplate(template, tiledata);
+                tab.append(renderhtml);
             }
-
-            let disabled = false;
-            for (let a of tiledata.actions) {
-                if (a.deactivated == "off")
-                    disabled = false;
-                if (disabled)
-                    a.disabled = true;
-                if (a.deactivated == "on")
-                    disabled = true;
-            }
-
-            tiledata.sounds = Object.entries(this.object.soundeffect || {}).filter(([k, v]) => !!v.src).map(([k, v]) => {
-                let filename = v.src.split('\\').pop().split('/').pop();
-                return {
-                    id: k,
-                    name: filename
-                };
-            });
-
-            let index = this.object.getFlag('monks-active-tiles', 'fileindex') || 0;
-            tiledata.files = (this.object.getFlag('monks-active-tiles', 'files') || []).map((f, idx) => {
-                f.selected = (index == idx);
-                return f;
-            });
-
-            let renderhtml = await renderTemplate(template, tiledata);
-            tab.append(renderhtml);
 
             return html;
         }

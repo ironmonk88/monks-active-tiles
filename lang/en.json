@@ -60,6 +60,7 @@
   "MonksActiveTiles.UnknownEntity": "Unknown Entity",
   "MonksActiveTiles.ActiveScene": "Active Scene",
   "MonksActiveTiles.TriggeringTokenScene": "Triggering Token Scene",
+  "MonksActiveTiles.TokenVision": "Token must have sight to trigger",
 
   "MonksActiveTiles.actiontext.pause": "<action>{pause} game</action>",
   "MonksActiveTiles.actiontext.delay": "<action>Wait</action> for <detail>\"{delay} seconds\"</detail>",
@@ -283,6 +284,7 @@
   "MonksActiveTiles.ctrl.asimage": "As Image",
   "MonksActiveTiles.ctrl.offset": "Offset",
   "MonksActiveTiles.ctrl.pingstyle": "Ping Style",
+  "MonksActiveTiles.ctrl.delayactions": "Delay Actions until finished",
 
   "MonksActiveTiles.mode.enter": "Enter",
   "MonksActiveTiles.mode.exit": "Exit",
@@ -331,6 +333,7 @@
   "MonksActiveTiles.add.add": "Add",
   "MonksActiveTiles.add.remove": "Remove",
   "MonksActiveTiles.add.toggle": "Toggle",
+  "MonksActiveTiles.add.clear": "Clear",
 
   "MonksActiveTiles.for.all": "Everyone",
   "MonksActiveTiles.for.gm": "GM Only",
@@ -436,6 +439,11 @@
   "MonksActiveTiles.distribute.evenall": "All items distributed amongst characters",
   "MonksActiveTiles.distribute.even": "Evenly distributed, leftovers are passed on",
 
+  "MonksActiveTiles.ping.pulse": "Pulse",
+  "MonksActiveTiles.ping.alert": "Alert",
+  "MonksActiveTiles.ping.chevron": "Chevron",
+  "MonksActiveTiles.ping.arrow": "Arrow",
+
   "MonksActiveTiles.msg.prevent-teleport": "Teleporting off the map has been prevented",
   "MonksActiveTiles.msg.prevent-movement": "Moving off the map has been prevented",
   "MonksActiveTiles.msg.invalid-entity": "Invalid Entity Type",
@@ -463,7 +471,7 @@
   "MonksActiveTiles.msg.useplayerlocation": "Use players token location",
   "MonksActiveTiles.msg.currentlyplaying": "Currently Playing",
   "MonksActiveTiles.msg.useusers": "Use players",
-  "MonksActiveTiles.msg.usescene": "Use scene",
+  "MonksActiveTiles.msg.usescene": "Use active scene",
 
   "MonksActiveTiles.allow-player.name": "Allow players",
   "MonksActiveTiles.allow-player.hint": "Allow players to activate Tiles if there is no GM present.",

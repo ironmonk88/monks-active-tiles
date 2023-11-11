@@ -1,5 +1,6 @@
 import { MonksActiveTiles, log, error, setting, i18n, makeid } from '../monks-active-tiles.js';
 import { LocationEdit } from './location-edit.js';
+import { EntityEdit } from './entity-edit.js';
 
 export class ActionConfig extends FormApplication {
     constructor(object, options = {}) {
@@ -197,12 +198,12 @@ export class ActionConfig extends FormApplication {
 
         if (data.type == "Macro" && action == "runmacro") {
             let id = (data.pack ? `Compendium.${data.pack}.${data.id}` : `Macro.${data.id}`);
-            $('select[name="data.macroid"]').val(id);
+            $('input[name="data.macroid"]').val(id).data("value", { id });
         } else if (data.type == "Scene" && action == "scene") {
-            $('select[name="data.sceneid"]').val(data.id);
+            $('input[name="data.sceneid"]').val(data.id).data("value", { id: data.id });
         } else if (data.type == "RollTable" && action == "rolltable") {
             let id = (data.pack ? `Compendium.${data.pack}.${data.id}` : `RollTable.${data.id}`);
-            $('select[name="data.rolltableid"]').val(id);
+            $('input[name="data.rolltableid"]').val(id).data("value", { id });
         } else if (data.type == "Item" && action == "additem") {
             let field = $('input[name="data.item"]', this.element);
 
@@ -289,7 +290,7 @@ export class ActionConfig extends FormApplication {
         let defType = field.data('deftype') || "";
 
         if (btn.attr('data-type') == 'tile') {
-            field.val('{"id":"tile","name":"' + i18n("MonksActiveTiles.ThisTile") + '"}').next().html(i18n("MonksActiveTiles.ThisTile"));
+            field.val('{"id":"tile","name":"' + i18n("MonksActiveTiles.ThisTile") + '"}').data("value", { "id": "tile", "name": i18n("MonksActiveTiles.ThisTile") }).next().html(i18n("MonksActiveTiles.ThisTile"));
             //$('input[name="data.attribute"]', this.element).data('typeahead').source = this.tileAttr;
             this.attributes = this.tileAttr;
         }
@@ -350,78 +351,67 @@ export class ActionConfig extends FormApplication {
     }
 
     static async updateSelection(selection, event) {
-        if (event?.shiftKey) {
-            let values = this.waitingfield.data('selected') || [];
-            if (values.includes(selection.id || selection))
-                values = values.filter(v => v != (selection.id || selection));
-            else
-                values.push(selection.id || selection);
-            this.waitingfield.data('selected', values);
-        } else {
-            await this.maximize();
-            if (this.options.parent)
-                await this.options.parent.maximize();
+        if (!this.waitingfield)
+            return;
 
-            if (MonksActiveTiles.lasttab) {
-                ui.sidebar.activateTab(MonksActiveTiles.lasttab);
-                delete MonksActiveTiles.lasttab;
-            }
+        await this.maximize();
+        if (this.options.parent)
+            await this.options.parent.maximize();
 
-            if (MonksActiveTiles.lasttool) {
-                let tool = ui.controls.controls.find(t => t.name == MonksActiveTiles.lasttool);
-                canvas[tool.layer].activate();
-                delete MonksActiveTiles.lasttool;
-            }
-
-            if (this.options.parent) {
-                if (canvas.scene.id != this.options.parent.object.parent.id)
-                    await game.scenes.get(this.options.parent.object.parent.id).view();
-            }
-
-            if (this.waitingfield.attr('name') == 'data.actor') {
-                let select = $('select[name="data.attack"]', this.element);
-                select.empty();
-                if (selection.id) {
-                    let ctrl = select.parent().data('ctrl');
-
-                    //this, this, action, data
-                    //let list = await ctrl.list.call(ctrl, { actor: { id: selection.id } });
-                    let list = await ctrl.list.call(this, this, null, { actor: { id: selection.id } }) || [];
-
-                    select.append(this.fillList(list, ''));
-                }
-            }
-
-            if (selection) {
-                let values = this.waitingfield.data('selected') || [];
-                if (!values.find(v => (v.id || v) == (selection.id || selection)))
-                    values.push(selection);
-
-                let entityName = MonksActiveTiles.forPlayersName(values);
-                let entityType = this.waitingfield.data('type');
-                if (entityType == 'for') {
-                    let custom = $("option[custom='true']", this.waitingfield);
-                    if (custom.length == 0) {
-                        custom = $('<option>').attr({ value: JSON.stringify(values), 'custom': 'true' }).data({ "value": values }).html(entityName);
-                        this.waitingfield.prepend(custom);
-                    } else
-                        custom.attr('value', values).html(entityName);
-                } else if (["entity", "location", "either", "position"].includes(entityType)) {
-                    let check = values[0];
-
-                    if (check.x != undefined || check.y != undefined)
-                        entityName = await MonksActiveTiles.locationName(values);
-                    else
-                        entityName = await MonksActiveTiles.entityName(values);                      
-
-                    this.waitingfield.next().html(entityName);
-                }
-                this.waitingfield.val(JSON.stringify(values)).data("value", values).trigger('change');
-            }
-
-            delete this.waitingfield;
-            delete MonksActiveTiles.waitingInput;
+        if (MonksActiveTiles.lasttab) {
+            ui.sidebar.activateTab(MonksActiveTiles.lasttab);
+            delete MonksActiveTiles.lasttab;
         }
+
+        if (MonksActiveTiles.lasttool) {
+            let tool = ui.controls.controls.find(t => t.name == MonksActiveTiles.lasttool);
+            canvas[tool.layer].activate();
+            delete MonksActiveTiles.lasttool;
+        }
+
+        if (this.options.parent) {
+            if (canvas.scene.id != this.options.parent.object.parent.id)
+                await game.scenes.get(this.options.parent.object.parent.id).view();
+        }
+
+        if (this.waitingfield.attr('name') == 'data.actor') {
+            let select = $('select[name="data.attack"]', this.element);
+            select.empty();
+            if (selection.id) {
+                let ctrl = select.parent().data('ctrl');
+
+                //this, this, action, data
+                //let list = await ctrl.list.call(ctrl, { actor: { id: selection.id } });
+                let list = await ctrl.list.call(this, this, null, { actor: { id: selection.id } }) || [];
+
+                select.append(this.fillList(list, ''));
+            }
+        }
+
+        if (selection) {
+            let entityName = "";
+            let entityType = this.waitingfield.data('type');
+            if (entityType == 'for') {
+                entityName = MonksActiveTiles.forPlayersName(selection);
+                let custom = $("option[custom='true']", this.waitingfield);
+                if (custom.length == 0) {
+                    custom = $('<option>').attr({ value: JSON.stringify(selection), 'custom': 'true' }).data({ "value": selection }).html(entityName);
+                    this.waitingfield.prepend(custom);
+                } else
+                    custom.attr('value', JSON.stringify(selection)).data({ "value": selection }).prop("selected", true).html(entityName);
+            } else if (["entity", "location", "either", "position"].includes(entityType)) {
+                if (selection.x != undefined || selection.y != undefined)
+                    entityName = await MonksActiveTiles.locationName(selection);
+                else
+                    entityName = await MonksActiveTiles.entityName(selection);                      
+
+                this.waitingfield.next().html(entityName);
+            }
+            this.waitingfield.val(JSON.stringify(selection)).data("value", selection).trigger('change');
+        }
+
+        delete this.waitingfield;
+        delete MonksActiveTiles.waitingInput;
     }
 
     async selectPosition(event) {
@@ -439,7 +429,7 @@ export class ActionConfig extends FormApplication {
     static async addTag(event) {
         let data = expandObject(this._getSubmitData());
         let prop = event.currentTarget.dataset["target"]
-        let entity = JSON.parse(getProperty(data, prop) || "{}");
+        let entity = $(`input[name="${prop}"]`).data("value") || {};
         entity["tag-name"] = entity?.id?.substring(7);
         entity.match = entity.match || "all";
         entity.scene = entity.scene || "_active";
@@ -455,6 +445,7 @@ export class ActionConfig extends FormApplication {
 
         let adjustTags = function (tagName) {
             if (game.modules.get("tagger")?.active) {
+
                 let tags = tagName.split(",");
 
                 const rules = {
@@ -572,9 +563,10 @@ export class ActionConfig extends FormApplication {
                 if (entity)
                     entityId = entity.document.uuid;
                 let field = $(event.currentTarget).prev();
-                let data = { id: entityId };
-                data.name = await MonksActiveTiles.entityName(data);
-                field.val(JSON.stringify(data)).data("value", data).next().html(data.name);
+                let name = !entityId ? `<span class="placeholder-style">${i18n(field.data("placeholder") || "MonksActiveTiles.msg.select-entity")}</span>` : await MonksActiveTiles.entityName({ id: entityId });
+                let data = !entityId ? null : { id: entityId, name };
+                
+                field.val(JSON.stringify(data)).data("value", data).next().html(name);
                 field.trigger('change');
             },
             rejectClose: false,
@@ -585,24 +577,13 @@ export class ActionConfig extends FormApplication {
     }
 
     async editLocationId(event) {
-        let data = super._getSubmitData();
-        new LocationEdit($(event.currentTarget).prev(), { action: data.action }).render(true);
-        /*
-        let sceneList = {"": ""};
+        let sceneList = { "": "" };
         for (let scene of game.scenes) {
             sceneList[scene.id] = scene.name;
         }
 
-        let data = super._getSubmitData();
-        for (let [k, v] of Object.entries(data)) {
-            $(`input[name="${k}"],select[name="${k}"]`, this.element).each(function () {
-                let value = $(this).data("value");
-                if (value != undefined)
-                    data[k] = value;
-            });
-        }
-
-        data = expandObject(data);
+        let data = expandObject(super._getSubmitData());
+        let location = JSON.parse(data?.data?.location || "{}");
 
         const html = await renderTemplate(`modules/monks-active-tiles/templates/location-dialog.html`, {
             action: data.action,
@@ -620,15 +601,13 @@ export class ActionConfig extends FormApplication {
                 const fd = new FormDataExtended(form);
                 let data = foundry.utils.expandObject(fd.object);
 
-                if (data.location.id) {
-                    delete data.location.x;
-                    delete data.location.y;
-                } else {
-                    delete data.location.id;
-                    if (data.location.x == "")
-                        delete data.location.x;
-                    if (data.location.y == "")
-                        delete data.location.y;
+                if (!isNaN(data.location.x)) {
+                    data.location.x = parseInt(data.location.x);
+                    data.location.id = "";
+                }
+                if (!isNaN(data.location.y)) {
+                    data.location.y = parseInt(data.location.y);
+                    data.location.id = "";
                 }
 
                 let location = data.location;
@@ -642,8 +621,19 @@ export class ActionConfig extends FormApplication {
                 width: 400
             }
         });
-        */
     }
+
+    /*
+    async editEntityId(event) {
+        let data = expandObject(super._getSubmitData());
+        new EntityEdit($(event.currentTarget).prev(), { action: data.action }).render(true);
+    }
+
+    async editLocationId(event) {
+        let data = super._getSubmitData();
+        new LocationEdit($(event.currentTarget).prev(), { action: data.action }).render(true);
+    }
+    */
 
     addToFileList(event) {
         let filename = $(event.currentTarget).val();
@@ -792,7 +782,7 @@ export class ActionConfig extends FormApplication {
         for(let [k, v] of Object.entries(formData)) {
             $(`input[name="${k}"],select[name="${k}"]`, this.element).each(function () {
                 let value = $(this).data("value");
-                if (value != undefined)
+                if (value !== undefined)
                     formData[k] = value;
             });
         }
@@ -998,21 +988,21 @@ export class ActionConfig extends FormApplication {
                     //so this is the fun one, when the button is pressed, I need to minimize the windows, and wait for a selection
                     if (ctrl.subtype == 'location' || ctrl.subtype == 'either' || ctrl.subtype == 'position') {
                         field.addClass("select-field-group")
-                            .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'hidden', name: id }).val(JSON.stringify(data[ctrl.id])).data({ 'type': ctrl.subtype, deftype: ctrl.defaultType, value: data[ctrl.id] }))
+                            .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'hidden', name: id }).val(JSON.stringify(data[ctrl.id])).data({ 'type': ctrl.subtype, deftype: ctrl.defaultType, placeholder: ctrl.placeholder, value: data[ctrl.id] }))
                             .append($('<span>').dblclick(this.editLocationId.bind(this)).addClass('display-value').html(await MonksActiveTiles.locationName(data[ctrl.id]) || `<span class="placeholder-style">${i18n(ctrl.placeholder) || 'Please select a location'}</style>`)) //(data[ctrl.id] ? (data[ctrl.id].name ? data[ctrl.id].name : 'x:' + data[ctrl.id].x + ', y:' + data[ctrl.id].y) + (scene ? ', scene:' + scene.name : '') : '')
                             .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectlocation") }).toggle(!options.hide.includes('select')).addClass('location-picker').html('<i class="fas fa-crosshairs fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'position', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.setposition") }).toggle(ctrl.subtype == 'position').addClass('location-picker').html('<i class="fas fa-crop-alt fa-sm"></i>').click(this.selectPosition.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'tile', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetile") }).toggle(options.show.includes('tile')).addClass('entity-picker').html('<i class="fas fa-cubes fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'token', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetoken") }).toggle(options.show.includes('token')).addClass('entity-picker').html('<i class="fas fa-user-alt fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').css({ "padding-left": "5px" }).attr({ 'type': 'button', 'data-type': 'players', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useplayerlocation") }).toggle(options.show.includes('players')).addClass('location-picker').html('<i class="fas fa-users fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
-                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'previous', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usepreviouslocation") }).toggle(options.show.includes('previous')).addClass('location-picker').html('<i class="fas fa-history fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
+                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'previous', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usepreviouslocation") }).toggle(options.show.includes('previous')).addClass('location-picker').html('<i class="fas fa-arrow-up-from-bracket fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'origin', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useorigin") }).toggle(options.show.includes('origin')).addClass('location-picker').html('<i class="fas fa-walking fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'tagger', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetagger") }).toggle(options.show.includes('tagger') && game.modules.get('tagger')?.active).addClass('location-picker').html('<i class="fas fa-tag fa-sm"></i>').click(ActionConfig.addTag.bind(this)));
 
                     } else if (ctrl.subtype == 'entity') {
-                        let displayValue = (ctrl.placeholder && !data[ctrl.id] && (!!ctrl.required || ctrl.defvalue === null) ? `<span class="placeholder-style">${i18n(ctrl.placeholder)}</style>` : await MonksActiveTiles.entityName(data[ctrl.id], (data?.collection || ctrl.defaultType)) || `<span class="placeholder-style">'Please select an Entity'</style>`);
+                        let displayValue = (ctrl.placeholder && !data[ctrl.id] && (!!ctrl.required || ctrl.defvalue === null) ? `<span class="placeholder-style">${i18n(ctrl.placeholder)}</style>` : await MonksActiveTiles.entityName(data[ctrl.id] ?? ctrl.defvalue, (data?.collection || ctrl.defaultType)) || `<span class="placeholder-style">${i18n("MonksActiveTiles.msg.select-entity")}</style>`);
                         field.addClass("select-field-group")//.css({ 'flex-direction': 'row', 'align-items': 'flex-start' })
-                            .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'hidden', name: id }).val(typeof data[ctrl.id] == 'object' ? JSON.stringify(data[ctrl.id]) : data[ctrl.id]).data({ 'restrict': ctrl.restrict, 'type': 'entity', deftype: ctrl.defaultType, value: data[ctrl.id] }))
+                            .append($('<input>').toggleClass('required', !!ctrl.required).attr({ type: 'hidden', name: id }).val(typeof data[ctrl.id] == 'object' ? JSON.stringify(data[ctrl.id]) : data[ctrl.id]).data({ 'restrict': ctrl.restrict, 'type': 'entity', deftype: ctrl.defaultType, placeholder: ctrl.placeholder, value: data[ctrl.id] }))
                             .append($('<span>').dblclick(this.editEntityId.bind(this)).addClass('display-value').html(displayValue))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': ctrl.subtype, 'data-target': id, 'title': i18n("MonksActiveTiles.msg.selectentity") }).toggle(!options.hide.includes('select')).addClass('entity-picker').html('<i class="fas fa-crosshairs fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'tile', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetile") }).toggle(options.show.includes('tile')).addClass('entity-picker').html('<i class="fas fa-cubes fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
@@ -1021,7 +1011,7 @@ export class ActionConfig extends FormApplication {
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'within', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usewithin") }).toggle(options.show.includes('within')).addClass('entity-picker').html('<i class="fas fa-street-view fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').css({ "padding-left": "5px" }).attr({ 'type': 'button', 'data-type': 'players', 'data-target': id, 'title': (command == "openjournal" ? i18n("MonksActiveTiles.msg.useplayersjournal") : i18n("MonksActiveTiles.msg.useplayers")) }).toggle(options.show.includes('players')).addClass('entity-picker').html('<i class="fas fa-users fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').css({ "padding-left": "5px" }).attr({ 'type': 'button', 'data-type': 'users', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useusers") }).toggle(options.show.includes('users')).addClass('entity-picker').html('<i class="fas fa-user fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
-                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'previous', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useprevious") }).toggle(options.show.includes('previous')).addClass('entity-picker').html('<i class="fas fa-history fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
+                            .append($('<button>').attr({ 'type': 'button', 'data-type': 'previous', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.useprevious") }).toggle(options.show.includes('previous')).addClass('entity-picker').html('<i class="fas fa-arrow-up-from-bracket fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'controlled', 'data-target': id, 'title': ctrl.defaultType == "playlists" ? i18n("MonksActiveTiles.msg.currentlyplaying") : i18n("MonksActiveTiles.msg.usecontrolled") }).toggle(options.show.includes('controlled')).addClass('entity-picker').html('<i class="fas fa-bullhorn fa-sm"></i>').click(ActionConfig.selectEntity.bind(this)))
                             .append($('<button>').attr({ 'type': 'button', 'data-type': 'tagger', 'data-target': id, 'title': i18n("MonksActiveTiles.msg.usetagger") }).toggle(options.show.includes('tagger') && game.modules.get('tagger')?.active).addClass('entity-picker').html('<i class="fas fa-tag fa-sm"></i>').click(ActionConfig.addTag.bind(this)));
                     }
@@ -1104,7 +1094,7 @@ export class ActionConfig extends FormApplication {
                 div.appendTo($('.action-controls', this.element));
 
                 if (ctrl.help && setting("show-help")) {
-                    let helpcond = ctrl.helpConditional == undefined || (typeof ctrl.helpConditional == 'function' ? await ctrl.helpConditional.call(this, this) : ctrl.helpConditional);
+                    let helpcond = ctrl.helpConditional == undefined || (typeof ctrl.helpConditional == 'function' ? await ctrl.helpConditional.call(this, this, action) : ctrl.helpConditional);
                     $('.action-controls', this.element).append($('<p>').addClass("notes").html(ctrl.help).toggle(ctrl.helpConditional ? helpcond : cond));
                 }
 
