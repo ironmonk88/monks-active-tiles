@@ -270,6 +270,108 @@ export class MonksActiveTiles {
 
     static triggerActions = ActionManager.actions;
 
+    /*
+    static drawingPoints(drawing) {
+        let points = [];
+        let repeat = true;
+
+        let size = drawing.strokeWidth / 2;
+
+        switch (drawing.shape.type) {
+            case 'r': //rect
+                points = [
+                    { x: drawing.x + size, y: drawing.y + size },
+                    { x: drawing.x + drawing.shape.width - size, y: drawing.y + size },
+                    { x: drawing.x + drawing.shape.width - size, y: drawing.y + drawing.shape.height - size },
+                    { x: drawing.x + size, y: drawing.y + drawing.shape.height - size },
+                    { x: drawing.x + size, y: drawing.y + size }
+                ];
+                break;
+            case 'e': //circle
+                let circlePts = [];
+                let a = drawing.shape.width / 2;
+                let b = drawing.shape.height / 2;
+                let pos = { x: drawing.x + a, y: drawing.y + b };
+                for (let i = 0; i <= Math.PI / 2; i = i + 0.2) {
+                    let x = ((a * b) / Math.sqrt((b ** 2) + ((a ** 2) * (Math.tan(i) ** 2))));
+                    let y = ((a * b) / Math.sqrt((a ** 2) + ((b ** 2) / (Math.tan(i) ** 2))));
+                    circlePts.push({ x: x, y: y });
+                }
+                circlePts = circlePts.concat(duplicate(circlePts).reverse().map(p => { return { x: -p.x, y: p.y }; }));
+                circlePts = circlePts.concat(duplicate(circlePts).reverse().map(p => { return { x: p.x, y: -p.y }; }));
+                points = MonksActiveTiles.simplify(circlePts.map(p => { return { x: p.x + pos.x, y: p.y + pos.y } }), 40);
+                break;
+            case 'p': //polygon and freehand
+                repeat = (drawing.shape.points[0] == drawing.shape.points[drawing.shape.points.length - 2] && drawing.shape.points[1] == drawing.shape.points[drawing.shape.points.length - 1]);
+                for (let i = 0; i < drawing.shape.points.length; i += 2) {
+                    points.push({ x: drawing.x + drawing.shape.points[i], y: drawing.y + drawing.shape.points[i+1] });
+                }
+                points = MonksActiveTiles.simplify(points, 40);
+                break;
+        }
+
+        return { points, repeat };
+    }
+
+    static simplify(points, tolerance = 20) {
+        if (points.length <= 2) return points;
+
+        let getSqSegDist = function (p, p1, p2) {
+
+            var x = p1.x,
+                y = p1.y,
+                dx = p2.x - x,
+                dy = p2.y - y;
+
+            if (dx !== 0 || dy !== 0) {
+
+                var t = ((p.x - x) * dx + (p.y - y) * dy) / (dx * dx + dy * dy);
+
+                if (t > 1) {
+                    x = p2.x;
+                    y = p2.y;
+
+                } else if (t > 0) {
+                    x += dx * t;
+                    y += dy * t;
+                }
+            }
+
+            dx = p.x - x;
+            dy = p.y - y;
+
+            return dx * dx + dy * dy;
+        }
+
+        let simplifyDPStep = function (points, first, last, sqTolerance, simplified) {
+            var maxSqDist = sqTolerance,
+                index;
+
+            for (var i = first + 1; i < last; i++) {
+                var sqDist = getSqSegDist(points[i], points[first], points[last]);
+
+                if (sqDist > maxSqDist) {
+                    index = i;
+                    maxSqDist = sqDist;
+                }
+            }
+
+            if (maxSqDist > sqTolerance) {
+                if (index - first > 1) simplifyDPStep(points, first, index, sqTolerance, simplified);
+                simplified.push(points[index]);
+                if (last - index > 1) simplifyDPStep(points, index, last, sqTolerance, simplified);
+            }
+        }
+
+        var last = points.length - 1;
+
+        var simplified = [points[0]];
+        simplifyDPStep(points, 0, last, tolerance, simplified);
+        simplified.push(points[last]);
+
+        return simplified;
+    }*/
+
     static getActionFlag(val, flag) {
         if (!val)
             return "";
@@ -391,7 +493,7 @@ export class MonksActiveTiles {
             }
         }
         else if (id == 'scene') {
-            entities.push(canvas.scene);
+            entities.push(game.scenes.active);
         }
         else if (id && id.startsWith('players')) {
             let newEntities = [];
@@ -648,14 +750,35 @@ export class MonksActiveTiles {
                 }
 
                 if (dest) {
-                    location[i] = {
-                        x: dest.x + (Math.abs(dest.width) / 2),
-                        y: dest.y + (Math.abs(dest.height) / 2),
-                        width: Math.abs(dest.width),
-                        height: Math.abs(dest.height),
-                        scene: dest.parent.id,
-                        dest: dest
-                    };
+                    let found = false;
+                    /*
+                    if (dest instanceof DrawingDocument) {
+                        //drawing
+                        //get all the points from the drawing
+                        //check to see if the shape is closed and set repeat = true
+                        let drawingData = MonksActiveTiles.drawingPoints(dest);
+                        if (drawingData.points.length) {
+                            location[i] = {
+                                x: drawingData.points[0].x,
+                                y: drawingData.points[0].y,
+                                scene: dest.parent.id,
+                                dest: dest,
+                                points: drawingData.points,
+                                repeat: drawingData.repeat
+                            };
+                            found = true;
+                        }
+                    }*/
+                    if (!found) {
+                        location[i] = {
+                            x: dest.x + (Math.abs(dest.width || dest.shape.width) / 2),
+                            y: dest.y + (Math.abs(dest.height || dest.shape.height) / 2),
+                            width: Math.abs(dest.width || dest.shape.width),
+                            height: Math.abs(dest.height || dest.shape.height),
+                            scene: dest.parent.id,
+                            dest: dest
+                        };
+                    }
                 } else
                     location[i] = null;
             } else {
@@ -2955,7 +3078,7 @@ export class MonksActiveTiles {
 
                         await scene.view();
                         if (data.oldpos && data.newpos) {
-                            changeTo = { x: data.newpos.x + offset.dx, y: data.newpos.y + offset.dy };
+                            let changeTo = { x: data.newpos.x + offset.dx, y: data.newpos.y + offset.dy };
                             canvas.pan(changeTo);
                         }
 
@@ -3181,20 +3304,21 @@ export class MonksActiveTiles {
                     if (!entity)
                         return;
 
-                    if (data.permission === true && !entity.testUserPermission(game.user, "LIMITED"))
+                    if (data.permission === true && (!entity.testUserPermission(game.user, "LIMITED") || (entity.parent && !entity.parent.testUserPermission(game.user, "LIMITED"))))
                         return ui.notifications.warn(`You do not have permission to view ${entity.name}.`);
 
-                    if (game.modules.get("monks-enhanced-journal")?.active && entity instanceof JournalEntry && entity.pages.size == 1 && !!getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type")) {
-                        let type = getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type");
+                    let checkEntity = entity.parent || entity;
+                    if (game.modules.get("monks-enhanced-journal")?.active && checkEntity instanceof JournalEntry && checkEntity.pages.size == 1 && !!getProperty(checkEntity.pages.contents[0], "flags.monks-enhanced-journal.type")) {
+                        let type = getProperty(checkEntity.pages.contents[0], "flags.monks-enhanced-journal.type");
                         if (type == "base" || type == "oldentry") type = "journalentry";
                         let types = game.MonksEnhancedJournal.getDocumentTypes();
                         if (types[type]) {
-                            entity = entity.pages.contents[0];
+                            entity = checkEntity.pages.contents[0];
                             game.MonksEnhancedJournal.fixType(entity);
                         }
                     }
 
-                    if (data.asimage && (entity.type == "image" || getProperty(entity, "flags.monks-enhanced-journal.type") == "picture")) {
+                    if (data.asimage && !!entity.src) {
                         new ImagePopout(entity.src).render(true);
                     } else {
                         if (data.enhanced !== true || !game.modules.get("monks-enhanced-journal")?.active || !game.MonksEnhancedJournal.openJournalEntry(entity, { tempOwnership: !data.permission })) {
@@ -4541,18 +4665,20 @@ export class MonksActiveTiles {
                                                 debug("Jumping to Landing", goto.tag);
                                                 let idx = actions.findIndex(a => a.action == 'anchor' && a.data.tag == goto.tag);
                                                 if (idx != -1) {
-                                                    let gotoContext = Object.assign({}, context);
+                                                    let entities = goto.entities;
                                                     delete goto.tag;
-                                                    if (goto.entities) {
+                                                    delete goto.entities;
+                                                    let gotoValue = Object.assign({}, goto, context.value);
+                                                    let gotoContext = Object.assign({}, context, { value: gotoValue, _id: makeid() });
+
+                                                    if (entities) {
                                                         let result = {};
-                                                        for (let entity of goto.entities) {
+                                                        for (let entity of entities) {
                                                             MonksActiveTiles.addToResult(entity, result);
                                                         }
-                                                        Object.assign(gotoContext, result);
-                                                        Object.assign(goto, result);
+                                                        Object.assign(gotoContext.value, result);
                                                     }
-                                                    let gotoValue = Object.assign(goto, context.value);
-                                                    Object.assign(gotoContext, { value: gotoValue, _id: makeid() });
+
                                                     await this.runActions(gotoContext, idx + 1);
                                                 }
                                             } else {
@@ -5651,10 +5777,10 @@ Hooks.on('preUpdateWall', async (document, update, options, userId) => {
 });
 
 Hooks.on("globalAmbientVolumeChanged", (volume) => {
-    if (!game.modules.get("monks-sund-enhancements")?.active) {
+    if (!game.modules.get("monks-sound-enhancements")?.active) {
         for (let tile of canvas.scene.tiles) {
             for (let sound of Object.values(tile.soundeffect || {})) {
-                if (sound.effectiveVolume) {
+                if (sound.effectiveVolume != undefined) {
                     sound.volume = volume * (sound.effectiveVolume ?? 1);
                 }
             }
@@ -5665,7 +5791,7 @@ Hooks.on("globalAmbientVolumeChanged", (volume) => {
 Hooks.on("globalSoundEffectVolumeChanged", (volume) => {
     for (let tile of canvas.scene.tiles) {
         for (let sound of Object.values(tile.soundeffect || {})) {
-            if (sound.effectiveVolume) {
+            if (sound.effectiveVolume != undefined) {
                 sound.volume = volume * (sound.effectiveVolume ?? 1);
             }
         }

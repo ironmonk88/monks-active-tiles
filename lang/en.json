@@ -125,6 +125,8 @@
   "MonksActiveTiles.action.url": "Open URL",
   "MonksActiveTiles.action.tempimage": "Temporary Tile Image",
   "MonksActiveTiles.action.ping": "Ping",
+  "MonksActiveTiles.action.gametime": "Game Time",
+  "MonksActiveTiles.action.shuffle": "Shuffle Collection",
 
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
   "MonksActiveTiles.filter.exists": "Check entity count",
@@ -285,6 +287,7 @@
   "MonksActiveTiles.ctrl.offset": "Offset (ms)",
   "MonksActiveTiles.ctrl.pingstyle": "Ping Style",
   "MonksActiveTiles.ctrl.delayactions": "Delay Actions until finished",
+  "MonksActiveTiles.ctrl.time": "Time (min)",
 
   "MonksActiveTiles.mode.enter": "Enter",
   "MonksActiveTiles.mode.exit": "Exit",

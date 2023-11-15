@@ -807,7 +807,7 @@ export class ActionConfig extends FormApplication {
             let content = i18n(trigger.name);
             if (trigger.content) {
                 try {
-                    content = await trigger.content(trigger, this.object);
+                    content = await trigger.content(trigger, this.object, this.options.parent.actions);
                 } catch {}
             }
             let li = $('<li>').addClass('item flexrow').attr('data-id', this.object.id).attr('data-collection', 'actions').attr('draggable', true)

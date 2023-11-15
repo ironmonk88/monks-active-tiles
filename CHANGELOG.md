@@ -1,3 +1,29 @@
+## Version 11.14
+
+Fixed issue with changing the scene not figuring out which users it's supposed to change the scene for
+
+Added the option to use Speed for the move token action and not just Duration.
+
+Fixed issue with move token using the GMs scene to calculate grid size instead of the token's scene.
+
+Fixed issues with setting permissions.
+
+Added an action to set the Game time.
+
+Added an action to shuffle a collection.
+
+Fixed issue when changing the scene to the active scene.
+
+Fixed issues with opening a journal entry that the players don't have permissions to view.
+
+Fixed issue with opening a Monk's Enhanced Journal entry.
+
+Fixed issue with opening the journal entry as an image.
+
+Fixed issue with looping through entities.
+
+Fixed issue with Monk's Sound Enhancement integration.
+
 ## Version 11.12
 
 Removed references to allowDelay, it hasn't been used for a very long while.

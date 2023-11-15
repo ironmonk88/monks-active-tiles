@@ -113,7 +113,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                             let content = (trigger == undefined ? 'Unknown' : i18n(trigger.name));
                             if (trigger?.content) {
                                 try {
-                                    content = await trigger.content(trigger, a);
+                                    content = await trigger.content(trigger, a, this.actions);
                                 } catch (e) {
                                     error(e);
                                 }
