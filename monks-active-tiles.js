@@ -2943,6 +2943,10 @@ export class MonksActiveTiles {
     static async fixScenes(tiles) {
         MonksActiveTiles._fixAllTiles(tiles, async function (action) {
             if (action.action == "scene" || action.action == "scenebackground" || action.action == "preload") {
+                if (action.data.sceneid instanceof Array) {
+                    action.data.sceneid = action.data.sceneid.length ? action.data.sceneid[0] : null;
+                    return true;
+                }
                 if (typeof action.data.sceneid == "string") {
                     let id = action.data.sceneid;
                     if (id == "_active")
@@ -2952,10 +2956,7 @@ export class MonksActiveTiles {
                     else if (id == "_token")
                         id = "token";
 
-                    action.data.sceneid = [{ id }];
-                    return true;
-                } else if (!(action.data.sceneid instanceof Array)) {
-                    action.data.sceneid = [action.data.sceneid];
+                    action.data.sceneid = { id };
                     return true;
                 }
             }
@@ -5055,9 +5056,10 @@ Hooks.on('ready', () => {
         MonksActiveTiles.fixRollTable();
         game.settings.set("monks-active-tiles", "fix-rolltable", true);
     }
-    if (!setting("fix-scene") && game.user.isGM) {
+    if ((!setting("fix-scene") || !setting("fix-scene-again")) && game.user.isGM) {
         MonksActiveTiles.fixScenes();
         game.settings.set("monks-active-tiles", "fix-scene", true);
+        game.settings.set("monks-active-tiles", "fix-scene-again", true);
     }
 
     $("#board").on("pointerdown", function (event) {
