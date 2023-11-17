@@ -2044,7 +2044,9 @@ export class ActionManager {
                                 actor: a.toObject(),
                                 token: entity.toObject(),
                                 rollmode: action.data.rollmode,
-                                flavor: "{{entity.name}} is being {{#if (lt result 0)}}hurt{{else}}healed{{/if}}"
+                                flavor: "{{entity.name}} is being {{#if (lt result 0)}}hurt{{else}}healed{{/if}}",
+                                operation: "assign",
+                                prop: ""
                             });
                             /*
                             let context = {

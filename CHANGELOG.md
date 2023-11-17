@@ -1,3 +1,15 @@
+## Version 11.16
+
+Fixed issue with Hurt/Heal
+
+Fixed issue with Rolltables and Scenes not linking any more.
+
+Fixed issue with dialog action not having the correct show to value.
+
+Possibly fixed sporatic issues with cooldown not working.
+
+Fixed issue with a deactivated Tile continuing to trigger remaining actions
+
 ## Version 11.15
 
 Fixing code that was supposed to fix changes, but ended up not fixing things, and actually broke stuff

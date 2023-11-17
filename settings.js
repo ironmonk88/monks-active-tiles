@@ -191,6 +191,13 @@ export const registerSettings = function () {
 		type: Boolean
 	});
 
+	game.settings.register(modulename, "fix-forplayer-again", {
+		scope: "world",
+		config: false,
+		default: false,
+		type: Boolean
+	});
+
 	game.settings.register(modulename, "fix-rolltable", {
 		scope: "world",
 		config: false,

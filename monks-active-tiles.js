@@ -585,7 +585,13 @@ export class MonksActiveTiles {
         else if (id) {
             let newEntities = id.split(",");
             for (let i = 0; i < newEntities.length; i++) {
-                newEntities[i] = (newEntities[i].includes('Terrain') ? MonksActiveTiles.getTerrain(newEntities[i]) : await fromUuid(newEntities[i]));
+                let document = (newEntities[i].includes('Terrain') ? MonksActiveTiles.getTerrain(newEntities[i]) : await fromUuid(newEntities[i]));
+                if (!document && defaultType) {
+                    let collection = game[defaultType];
+                    if (collection)
+                        document = collection.get(id);
+                }
+                newEntities[i] = document;
             }
             newEntities = newEntities.filter(e => !!e);
 
@@ -2878,7 +2884,7 @@ export class MonksActiveTiles {
 
     static async fixForPlayer(tiles) {
         MonksActiveTiles._fixAllTiles(tiles, async function (action) {
-            if (action.action == "notification" || action.action == "closedialog" || action.action == "preload") {
+            if (action.action == "notification" || action.action == "preload") {
                 if (action.data.showto == "all") {
                     action.data.showto = "everyone"
                     return true;
@@ -2921,6 +2927,30 @@ export class MonksActiveTiles {
                 action.data.showto = action.data.for;
                 delete action.data.for;
                 return true;
+            } else if (action.action == "closedialog") {
+                if (action.data.for == "all") {
+                    action.data.for = "everyone"
+                    return true;
+                }
+            }
+        });
+    }
+
+    static async fixForPlayerAgain(tiles) {
+        MonksActiveTiles._fixAllTiles(tiles, async function (action) {
+            if (action.action == "dialog") {
+                if (action.data.showto == "token")
+                    action.data.showto = "trigger";
+                return true;
+            } else if (action.action == "closedialog") {
+                if (action.data.for == "all") {
+                    action.data.for = "everyone"
+                    return true;
+                }
+                if (action.data.for == "token") {
+                    action.data.for = "trigger";
+                    return true;
+                }
             }
         });
     }
@@ -2933,7 +2963,7 @@ export class MonksActiveTiles {
                     return true;
                 }
                 if (typeof action.data.rolltableid == "string") {
-                    action.data.rolltableid = { id: action.data.rolltableid };
+                    action.data.rolltableid = { id: action.data.rolltableid.startsWith("RollTable") ? action.data.rolltableid : `RollTable.${action.data.rolltableid}` };
                     return true;
                 }
             }
@@ -2948,7 +2978,7 @@ export class MonksActiveTiles {
                     return true;
                 }
                 if (typeof action.data.sceneid == "string") {
-                    let id = action.data.sceneid;
+                    let id = action.data.sceneid.startsWith("Scene") ? action.data.sceneid : `Scene.${action.data.sceneid}`;
                     if (id == "_active")
                         id = "scene";
                     else if (id == "_previous")
@@ -4569,14 +4599,14 @@ export class MonksActiveTiles {
                     }
                 }
 
-                if (triggerData.cooldown && getProperty(this, "flags.monks-active-tiles.triggertime")) {
+                if (triggerData.cooldown && this._matt_triggertime) {
                     // calculate the difference between two dates
-                    let difference = Date.now() - getProperty(this, "flags.monks-active-tiles.triggertime");
+                    let difference = Date.now() - this._matt_triggertime;
                     if (difference < (triggerData.cooldown * 1000)) {
                         return;
                     }
                 }
-                setProperty(this, "flags.monks-active-tiles.triggertime", Date.now());
+                this._matt_triggertime = Date.now();
 
                 let actionResult = await this.runActions(context, Math.max(start, 0));
 
@@ -5052,6 +5082,10 @@ Hooks.on('ready', () => {
         MonksActiveTiles.fixForPlayer();
         game.settings.set("monks-active-tiles", "fix-forplayer", true);
     }
+    if (!setting("fix-forplayer-again") && game.user.isGM) {
+        MonksActiveTiles.fixForPlayerAgain();
+        game.settings.set("monks-active-tiles", "fix-forplayer-again", true);
+    }
     if (!setting("fix-rolltable") && game.user.isGM) {
         MonksActiveTiles.fixRollTable();
         game.settings.set("monks-active-tiles", "fix-rolltable", true);
@@ -5255,7 +5289,7 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
 
                 debug("Available triggers", availableTriggers);
                 let doTrigger = async function (idx) {
-                    if (idx >= availableTriggers.length)
+                    if (idx >= availableTriggers.length || !getProperty(tile, "flags.monks-active-tiles.active"))
                         return; // We've worked through all the triggers
 
                     let when = availableTriggers[idx];
