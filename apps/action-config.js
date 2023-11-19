@@ -270,13 +270,45 @@ export class ActionConfig extends FormApplication {
             return;
 
         if (list instanceof Array) {
-            if (list.length > 0 && list[0].groups) {
-                return list.map(g => { return $('<optgroup>').attr('label', i18n(g.text)).append(Object.entries(g.groups).map(([k, v]) => { return $('<option>').attr('value', (g.id ? g.id + ":" : '') + k).html(i18n(v)).prop('selected', ((g.id ? g.id + ":" : '') + k) == id) })) })
-            } else {
-                return list.map((v) => { return $('<option>').attr('value', v).html(i18n(v)).prop('selected', v == id) });
-            }
+            return list
+                .map(g => {
+                    if (g.groups) {
+                        let gtext = g.label ?? g.id;
+                        if (game.i18n.has(gtext))
+                            gtext = i18n(gtext);
+                        return $('<optgroup>')
+                            .attr('label', gtext)
+                            .append(Object.entries(g.groups)
+                                .map(([k, v]) => {
+                                    let gid = (g.id ? g.id + ":" : '') + k;
+                                    let text = v.label ?? v;
+                                    if (game.i18n.has(text))
+                                        text = i18n(text);
+                                    return $('<option>')
+                                        .attr('value', gid)
+                                        .html(text)
+                                        .prop('selected', gid == id)
+                                }))
+                    } else {
+                        let gid = g.id || g;
+                        let text = g.label ?? g;
+                        if (game.i18n.has(text))
+                            text = i18n(text);
+                        return $('<option>').attr('value', gid).html(text).prop('selected', gid == id)
+                    }
+                });
         } else {
-            return Object.entries(list).map(([k, v]) => { return $('<option>').attr('value', k).html(i18n(v)).prop('selected', k == id) });
+            return Object.entries(list)
+                .map(([k, v]) => {
+                    let text = v.label ?? v;
+                    if (game.i18n.has(text))
+                        text = i18n(text);
+
+                    return $('<option>')
+                        .attr('value', k)
+                        .html(text)
+                        .prop('selected', k == id)
+                });
         }
     }
 
@@ -666,7 +698,7 @@ export class ActionConfig extends FormApplication {
                     const fd = new FormDataExtended(form);
                     data = foundry.utils.mergeObject(data, fd.object);
 
-                    let buttons = JSON.parse($('input[name="buttons"', this.element).val() || "[]");
+                    let buttons = JSON.parse($('input[name="data.buttons"', this.element).val() || "[]");
                     if (!data.id) {
                         data.id = randomID();
                         buttons.push(data);
@@ -675,7 +707,7 @@ export class ActionConfig extends FormApplication {
                         Object.assign(button, data);
                     }
 
-                    $('input[name="buttons"', this.element).val(JSON.stringify(buttons)).data("value", buttons).change();
+                    $('input[name="data.buttons"', this.element).val(JSON.stringify(buttons)).data("value", buttons).change();
                 }
             }
         })
@@ -688,9 +720,9 @@ export class ActionConfig extends FormApplication {
     }
 
     removeButton(id, event) {
-        let buttons = JSON.parse($('input[name="buttons"', this.element).val() || "[]");
+        let buttons = JSON.parse($('input[name="data.buttons"', this.element).val() || "[]");
         buttons.findSplice((b) => { return b.id == id });
-        $('input[name="buttons"', this.element).val(JSON.stringify(buttons)).data("value", buttons).change();
+        $('input[name="data.buttons"', this.element).val(JSON.stringify(buttons)).data("value", buttons).change();
     }
 
     getButtonList(element, buttons = []) {
@@ -940,7 +972,7 @@ export class ActionConfig extends FormApplication {
                                     .append($('<li>').addClass('item-header flexrow')
                                         .append($('<div>').addClass('item-controls').css({ 'text-align': 'right' })
                                             .append($('<a>').css({ 'margin-right': '12px' }).attr({ 'title': "Add button" }).html('<i class="fas fa-plus"></i> Add').on('click', this._editButton.bind(this, undefined))))
-                                        .append($('<input>').css({ "margin-right": "0px !important" }).attr({ type: 'hidden', name: 'buttons' }).val(JSON.stringify(data.buttons || [])).data("value", data.buttons || []).change(this.refreshButtonList.bind(this, ul)))
+                                        .append($('<input>').css({ "margin-right": "0px !important" }).attr({ type: 'hidden', name: id }).val(JSON.stringify(data.buttons || [])).data("value", data.buttons || []).change(this.refreshButtonList.bind(this, ul)))
                                     )
                                     .append(ul)));
 

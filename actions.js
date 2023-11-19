@@ -29,6 +29,15 @@ export class ActionManager {
         }
         return defvalue;
     }
+    static getDefaultType = (actionID, ctrlId, deftype) => {
+        let action = ActionManager.actions[actionID];
+        if (action) {
+            let ctrl = action.ctrls.find(c => c.id == ctrlId);
+            if (ctrl)
+                return ctrl.defaultType;
+        }
+        return deftype;
+    }
     static get actions() {
         return {
             'pause': {
@@ -391,8 +400,11 @@ export class ActionManager {
 
                     let tokenTransfers = {};
 
-                    let dests = await MonksActiveTiles.getLocation.call(tile, action.data.location, args);
                     for (let tokendoc of entities) {
+                        let loc = duplicate(action.data.location);
+                        loc.sceneId = loc.sceneId || tokendoc.parent.id;
+                        let dests = await MonksActiveTiles.getLocation.call(tile, loc, args);
+
                         let midX = ((tokendoc.parent.dimensions.size * Math.abs(tokendoc.width)) / 2);
                         let midY = ((tokendoc.parent.dimensions.size * Math.abs(tokendoc.height)) / 2);
 
@@ -404,7 +416,7 @@ export class ActionManager {
                         let dest = ActionManager.pickRandom(dests, tile.id);
                         let entDest = duplicate(dest);
                         if (!entDest) {
-                            console.warn("monks-active-tiles | Could not find a teleport destination", action.data.location);
+                            console.warn("monks-active-tiles | Could not find a teleport destination", loc);
                             let newPos = canvas.grid.getSnappedPosition(original.x, original.y);
 
                             let ray = new Ray({ x: tokendoc.x, y: tokendoc.y }, { x: newPos.x, y: newPos.y });
@@ -516,9 +528,9 @@ export class ActionManager {
                                 newPos = MonksActiveTiles.findVacantSpot(newPos, tokendoc, tokendoc.parent, newTokens, entDest, action.data.remotesnap);
 
                             if (action.data.remotesnap) {
-                                let [y, x] = canvas.grid.grid.getGridPositionFromPixels(newPos.x, newPos.y);
-                                newPos.x = x * tokendoc.parent.dimensions.size;
-                                newPos.y = y * tokendoc.parent.dimensions.size;
+                                let gs = scene.dimensions.size;
+                                newPos.x = Math.floor(newPos.x / gs) * gs;
+                                newPos.y = Math.floor(newPos.y / gs) * gs;
                             } else {
                                 newPos.x -= midX;
                                 newPos.y -= midY;
@@ -1118,7 +1130,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { show: ['players', 'previous'] },
+                        options: { show: ['token', 'players', 'previous'] },
                         restrict: (entity) => { return (entity instanceof Actor || entity instanceof JournalEntry || entity instanceof Note); },
                         onChange: (app) => {
                             app.checkConditional();
@@ -1216,6 +1228,9 @@ export class ActionManager {
                                     dests = [{ x: entity.x, y: entity.y }];
                                 }
                                 entity = entity.entry;
+                            }
+                            if (entity instanceof TokenDocument) {
+                                entity = entity.actor;
                             }
                             if (entity instanceof JournalEntry) {
                                 if (game.modules.get("monks-enhanced-journal")?.active && entity.pages.size == 1 && (getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.actors") || []).length) {
@@ -1620,7 +1635,7 @@ export class ActionManager {
                 },
                 fn: async (args = {}) => {
                     const { action, value } = args;
-                    let entities = await MonksActiveTiles.getEntities(args, action.data?.collection || action.ctrls.entity.defaultType);
+                    let entities = await MonksActiveTiles.getEntities(args, action.data?.collection || ActionManager.getDefaultType("activate", "entity"));
                     if (entities.length == 0)
                         return;
 
@@ -2891,8 +2906,29 @@ export class ActionManager {
                         id: "language",
                         name: "MonksActiveTiles.ctrl.language",
                         list: () => {
+                            let languages = [{id: "", label: ""}];
                             let syslang = CONFIG[game.system.id.toUpperCase()]?.languages || {};
-                            let languages = mergeObject({ '': '' }, duplicate(syslang));
+                            if (!(syslang instanceof Array) && typeof syslang == "object") {
+                                let parseGroup = (group, attach) => {
+                                    let array = attach;
+                                    for (let [key, value] of Object.entries(group)) {
+                                        if (typeof value == "string")
+                                            (attach || languages).push({ id: key, label: value });
+                                        else {
+                                            if (!attach) {
+                                                let newGroup = { id: key, label: value.label, groups: [] };
+                                                languages.push(newGroup);
+                                                array = newGroup.groups;
+                                            }
+                                            parseGroup(value.children, array);
+                                            if (!attach) {
+                                                array.sort((a, b) => a.label.localeCompare(b.label));
+                                            }
+                                        }
+                                    }
+                                }
+                                parseGroup(syslang);
+                            }
                             return languages;
                         },
                         conditional: () => {
@@ -4701,9 +4737,7 @@ export class ActionManager {
 
                         if (showUsers.includes(game.user.id)) {
                             if (action.data.activate && game.user.isGM && !scene.active) {
-                                window.setTimeout(() => {
-                                    scene.activate();
-                                }, 3000);
+                                scene.activate();
                                 showUsers = []; // Clear the show users because the activate will switch the view
                             } else
                                 await scene.view();

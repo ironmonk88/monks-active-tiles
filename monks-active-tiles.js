@@ -2045,6 +2045,7 @@ export class MonksActiveTiles {
             });
         } catch { }
 
+        //@Tile[Scene.b77ocyto1VdgAZU5.Tile.QW3oZo39pZsf8cTX landing:test1]{Journal Click Tile}
         CONFIG.TextEditor.enrichers.push({ id: 'MonksActiveTileTrigger', pattern: new RegExp(`@(Tile)\\[([^\\]]+)\\](?:{([^}]+)})?`, 'g'), enricher: MonksActiveTiles._createTileLink });
 
         //let otherGroups = {};
@@ -2203,6 +2204,7 @@ export class MonksActiveTiles {
                     MonksActiveTiles.fixVariableName([tile]);
                     MonksActiveTiles.fixImageCycle([tile]);
                     MonksActiveTiles.fixForPlayer([tile]);
+                    MonksActiveTiles.fixForPlayerAgain([tile]);
                     MonksActiveTiles.fixRollTable([tile]);
                     MonksActiveTiles.fixScenes([tile]);
                 });
@@ -3007,6 +3009,9 @@ export class MonksActiveTiles {
         let activeProp = (props || []).find(p => p.startsWith('active:'));
         if (activeProp)
             data.dataset.active = activeProp.replace('active:', '');
+        let landingProp = (props || []).find(p => p.startsWith('landing:'));
+        if (landingProp)
+            data.dataset.landing = landingProp.replace('landing:', '');
         const constructAnchor = () => {
             const a = document.createElement("a");
             a.classList.add(...data.cls);
@@ -3041,7 +3046,11 @@ export class MonksActiveTiles {
 
                 if (a.dataset.active == "true" && !triggerData.active) return;
 
-                tile.trigger({ tokens: tokens, method: "manual", options: { journal: [this.object] } });
+                let options = { journal: [this.object] }
+                if (a.dataset.landing)
+                    options.landing = a.dataset.landing;
+
+                tile.trigger({ tokens: tokens, method: "trigger", options });
             }
         }
     }
@@ -3414,7 +3423,7 @@ export class MonksActiveTiles {
                         data.tokens.forEach(id => {
                             let token = canvas.tokens.get(id);
                             if (token)
-                                token.setTarget(data.target !== "clear", { user: game.user, releaseOthers: false, groupSelection: false })
+                                token.setTarget(data.target !== "clear" && data.target !== "remove", { user: game.user, releaseOthers: false, groupSelection: false })
                         });
                     }
                 }
