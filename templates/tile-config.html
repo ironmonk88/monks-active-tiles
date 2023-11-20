@@ -1,7 +1,7 @@
 <nav class="trigger-tabs sheet-tabs tabs" data-group="triggers">
-    <a class="item" data-tab="trigger-setup"><i class="fas fa-cog"></i> Setup</a>
-    <a class="item" data-tab="trigger-actions"><i class="fas fa-running"></i> Actions</a>
-    <a class="item" data-tab="trigger-images"><i class="fas fa-image"></i> Images</a>
+    <a class="item" data-tab="trigger-setup"><i class="fas fa-cog"></i> {{ localize "MonksActiveTiles.tabs.Setup" }}</a>
+    <a class="item" data-tab="trigger-actions"><i class="fas fa-running"></i> {{ localize "MonksActiveTiles.tabs.Actions" }}</a>
+    <a class="item" data-tab="trigger-images"><i class="fas fa-image"></i> {{ localize "MonksActiveTiles.tabs.Images" }}</a>
 </nav>
 
 <div class="tab matt-tab" data-tab="trigger-setup">
@@ -17,8 +17,8 @@
     <div class="form-group">
         <label>{{ localize "MonksActiveTiles.History" }}</label>
         <div class="form-fields">
-            <button class="view-history" type="button" style="height: 20px; line-height: 15px;">View&nbsp;History</button>
-            <button class="view-variables" type="button" style="height: 20px; line-height: 15px;">View&nbsp;Variables</button>
+            <button class="view-history" type="button" style="height: 20px; line-height: 15px; white-space: nowrap;">{{ localize "MonksActiveTiles.history.ViewHistory" }}</button>
+            <button class="view-variables" type="button" style="height: 20px; line-height: 15px; white-space: nowrap;">{{ localize "MonksActiveTiles.history.ViewVariables" }}</button>
             <div></div>
             <input class="record-history" type="checkbox" name="flags.monks-active-tiles.record" {{ checked data.flags.monks-active-tiles.record }}>
         </div>
@@ -191,7 +191,7 @@
     <ol class="files-list items-list" data-collection="files">
         <li class="item-header flexrow">
             <div class="item-controls" style="text-align: right;flex: 1;">
-                <a title="Browse Files" class="browse-files" style="margin-right: 12px;"><i class="fas fa-plus"></i> Add</a>
+                <a title="Browse Files" class="browse-files" style="margin-right: 12px;"><i class="fas fa-plus"></i> {{ localize "MonksActiveTiles.Add" }}</a>
                 <button type="button" class="add-image" data-target="_file-list" style="display: none;"></button>
             </div>
             <input type="hidden" class="filepath" name="_file-list">

@@ -5763,7 +5763,7 @@ Hooks.on("renderTileConfig", (app, html, data) => {
     $(app.element).addClass("monks-active-tiles");
 
     if ($("save-template-button", html).length == 0)
-        $("<button>").addClass("save-template-button").attr("type", "button").attr("title", "Save as Template").css({ "flex": "0 0 34px" }).html('<i class="fas fa-save" style="margin-right: 0px;"></i>').insertBefore($('button[type="submit"]', html)).on("click", MonksActiveTiles.saveTemplate.bind(app));
+        $("<button>").addClass("save-template-button").attr("type", "button").attr("title", i18n("MonksActiveTiles.SaveAsTemplate")).css({ "flex": "0 0 34px" }).html('<i class="fas fa-save" style="margin-right: 0px;"></i>').insertBefore($('button[type="submit"]', html)).on("click", MonksActiveTiles.saveTemplate.bind(app));
 });
 
 Hooks.on("canvasReady", () => {

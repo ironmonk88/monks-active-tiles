@@ -50,6 +50,7 @@
   "MonksActiveTiles.AllowWhenPaused": "Allow When Paused",
   "MonksActiveTiles.ShownImage": "Shown Image",
   "MonksActiveTiles.TileTemplates": "Tile Templates",
+  "MonksActiveTiles.SaveAsTemplate": "Save as Template",
   "MonksActiveTiles.Players": "Players",
   "MonksActiveTiles.Cooldown": "Cooldown (sec)",
   "MonksActiveTiles.MultiplePlayers": "Multiple Players ({players})",
@@ -507,5 +508,18 @@
   "MonksActiveTiles.show-landing.name": "Show Landing Highlight",
   "MonksActiveTiles.show-landing.hint": "Highlight the actions that happen within landings",
   "MonksActiveTiles.drop-macro.name": "Drop Macro on Canvas",
-  "MonksActiveTiles.drop-macro.hint": "Allow macros dropped on the canvas to be created as Active Tiles"
+  "MonksActiveTiles.drop-macro.hint": "Allow macros dropped on the canvas to be created as Active Tiles",
+
+  "MonksActiveTiles.tabs.Setup": "Setup",
+  "MonksActiveTiles.tabs.Actions": "Actions",
+  "MonksActiveTiles.tabs.Images": "Images",
+
+  "MonksActiveTiles.history.ViewHistory": "View History",
+  "MonksActiveTiles.history.ViewVariables": "View Variables",
+  "MonksActiveTiles.history.Token": "Token",
+  "MonksActiveTiles.history.When": "When",
+  "MonksActiveTiles.history.How": "How",
+  "MonksActiveTiles.history.Who": "Who",
+  "MonksActiveTiles.history.Name": "Name",
+  "MonksActiveTiles.history.Value": "Value"  
 }
