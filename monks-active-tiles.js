@@ -5171,9 +5171,10 @@ Hooks.on('preUpdateToken', async (document, update, options, userId) => {
         update.y = MonksActiveTiles._rejectRemaining[document.id].y;
         options.animate = false;
     }*/
-
+    //check Token Warp's setting for MATT bypass option.
+    const tokenWarpBypass = game.modules.get('tokenwarp')?.active && game.settings.get('tokenwarp','shouldBypassMonksActiveTiles');
     //make sure to bypass if the token is being dropped somewhere, otherwise we could end up triggering a lot of tiles
-    if ((update.x != undefined || update.y != undefined || update.elevation != undefined || update.rotation != undefined) && options.bypass !== true && options.animate !== false) { //(!game.modules.get("drag-ruler")?.active || options.animate)) {
+    if ((update.x != undefined || update.y != undefined || update.elevation != undefined || update.rotation != undefined) && options.bypass !== true && options.animate !== false && !tokenWarpBypass) { //(!game.modules.get("drag-ruler")?.active || options.animate)) {
         let token = document.object;
 
         if ((document.caught || document.getFlag('monks-active-tiles', 'teleporting')) && !options.teleport) {
