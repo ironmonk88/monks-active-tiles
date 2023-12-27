@@ -50,7 +50,6 @@
   "MonksActiveTiles.AllowWhenPaused": "Allow When Paused",
   "MonksActiveTiles.ShownImage": "Shown Image",
   "MonksActiveTiles.TileTemplates": "Tile Templates",
-  "MonksActiveTiles.SaveAsTemplate": "Save as Template",
   "MonksActiveTiles.Players": "Players",
   "MonksActiveTiles.Cooldown": "Cooldown (sec)",
   "MonksActiveTiles.MultiplePlayers": "Multiple Players ({players})",
@@ -513,7 +512,7 @@
   "MonksActiveTiles.drop-macro.name": "Drop Macro on Canvas",
   "MonksActiveTiles.drop-macro.hint": "Allow macros dropped on the canvas to be created as Active Tiles",
   "MonksActiveTiles.tile-edit.name": "Allow Tile Template Editing",
-  "MonksActiveTiles.tile-edit.hint": "Allow editing of Tile Templates, I'd strongly recommend not using this unless you're sure you know what you're doing'",
+  "MonksActiveTiles.tile-edit.hint": "Allow editing of Tile Templates, I'd strongly recommend not using this unless you're sure you know what you're doing",
 
   "MonksActiveTiles.tabs.Setup": "Setup",
   "MonksActiveTiles.tabs.Actions": "Actions",
@@ -526,5 +525,5 @@
   "MonksActiveTiles.history.How": "How",
   "MonksActiveTiles.history.Who": "Who",
   "MonksActiveTiles.history.Name": "Name",
-  "MonksActiveTiles.history.Value": "Value"  
+  "MonksActiveTiles.history.Value": "Value"
 }

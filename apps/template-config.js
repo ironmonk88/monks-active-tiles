@@ -42,13 +42,15 @@ export class TemplateConfig extends FormApplication {
             if (setting("tile-edit")) {
                 // check that the JSON is valid before submitting
                 let tileData = $('textarea[name="tileData"]', html).val();
-                try {
-                    $(".error-message", html).html("");
-                    JSON.parse(tileData);
-                } catch (e) {
-                    $(".error-message", html).html(e);
-                    error(e);
-                    return;
+                if (tileData) {
+                    try {
+                        $(".error-message", html).html("");
+                        JSON.parse(tileData);
+                    } catch (e) {
+                        $(".error-message", html).html(e);
+                        error(e);
+                        return;
+                    }
                 }
             }
             that.submit();
@@ -56,17 +58,17 @@ export class TemplateConfig extends FormApplication {
     }
 
     async _updateObject(event, formData) {
-        if (setting("tile-edit")) {
+        if (setting("tile-edit") && formData.tileData) {
             try {
                 let tileData = JSON.parse(formData.tileData);
                 tileData.id = this.object._id;
                 tileData.name = formData.name;
                 this.tiletemplates.updateTile(tileData);
+                return;
             } catch (e) {
                 error(e);
                 return;
             }
-            return;
         }
 
         formData.id = this.object._id;
