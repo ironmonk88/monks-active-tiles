@@ -156,6 +156,15 @@ export const registerSettings = function () {
 		type: Boolean,
 	});
 
+	game.settings.register(modulename, "tile-edit", {
+		name: i18n("MonksActiveTiles.tile-edit.name"),
+		hint: i18n("MonksActiveTiles.tile-edit.hint"),
+		scope: "world",
+		config: true,
+		default: false,
+		type: Boolean,
+	});
+
 	game.settings.register(modulename, "prevent-cycle", {
 		scope: "world",
 		config: false,

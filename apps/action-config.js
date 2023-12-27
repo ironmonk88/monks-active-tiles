@@ -273,14 +273,14 @@ export class ActionConfig extends FormApplication {
             return list
                 .map(g => {
                     if (g.groups) {
-                        let gtext = g.label ?? g.id;
+                        let gtext = g.label ?? g.text ?? g.id;
                         if (game.i18n.has(gtext))
                             gtext = i18n(gtext);
                         return $('<optgroup>')
                             .attr('label', gtext)
                             .append(Object.entries(g.groups)
                                 .map(([k, v]) => {
-                                    let gid = (g.id ? g.id + ":" : '') + k;
+                                    let gid = (g.id ? g.id + ":" : '') + (g.groups instanceof Array ? v.id : k);
                                     let text = v.label ?? v;
                                     if (game.i18n.has(text))
                                         text = i18n(text);
@@ -290,7 +290,7 @@ export class ActionConfig extends FormApplication {
                                         .prop('selected', gid == id)
                                 }))
                     } else {
-                        let gid = g.id || g;
+                        let gid = g.id ?? g;
                         let text = g.label ?? g;
                         if (game.i18n.has(text))
                             text = i18n(text);

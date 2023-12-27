@@ -191,10 +191,13 @@
     <ol class="files-list items-list" data-collection="files">
         <li class="item-header flexrow">
             <div class="item-controls" style="text-align: right;flex: 1;">
-                <a title="Browse Files" class="browse-files" style="margin-right: 12px;"><i class="fas fa-plus"></i> {{ localize "MonksActiveTiles.Add" }}</a>
-                <button type="button" class="add-image" data-target="_file-list" style="display: none;"></button>
+                <a title="Browse Folder" class="browse-folder" style="margin-right: 12px;"><i class="fas fa-folder"></i> Folder</a>
+				<button type="button" class="add-folder" data-target="_folder-list" style="display: none;"></button>
+				<a title="Browse Files" class="browse-files" style="margin-right: 12px;"><i class="fas fa-plus"></i> Add</a>
+				<button type="button" class="add-image" data-target="_file-list" style="display: none;"></button>
             </div>
             <input type="hidden" class="filepath" name="_file-list">
+            <input type="hidden" class="folderpath" name="_folder-list">
         </li>
         <ul class="file-list">
             {{#each files}}

@@ -1,3 +1,77 @@
+## Version 11.18
+
+Fixed issue with delay time not using fractions of seconds.
+
+Fixed issues with pan canvas waiting until the gm was finished before starting the players panning.
+
+Fixed issue with teleport wash colour not happening when an owner of a tile changes scenes.
+
+Fixed issue with creating a token on a scene the GM is currently not on
+
+Fixed label for Play sound action.
+
+Fixed issue when changing wall type from proximity to normal.
+
+Fixed issue using polyglot with chatmessage.
+
+Fixed issue when adding and removing effects in PF2e.
+
+Added the option to change permissions for a Journal Page.
+
+Hopefully fixed issue where having two attacks in the same action list would overwrite the first attack with the second attacks data.
+
+Hopefully fixed some of the issues with transitions.
+
+Fixed an issue with close dialog not firing for all users.
+
+Added the options to append a line, or prepend a line when writing to a journal.
+
+Added the option to insert text into a journal, at a specific character spot, with the option to replace a certain number of characters.
+
+Added polyglot support when adding text to a journal entry.
+
+Added the `datetime` handlebar value when appending to journal entries, if you have the smalltime module active.  To be able to write the current game time to a journal.
+
+Changed all the `Find` text to `Filter` to make it clearer what actions are being performed.
+
+Added handlebar support when redirecting based on player type
+
+Updated the landing action to default to stop when reached.
+
+Fixed issues with how DnD5e is now listing their languages.
+
+Automatically closes Action edits when you close the Tile edit window.
+
+Fixed issue where image files weren't saving when the Tile was first created.
+
+Added the option to add tile images by picking a folder.
+
+Added the option to edit the Tile data in the Tile Template browser.
+
+Added the option to use `!=` when comparing values
+
+Fixed issue when finding tagger entities across scenes.
+
+Fixed issues with DnD5e enrichers.
+
+Fixed issue with right clicking on a door triggering it twice.
+
+Fixed issue when correcting who to show the action for, for both chat messages and dialogs.
+
+Updated the inline link for Tiles to be more flexible and not need to specify the scene.
+
+Fixed issue with running the fade action not finding the correct users to fade for.
+
+Fixed issue with Scrolling Text not finding the correct center of the entity.
+
+Fixed issue with running a transition for a tile that shouldn't be visible
+
+Fixed issue with redirecting tokens from a jump to landing.
+
+Fixed issue with order of operations when updating a token.  Made sure that MATT comes last in the list.
+
+Fixed issue with the stop within tile trigger
+
 ## Version 11.17
 
 Fixed issue with Activate/Deactivate action

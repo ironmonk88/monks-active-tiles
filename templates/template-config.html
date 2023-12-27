@@ -1,13 +1,22 @@
 <form>
-    <div class="action-container">
-        <div class="form-group" data-type="delay">
+    <div class="action-container flexcol" style="height: 100%;">
+        <div class="form-group" style="flex-grow: 0;">
             <label for="action">Name</label>
             <div class="form-fields">
                 <input type="text" name="name" value="{{object.name}}">
             </div>
         </div>
-        <footer class="dialog-buttons sheet-footer flexrow">
-            <button type="submit" name="submit">
+        {{#if allowEditing}}
+        <div class="form-group">
+            <label for="action">Action</label>
+            <div class="form-fields" style="height: 100%;flex-direction:column;">
+                <textarea type="text" name="tileData" style="height: 100%;resize:none;">{{tileData}}</textarea>
+                <p class="notes error-message" style="color: #ff0000; flex-grow: 0;"></p>
+            </div>
+        </div>
+        {{/if}}
+        <footer class="dialog-buttons sheet-footer flexrow" style="flex-grow: 0;">
+            <button type="button" name="submit">
                 <i class="far fa-save"></i> {{localize "MonksActiveTiles.Update"}}
             </button>
         </footer>

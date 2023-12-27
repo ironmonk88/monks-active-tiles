@@ -534,3 +534,7 @@ body.system-CoC7 .multiple-dropdown .multiple-dropdown-option {
     padding-bottom: 4px;
     margin-bottom: 4px;
 }
+
+#template-config p.error-message:empty {
+    display: none;
+}
