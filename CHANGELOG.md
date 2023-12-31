@@ -36,7 +36,7 @@ Added the option to insert text into a journal, at a specific character spot, wi
 
 Added polyglot support when adding text to a journal entry.
 
-Added the `datetime` handlebar value when appending to journal entries, if you have the smalltime module active.  To be able to write the current game time to a journal.
+Added the `datetime` handlebar value when appending to journal entries, if you have the simple calendar module active.  To be able to write the current game time to a journal.
 
 Changed all the `Find` text to `Filter` to make it clearer what actions are being performed.
 
