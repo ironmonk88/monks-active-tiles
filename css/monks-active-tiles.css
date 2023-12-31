@@ -538,3 +538,7 @@ body.system-CoC7 .multiple-dropdown .multiple-dropdown-option {
 #template-config p.error-message:empty {
     display: none;
 }
+
+#trigger-action .small-field {
+    flex: 0 0 75px;
+}

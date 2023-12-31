@@ -1,3 +1,9 @@
+## Version 11.19
+
+Changed the quantity field when adding items to allow for dice notation
+
+Fixed issue with dice roll notation.
+
 ## Version 11.18
 
 Fixed issue with delay time not using fractions of seconds.

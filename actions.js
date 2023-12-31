@@ -4054,10 +4054,9 @@ export class ActionManager {
                     {
                         id: "quantity",
                         name: "MonksActiveTiles.ctrl.quantity",
-                        type: "number",
+                        type: "text",
+                        "class": "small-field",
                         defvalue: 1,
-                        min: 1,
-                        step: 1,
                         help: "Set this to blank to use the items original quantity"
                     },
                     {
@@ -4106,12 +4105,13 @@ export class ActionManager {
                                     if (item instanceof Item) {
                                         const itemData = item.toObject();
                                         if (action.data?.quantity) {
+                                            let quantity = await getValue(action.data?.quantity, args, item);
                                             let quantityName = item.system.quantity != undefined ? "quantity" : item.system.value != undefined ? "value" : item.system.eqt != undefined ? "eqt.count" : null;
                                             if (quantityName) {
                                                 let valueName = `system.${quantityName}.value`;
                                                 let useValue = getProperty(item, valueName) != undefined;
 
-                                                setProperty(itemData, `system.${quantityName}`, useValue ? { value: action.data?.quantity } : action.data?.quantity);
+                                                setProperty(itemData, `system.${quantityName}`, useValue ? { value: quantity } : quantity);
                                             }
                                         }
                                         let hasAdded = false;

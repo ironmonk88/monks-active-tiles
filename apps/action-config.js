@@ -918,6 +918,7 @@ export class ActionConfig extends FormApplication {
         for (let ctrl of (action?.ctrls || [])) {
             let options = mergeObject({ hide: [], show: [] }, ctrl.options);
             let field = $('<div>').addClass('form-fields').data('ctrl', ctrl);
+            if (ctrl["class"]) field.addClass(ctrl["class"]);
             let id = 'data.' + ctrl.id + (ctrl.variation ? '.value' : '');
             let val = data[ctrl.id] != undefined ? (data[ctrl.id].value != undefined ? data[ctrl.id].value : data[ctrl.id]) : (data[ctrl.id] === null ? "" : ctrl.defvalue);
 
@@ -1070,7 +1071,8 @@ export class ActionConfig extends FormApplication {
                                 input.attr('max', ctrl.max);
                             if (ctrl.step)
                                 input.attr('step', ctrl.step);
-                            input.css({ flex: '0 0 75px', 'text-align': 'right' });
+                            input.css({ 'text-align': 'right' });
+                            field.addClass("small-field");
                         }
                         if (ctrl.onBlur)
                             input.on('blur', ctrl.onBlur.bind(this, this));

@@ -1980,7 +1980,7 @@ export class MonksActiveTiles {
         let doRoll = async function (match, command, formula, closing, label, ...args) {
             if (closing.length === 3) formula += "]";
 
-            if (["/save", "/damage", "/skill", "/check", "/tool"].includes(command.trim()))
+            if (["/save", "/damage", "/skill", "/check", "/tool"].includes((command || "").trim()))
                 return match;
 
             let roll = await Roll.create(formula).roll({async: true});
