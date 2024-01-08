@@ -1,3 +1,6 @@
+## Version 11.20 will change the way the `Movement` trigger will function.  There was an error in the code that was causing it to work like the `Enter` and `Exit` triggers and it shouldn't have been doing that.  Movement is triggered when movement is *started* within the Tile
+## In adition to the movement trigger changes, there's now a change to how the triggers are handled.  Previously `Stop Movement` would stop regardless of if it was activated within a landing.  Therefore you'd need to use the Token move action to get the token to resume its journey.  That will no longer be needed.
+
 # Monk's Active Tile Triggers
 Add-On Module for Foundry VTT
 Want to teleport, or open doors, or hide characters, or display a message, or play a sound, or change a token's elevation when a token walks over a tile... now you can
