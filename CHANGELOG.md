@@ -1,3 +1,25 @@
+## Version 11.20
+
+Fixed issue with pan canvas to player token, will now pan for individual players rather than panning to every player.
+
+Reset the drag ruler movement history when teleporting within the same scene.
+
+Added the option to reset tile history for everything or for a specific token.
+
+Fixed warning for conditional effect using label instead of name.
+
+Fixed issue with checking values in case the name, through handlebars, returns as blank.
+
+Added the option to stop all remaining triggers.
+
+Fixed issue with DFreds Convenient Effects filtering by conditions.
+
+Fixed issue with triggering a Tile that is scaled.
+
+Fixed an issue with the `movement` trigger.  It was incorrectly triggering on an enter and an exit.  `movement` triggers when movement *starts* in a Tile.
+
+Sorting triggers by "distance to effect", "trigger type", and "z-index" so you can now set a Tile on top of another tile and choose which one gets triggered first.  This changes how the `Stop Token Movement` works.  Before, tokens were stopped regardless of if the action was processed.  For example if the stop was within a landing that wasn't called, then the movement was stopped regardless.  You'll no longer need to use this, as the token should stop now when it reaches the trigger point.  If the stop is within a landing, you may see a bit of a hiccup where the token reverses movement back to the triggering point.
+
 ## Version 11.19
 
 Changed the quantity field when adding items to allow for dice notation

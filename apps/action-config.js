@@ -281,7 +281,7 @@ export class ActionConfig extends FormApplication {
                             .append(Object.entries(g.groups)
                                 .map(([k, v]) => {
                                     let gid = (g.id ? g.id + ":" : '') + (g.groups instanceof Array ? v.id : k);
-                                    let text = v.label ?? v;
+                                    let text = typeof v == "string" ? v : v.label ?? v.name;
                                     if (game.i18n.has(text))
                                         text = i18n(text);
                                     return $('<option>')
@@ -291,7 +291,7 @@ export class ActionConfig extends FormApplication {
                                 }))
                     } else {
                         let gid = g.id ?? g;
-                        let text = g.label ?? g;
+                        let text = typeof g == "string" ? g : g.label ?? g.name;
                         if (game.i18n.has(text))
                             text = i18n(text);
                         return $('<option>').attr('value', gid).html(text).prop('selected', gid == id)
@@ -300,7 +300,8 @@ export class ActionConfig extends FormApplication {
         } else {
             return Object.entries(list)
                 .map(([k, v]) => {
-                    let text = v.label ?? v;
+                    if (!v) return null;
+                    let text = typeof v == "string" ? v : v?.label ?? v?.name;
                     if (game.i18n.has(text))
                         text = i18n(text);
 
@@ -308,7 +309,7 @@ export class ActionConfig extends FormApplication {
                         .attr('value', k)
                         .html(text)
                         .prop('selected', k == id)
-                });
+                }).filter(o => !!o);
         }
     }
 

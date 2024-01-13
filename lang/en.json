@@ -149,6 +149,7 @@
   "MonksActiveTiles.logic.loop": "Loop through Entities",
   "MonksActiveTiles.logic.method": "Redirect based on Method",
   "MonksActiveTiles.logic.checkdata": "Check data",
+  "MonksActiveTiles.logic.stoptriggers": "Stop additional tiles triggering",
 
   "MonksActiveTiles.ctrl.snap": "Snap to grid",
   "MonksActiveTiles.ctrl.select-coordinates": "Select Coordinates",
@@ -291,6 +292,7 @@
   "MonksActiveTiles.ctrl.delayactions": "Delay Actions until finished",
   "MonksActiveTiles.ctrl.time": "Time (min)",
   "MonksActiveTiles.ctrl.landingname": "Landing Name",
+  "MonksActiveTiles.ctrl.resettype": "Reset Type",
 
   "MonksActiveTiles.mode.enter": "Enter",
   "MonksActiveTiles.mode.exit": "Exit",
@@ -449,6 +451,9 @@
   "MonksActiveTiles.ping.alert": "Alert",
   "MonksActiveTiles.ping.chevron": "Chevron",
   "MonksActiveTiles.ping.arrow": "Arrow",
+
+  "MonksActiveTiles.resettype.everything": "Everything",
+  "MonksActiveTiles.resettype.token": "Token",
 
   "MonksActiveTiles.msg.prevent-teleport": "Teleporting off the map has been prevented",
   "MonksActiveTiles.msg.prevent-movement": "Moving off the map has been prevented",
