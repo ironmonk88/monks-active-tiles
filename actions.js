@@ -348,7 +348,7 @@ export class ActionManager {
                         type: "list",
                         conditional: (app) => {
                             let entity = $('input[name="data.location"]', app.element).data("value") || {};
-                            return /[a-zA-Z0-9]{16}$/.test(entity?.id) || (entity?.id || "").startsWith("tagger");
+                            return /[a-zA-Z0-9]{16}$/.test(entity?.id) || (entity?.id || "").startsWith("tagger") || (entity?.id || "") == "tile";
                         },
                         defvalue: "random"
                     },

@@ -1,3 +1,9 @@
+## Version 11.21
+
+Allow `This Tile` teleport destination to use `Random Within`, `Centered` and `Relative`
+
+
+
 ## Version 11.20
 
 Fixed issue with pan canvas to player token, will now pan for individual players rather than panning to every player.
