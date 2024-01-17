@@ -5317,7 +5317,7 @@ Hooks.on('createToken', async (document, options, userId) => {
 Hooks.once('ready', () => {
     // If this is added during the ready function then hopefully it will get added last
     Hooks.on('preUpdateToken', async (document, update, options, userId) => {
-        log('preupdate token', document, update, options);
+        //log('preupdate token', document, update, options);
 
         /*
         if (MonksActiveTiles._rejectRemaining[document.id] && options.bypass !== true) {
