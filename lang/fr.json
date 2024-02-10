@@ -75,7 +75,7 @@
   "MonksActiveTiles.action.teleport": "Teleporter",
   "MonksActiveTiles.action.showhide": "Afficher/Masquer",
   "MonksActiveTiles.action.activate": "Activer/Désactiver",
-  "MonksActiveTiles.action.alter": "Alter",
+  "MonksActiveTiles.action.alter": "Altérer",
   "MonksActiveTiles.action.playsound": "Jouer le son",
   "MonksActiveTiles.action.playlist": "Playlist",
   "MonksActiveTiles.action.stopsound": "Arrêter le son",
