@@ -324,7 +324,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.select-entity",
                         type: "select",
                         subtype: "entity",
-                        options: { show: ['token', 'within', 'players', 'previous'] },
+                        options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Token); },
                         defaultType: "tokens"
                     },
@@ -348,7 +348,7 @@ export class ActionManager {
                         type: "list",
                         conditional: (app) => {
                             let entity = $('input[name="data.location"]', app.element).data("value") || {};
-                            return /[a-zA-Z0-9]{16}$/.test(entity?.id) || (entity?.id || "").startsWith("tagger");
+                            return /[a-zA-Z0-9]{16}$/.test(entity?.id) || (entity?.id || "").startsWith("tagger") || (entity?.id || "") == "tile";
                         },
                         defvalue: "random"
                     },
@@ -361,6 +361,12 @@ export class ActionManager {
                         id: "animatepan",
                         name: "MonksActiveTiles.ctrl.animatepan",
                         type: "checkbox"
+                    },
+                    {
+                        id: "triggerremote",
+                        name: "MonksActiveTiles.ctrl.triggerremote",
+                        type: "checkbox",
+                        defvalue: false,
                     },
                     {
                         id: "deletesource",
@@ -550,6 +556,8 @@ export class ActionManager {
 
                         let teleportColour = action.data.colour || setting("teleport-colour");
 
+                        let bypass = action.data.triggerremote !== true;
+
                         if (samescene) {
                             await tokendoc._object?.stopAnimation();   //+++ need to stop the animation for everyone, even if they're not on the same scene
                             if (!tokendoc.parent.dimensions.rect.contains(newPos.x, newPos.y)) {
@@ -559,8 +567,9 @@ export class ActionManager {
                             }
 
                             //find a vacant spot
-                            if (action.data.avoidtokens)
+                            if (action.data.avoidtokens) {
                                 newPos = MonksActiveTiles.findVacantSpot(newPos, tokendoc, tokendoc.parent, newTokens, entDest, action.data.remotesnap);
+                            }
 
                             if (action.data.remotesnap) {
                                 let gs = scene.dimensions.size;
@@ -586,9 +595,9 @@ export class ActionManager {
                                 window.dragRuler.resetMovementHistory(tokendoc.combatant.combat, tokendoc.combatant.id);
                             }
 
-                            newTokens.push({ data: { x: newPos.x, y: newPos.y, width: tokendoc.width, height: tokendoc.height } });
+                            newTokens.push({ x: newPos.x, y: newPos.y, width: tokendoc.width, height: tokendoc.height });
 
-                            batch.add("update", tokendoc, { x: newPos.x, y: newPos.y, 'flags.monks-active-tiles.teleporting': true, 'flags.monks-active-tiles.current': true }, { bypass: true, animate: false, teleport: true, animation: { duration: 0 } });
+                            batch.add("update", tokendoc, { x: newPos.x, y: newPos.y, 'flags.monks-active-tiles.teleporting': true, 'flags.monks-active-tiles.current': true }, { bypass, animate: false, teleport: true, animation: { duration: 0 } });
                             //await tokendoc.update({ x: newPos.x, y: newPos.y }, { bypass: true, animate: false, teleport: true });
                         } else {
                             result.tokens = [];
@@ -618,14 +627,14 @@ export class ActionManager {
                             if (newtoken) {
                                 batch.add("update", newtoken, (action.data.preservesettings ?
                                     { x: newPos.x, y: newPos.y, img: tokendoc.texture.src, hidden: tokendoc.hidden, 'flags.monks-active-tiles.teleporting': true, 'flags.monks-active-tiles.current': true } : td),
-                                    { bypass: true, animate: false, teleport: true });
+                                    { bypass, animate: false, teleport: true });
                                 //await newtoken.update((action.data.preservesettings ? { x: newPos.x, y: newPos.y, hidden: tokendoc.hidden } : td), { bypass: true, animate: false, teleport: true });
                             } else {
                                 batch.add("create", cls, td, { parent: scene });
                                 //newtoken = await cls.create(td, { parent: scene });
                             }
 
-                            newTokens.push({ data: { x: newPos.x, y: newPos.y, width: tokendoc.width, height: tokendoc.height } });
+                            newTokens.push({ x: newPos.x, y: newPos.y, width: tokendoc.width, height: tokendoc.height });
 
                             //await newtoken.unsetFlag('monks-active-tiles', 'teleporting');
 
@@ -1040,7 +1049,7 @@ export class ActionManager {
                             let duration = (action.data?.duration ?? 5) * 1000;
                             let time = new Date().getTime() + duration;
 
-                            let rotation = parseInt(await getValue(action.data.rotation, args, entity, { prop: entity.rotation })) || 0;
+                            let rotation = parseFloat(await getValue(action.data.rotation, args, entity, { prop: entity.rotation })) || 0;
 
                             batch.add("update", entity, { rotation: rotation }, { bypass: !action.data.trigger, animate: true, animation: { duration, time } });
                         }
@@ -1469,7 +1478,7 @@ export class ActionManager {
                             //    tkn.update({ hidden: true });
 
                             //result.tokens.push(tkn);
-                            newTokens.push({ data: { x: td.x, y: td.y, width: td.width, height: td.height } });
+                            newTokens.push({ x: td.x, y: td.y, width: td.width, height: td.height });
                         }
                         let tokens = await batch.execute();
                         tokens = batch.mergeResults(tokens);
@@ -2006,6 +2015,7 @@ export class ActionManager {
                         subtype: "entity",
                         restrict: (entity) => { return entity instanceof Token; },
                         options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
+                        help: "Hurt/Heal does not use a damage type due to the differences in systems.  Use the attack action instead"
                     },
                     {
                         id: "value",
@@ -2157,7 +2167,7 @@ export class ActionManager {
                                     else if (game.system.id == "pf1")
                                         await a.applyDamage(val);
                                     else
-                                        await a.applyDamage(val, 1);
+                                        await a.applyDamage(val, { multiplier: 1 });
                                 } else {
                                     applyDamage(a, val);
                                 }
@@ -3013,12 +3023,12 @@ export class ActionManager {
 
                         const speaker = { scene: scene?.id, actor: tkn?.actor?.id || user?.character?.id, token: tkn?.id, alias: tkn?.name || user?.name };
 
-                        let content = await getValue(action.data.text, args, entity, { speaker });
-                        let flavor = await getValue(action.data.flavor, args, entity, { speaker });
-
-                        if (typeof content == "string" && content.startsWith('/')) {
-                            ui.chat.processMessage(content);
+                        if (typeof action.data.text == "string" && (action.data.text.startsWith('/') || action.data.text.startsWith('[[/'))) {
+                            ui.chat.processMessage(action.data.text);
                         } else {
+                            let content = await getValue(action.data.text, args, entity, { speaker });
+                            let flavor = await getValue(action.data.flavor, args, entity, { speaker });
+
                             let showto = action.data.showto || "everyone";
                             let showUsers = MonksActiveTiles.getForPlayers(showto, args);
 
@@ -3167,6 +3177,26 @@ export class ActionManager {
                     }
 
                     return `<span class="action-style">${i18n(trigger.name)}</span>, <span class="entity-style">${entityName}</span>${(action.data.runasgm != undefined && action.data.runasgm != 'unknown' ? ' as <span class="value-style">&lt;' + i18n(trigger.values.runas[action.data.runasgm]) + '&gt;</span>' : '')}`;
+                }
+            },
+            'runcode': {
+                name: "MonksActiveTiles.action.runcode",
+                ctrls: [
+                    {
+                        id: "code",
+                        name: "MonksActiveTiles.ctrl.code",
+                        type: "text",
+                        subtype: "multiline",
+                        required: true
+                    },
+                ],
+                fn: async (args = {}) => {
+                    const { action } = args;
+                    //Find the macro to be run, call it with the data from the trigger
+                    return await MonksActiveTiles._executeCode(args);
+                },
+                content: async (trigger, action) => {
+                    return `<span class="action-style">${i18n(trigger.name)}</span>`;
                 }
             },
             'rolltable': {
@@ -4152,7 +4182,7 @@ export class ActionManager {
                                         }
                                         if (!hasAdded) {
                                             let sheet = actor.sheet;
-                                            sheet._onDropItem({ preventDefault: () => { } }, { type: "Item", uuid: item.uuid, data: itemData });
+                                            sheet._onDropItem({ preventDefault: () => { }, target: { closest: () => { return false } } }, { type: "Item", uuid: item.uuid, data: itemData });
                                         }
 
                                         //batch.add("create", item.constructor, itemData, { parent: actor });
@@ -6601,6 +6631,7 @@ export class ActionManager {
                     const { action, value } = args;
 
                     let result = value;
+                    delete result.pause;
 
                     let actionType = action.data.action || "add";
                     if (actionType == "clear") {
@@ -6980,7 +7011,7 @@ export class ActionManager {
                         },
                         options: { show: ['token', 'within', 'players', 'previous', 'tagger'] },
                         restrict: (entity) => { return (entity instanceof Token); },
-                        help: '<span style="color: #FF0000;">This should probably be using the Current Tokens <i class="fas fa-history fa-sm"></i> instead of the Triggering Tokens</span>',
+                        help: '<span style="color: #FF0000;">This should probably be using the Current Tokens <i class="fas fa-arrow-up-from-bracket fa-sm"></i> instead of the Triggering Tokens</span>',
                         helpConditional: (app) => {
                             let entity = $('input[name="data.entity"]', app.element).data("value") || {};
                             return entity?.id == "token";
@@ -7552,7 +7583,7 @@ export class ActionManager {
                             let conditions = CONFIG.statusEffects;
                             if (game.system.id == 'pf2e') {
                                 conditions = game.pf2e.ConditionManager.conditions;
-                                conditions = [...conditions].map(e => { return { id: e[0], label: e[1].name }; });
+                                conditions = [...conditions].map(e => { return { id: e[0], label: e[1].name }; }).filter((value, index, array) => array.findIndex(a => a.label === value.label) === index);
                             }
                             for (let effect of conditions.sort((a, b) => { return String(a.name || a.label).localeCompare(b.name || b.label) })) { //(i18n(a.label) > i18n(b.label) ? 1 : (i18n(a.label) < i18n(b.label) ? -1 : 0))
                                 result[effect.id] = i18n(effect.name || effect.label);
@@ -7589,6 +7620,8 @@ export class ActionManager {
                             return entity.actor.itemTypes.condition.some((condition) => {
                                 return condition.slug === effect.slug;
                             });
+                        } else if (game.system.id == 'dnd5e') {
+                            return entity.actor.statuses.has(effect.id);
                         } else {
                             return (entity.actor.effects.find(e => e.getFlag("core", "statusId") === effect.id) != undefined);
                         }
@@ -7748,7 +7781,8 @@ export class ActionManager {
                     const { tile, tokens, action, userid, value, method, change } = args;
 
                     let name = await getValue(action.data?.name, args, null, { operation: 'compare' });
-                    let cando = await getValue(action.data?.value, args, null, { prop: !!name ? getProperty(value, name) : "", operation: 'compare' });
+                    let prop = !!name ? getProperty(value, name) ?? getProperty(args, name) : "";
+                    let cando = await getValue(action.data?.value, args, null, { prop, operation: 'compare' });
 
                     if (cando)
                         return { continue: true };

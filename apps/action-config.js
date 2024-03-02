@@ -21,7 +21,7 @@ export class ActionConfig extends FormApplication {
         let player = game.actors.find(a => a.type == 'character');
         if (player) {
             try {
-            let attributes = getDocumentClass("Token").getTrackedAttributes(player.system ?? {});
+                let attributes = getDocumentClass("Token").getTrackedAttributes(player.system ?? {});
                 if (attributes)
                     this.tokenAttr = (this.tokenAttr || []).concat(attributes.value.concat(attributes.bar).map(a => a.join('.')));
             } catch {}
@@ -30,8 +30,12 @@ export class ActionConfig extends FormApplication {
         let tile = canvas.scene.tiles?.contents[0];
         if (tile) {
             try {
-                this.tileAttr = (ActionConfig.getTileTrackedAttributes(tile ?? {}) || []).map(a => a.join('.'));
-            } catch { }
+                this.tileAttr = (ActionConfig.getTileTrackedAttributes(tile.schema ?? {}) || [])
+                    .filter(a => a && a.length > 0)
+                    .map(a => a.join('.'));
+            } catch (e) {
+                log(e);
+            }
         }
 
         this.autoanchors = [
@@ -160,26 +164,28 @@ export class ActionConfig extends FormApplication {
         return fp.browse();
     }
 
-    static getTileTrackedAttributes(data, _path = []) {
-        if (!data)
-            return {};
+    static getTileTrackedAttributes(schema, _path = [], depth = 0) {
+        if (!schema)
+            return [];
+        if (depth > 5)
+            return [];
 
         // Track the path and record found attributes
         const attributes = [];
 
-        // Recursively explore the object
-        for (let [k, v] of Object.entries(data)) {
-            let p = _path.concat([k]);
-
-            // Check objects for both a "value" and a "max"
-            if (v instanceof Object) {
-                const inner = this.getTileTrackedAttributes(data[k], p);
-                attributes.push(...inner);
-            }
-
-            // Otherwise identify values which are numeric or null
-            else if (Number.isNumeric(v) || (v === null)) {
+        for (const [name, field] of Object.entries(schema.fields)) {
+            const p = _path.concat([name]);
+            if (field instanceof foundry.data.fields.NumberField)
                 attributes.push(p);
+            else {
+                const isSchema = field instanceof foundry.data.fields.SchemaField;
+                const isModel = field instanceof foundry.data.fields.EmbeddedDataField;
+                if (isSchema || isModel) {
+                    const schema = isModel ? field.model.schema : field;
+
+                    const inner = this.getTileTrackedAttributes(schema, p, depth + 1);
+                    attributes.push(...inner);
+                }
             }
         }
         return attributes;
@@ -204,19 +210,23 @@ export class ActionConfig extends FormApplication {
         } else if (data.type == "RollTable" && action == "rolltable") {
             let id = (data.pack ? `Compendium.${data.pack}.${data.id}` : `RollTable.${data.id}`);
             $('input[name="data.rolltableid"]').val(id).data("value", { id });
+        } else if (data.type == "Actor" && action == "attack") {
+            let field = $('input[name="data.actor"]', this.element);
+            if (field.length == 0)
+                return;
+
+            let actor = await fromUuid(data.uuid);
+            if (!actor) return;
+
+            this.waitingfield = field;
+            ActionConfig.updateSelection.call(this, { id: actor.uuid, name: actor.name });
         } else if (data.type == "Item" && action == "additem") {
             let field = $('input[name="data.item"]', this.element);
 
             if (field.length == 0)
                 return;
 
-            let item;
-            if (data.pack) {
-                const pack = game.packs.get(data.pack);
-                if (!pack) return;
-                item = await pack.getDocument(data.id);
-            } else
-                item = game.items.get(data.id);
+            let item = await fromUuid(data.uuid);
 
             if (!item) return;
 

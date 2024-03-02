@@ -1,3 +1,41 @@
+## Version 11.22
+
+Added tagger to teleport options
+
+Updated teleport so selecting This Tile will allow you to set the position within the tile
+
+Added the option to allow a teleport to trigger the remote Tile
+
+Fixed the code finding a vacant spot when teleporting Tokens
+
+Fixed issue with Hurt/Heal in D&D 5e
+
+Fixed issue adding an item to a character in D&D 5e
+
+Fixed issue with filtering conditions in D&D 5e
+
+Fixed issue with setting the current entities not resuming after a pause
+
+Fixed issue with processing the chat message text when it starts with dice roll notation
+
+Added the action to run code in case you don't want to create a macro to store the code
+
+Fixed the help icon in the entity count message
+
+Removed the additional conditions in the PF2e list of conditions
+
+Updated the check value action to allow checking values that aren't specifically in the list of values
+
+Fixed issues with getting the tracked attributes in the action config dialog
+
+Allow drag and drop of actors onto the Attack action
+
+Fixed issue with sorting triggers causing an error message
+
+Fixed issue with playing a sound only on a specific Scene
+
+Fixed issue with stop token movement when a player moves the token
+
 ## Version 11.21
 
 Allow `This Tile` teleport destination to use `Random Within`, `Centered` and `Relative`

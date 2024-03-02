@@ -42,7 +42,10 @@ export const WithActiveTileConfig = (TileConfig) => {
             let data = MonksActiveTiles.mergeArray(super.defaultOptions, {
                 classes: ["monks-active-tiles"],
                 scrollY: ["ol.item-list"],
-                dragDrop: [{ dragSelector: ".item", dropSelector: ".items-list" }, { dragSelector: ".item", dropSelector: ".files-list" }],
+                dragDrop: [
+                    { dragSelector: ".items-list .item-list .item", dropSelector: ".items-list .item-list" },
+                    { dragSelector: ".files-list .file-list .item", dropSelector: ".files-list .file-list" }
+                ],
                 tabs: [{ navSelector: '.tabs[data-group="triggers"]', contentSelector: '.tab[data-tab="triggers"]', initial: "trigger-setup" }]
             });
             data.tabs[0].navSelector = ".sheet-tabs:not(.trigger-tabs)";

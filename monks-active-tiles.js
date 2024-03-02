@@ -1091,8 +1091,41 @@ export class MonksActiveTiles {
         }*/
     }
 
+    static async _executeCode(args = {}) {
+        const { tile, tokens, action, userid, values, value, method, pt, change, event } = args;
+
+        for (let i = 0; i < tokens.length; i++) {
+            tokens[i] = (typeof tokens[i] == 'string' ? await fromUuid(tokens[i]) : tokens[i]);
+        }
+
+        let tkn = tokens[0];
+
+        let user = game.users.get(userid);
+
+        let context = {
+            actor: tkn?.actor,
+            token: tkn?.object,
+            character: user.character,
+            tile: tile.object,
+            user: user,
+            canvas: canvas,
+            scene: canvas.scene,
+            values: values,
+            value: value,
+            tokens: tokens,
+            method: method,
+            pt: pt,
+            actionId: args._id,
+            change: change,
+            event: event
+        };
+        
+
+        MonksActiveTiles._execute.call({ command: action.data.code } , context);
+    }
+
     static async _execute(context) {
-        if (setting('use-core-macro')) {
+        if (setting('use-core-macro') && this instanceof Macro) {
             return await this.execute(context);
         } else {
             try {
@@ -1842,34 +1875,38 @@ export class MonksActiveTiles {
 
     static findVacantSpot(pos, token, scene, newTokens, dest, snap) {
         let tokenList = scene.tokens.contents.concat(...newTokens);
-        let tokenCollide = function (pt) {
-            let ptWidth = (token.width * scene.dimensions.size) / 2;
-            let checkpt = duplicate(pt);
-            if (snap) {
-                checkpt.x += ((Math.abs(token.width) * scene.dimensions.size) / 2);
-                checkpt.y += ((Math.abs(token.height) * scene.dimensions.size) / 2);
-            }
+        let tokenWidth = (token.width * scene.dimensions.size);
+        let tokenHeight = (token.height * scene.dimensions.size);
 
-            let found = tokenList.find(tkn => {
-                if (token.id == tkn.id)
+        log("Token List", tokenList)
+
+        let rect = {
+            x: dest?.dest?.x ?? pos.x - (scene.dimensions.size * 10),
+            y: dest?.dest?.y ?? pos.y - (scene.dimensions.size * 10),
+            width: dest.width ?? (scene.dimensions.size * 20),
+            height: dest.height ?? (scene.dimensions.size * 20)
+        }
+
+        let tokenCollide = function (checkpt) {
+            let ptx2 = checkpt.x + tokenWidth;
+            let pty2 = checkpt.y + tokenHeight;
+
+            let found = tokenList.filter(tkn => {
+                if (token.id == tkn.id || !tkn.x || !tkn.y)
                     return false;
 
-                let tokenX = tkn.x + ((Math.abs(tkn.width) * scene.dimensions.size) / 2);
-                let tokenY = tkn.y + ((Math.abs(tkn.height) * scene.dimensions.size) / 2);
+                let tknx2 = tkn.x + (Math.abs(tkn.width) * scene.dimensions.size);
+                let tkny2 = tkn.y + (Math.abs(tkn.height) * scene.dimensions.size);
 
-                let distSq = parseInt(Math.sqrt(Math.pow(checkpt.x - tokenX, 2) + Math.pow(checkpt.y - tokenY, 2)));
-                let radSumSq = ((Math.abs(tkn.width) * scene.dimensions.size) / 2) + ptWidth;
+                // check if the two rectangles overlap
+                let result = (checkpt.x >= tknx2 || ptx2 <= tkn.x || checkpt.y >= tkny2 || pty2 <= tkn.y);
+                if (!result)
+                    log("Token Collide", { x: checkpt.x, y: checkpt.y, x2: ptx2, y2: pty2 }, { x: tkn.x, y: tkn.y, x2: tknx2, y2: tkny2 }, tkn, token);
 
-                let result = (distSq < radSumSq - 5);
-                
-                //log('check', count, dist, tkn.name, distSq, radSumSq, checkpt, tkn, result);
-                //gr.lineStyle(2, 0x808080).drawCircle(tokenX + debugoffset.x, tokenY + debugoffset.y, ((tkn.width * scene.dimensions.size) / 2));
-                
-
-                return result;
+                return !result;
             })
 
-            return found != undefined;
+            return found.length;
         }
 
         let wallCollide = function (ray) {
@@ -1880,106 +1917,48 @@ export class MonksActiveTiles {
             return false
         }
 
-        let outsideTile = function (pt) {
-            if (dest && dest.width && dest.height) {
-                let checkpt = duplicate(pt);
-                if (snap) {
-                    checkpt.x += ((Math.abs(token.width) * scene.dimensions.size)/ 2);
-                    checkpt.y += ((Math.abs(token.height) * scene.dimensions.size) / 2);
-                }
-
-                //gr.lineStyle(2, 0x808080).drawRect(dest.x + debugoffset.x, dest.y + debugoffset.y, dest.width, dest.height);
-                return (checkpt.x < dest.x || checkpt.y < dest.y || checkpt.x > dest.x + Math.abs(dest.width) || checkpt.y > dest.y + Math.abs(dest.height));
-            }
-            return false;
+        let outsideTile = function (checkpt) {
+            return (checkpt.x < rect.x || checkpt.y < rect.y || checkpt.x > rect.x + Math.abs(rect.width) || checkpt.y > rect.y + Math.abs(rect.height));
         }
 
-        /*let debugoffset = (scene != undefined ? { x: -(pos.x - scene.dimensions.paddingX), y: -(pos.y - scene.dimensions.paddingY) } : { x: 0, y: 0 });
-        let gr = new PIXI.Graphics();
-        if (MonksActiveTiles.debugGr)
-            canvas.tokens.removeChild(MonksActiveTiles.debugGr);
-        MonksActiveTiles.debugGr = gr;
-        canvas.tokens.addChild(gr);
-        gr.beginFill(0x0000ff).drawCircle(pos.x + debugoffset.x, pos.y + debugoffset.y, 4).endFill();*/
-
-        let count = 0;
-        const tw = (Math.abs(token.width) * scene.dimensions.size);
-        let dist = 0;
-        let angle = null;
-        let rotate = 1; //should be set first thing, but if it isn't just make sure it's not 0
-        let spot = duplicate(pos);
-        let checkspot = duplicate(spot);
+        let positions = [];
+        let snappos = { x: pos.x.toNearest(scene.dimensions.size), y: pos.y.toNearest(scene.dimensions.size) };
+        let offset = { x: pos.x - snappos.x, y: pos.y - snappos.y };
+        // If snapping to grid, then align to the grid, if not, then align to pos
         if (snap) {
-            checkspot.x -= ((Math.abs(token.width) * scene.dimensions.size) / 2);
-            checkspot.y -= ((Math.abs(token.height) * scene.dimensions.size) / 2);
-            checkspot.x = checkspot.x.toNearest(scene.dimensions.size);
-            checkspot.y = checkspot.y.toNearest(scene.dimensions.size);
+            offset = { x: 0, y: 0 };
         }
-        let ray = new Ray({ x: pos.x, y: pos.y }, { x: checkspot.x, y: checkspot.y });
 
-        while (tokenCollide(checkspot) || wallCollide(ray) || outsideTile(checkspot)) {
-
-            //log("Checking Position:", checkspot, tknRes, wallRes, tileRes);
-
-            count++;
-            //move the point along
-            if (angle == undefined || angle > 2 * Math.PI) {
-                dist += scene.dimensions.size;
-                angle = 0;
-                rotate = Math.atan2(tw, dist); //What's the angle to move, so at this distance, the arc travles the token width
-            } else {
-                //rotate
-                angle += rotate;
-            }
-            spot.x = pos.x + (Math.cos(angle) * dist);
-            spot.y = pos.y + (-Math.sin(angle) * dist);
-            checkspot = duplicate(spot);
-
-            //need to check that the resulting snap to grid isn't going to put this out of bounds
-            if (snap) {
-                checkspot.x -= ((Math.abs(token.width) * scene.dimensions.size) / 2);
-                checkspot.y -= ((Math.abs(token.height) * scene.dimensions.size) / 2);
-                checkspot.x = checkspot.x.toNearest(scene.dimensions.size);
-                checkspot.y = checkspot.y.toNearest(scene.dimensions.size);
-
-                ray.B.x = checkspot.x + ((Math.abs(token.width) * scene.dimensions.size) / 2);
-                ray.B.y = checkspot.y + ((Math.abs(token.height) * scene.dimensions.size) / 2);
-            } else {
-                ray.B.x = checkspot.x;
-                ray.B.y = checkspot.y;
-            }
-
-            //for testing
-            /*
-            log('Checking', checkspot, dest);
-
-            let collide = wallCollide(ray);
-            let tcollide = tokenCollide(checkspot);
-            let outside = outsideTile(checkspot);
-
-            if (spot.x != checkspot.x || spot.y != checkspot.y) {
-                gr.beginFill(0x800080)
-                    .lineStyle(2, 0x800080)
-                    .moveTo(spot.x + debugoffset.x, spot.y + debugoffset.y)
-                    .lineTo(checkspot.x + debugoffset.x, checkspot.y + debugoffset.y)
-                    .drawCircle(spot.x + debugoffset.x, spot.y + debugoffset.y, 4).endFill();
-            }
-            gr.beginFill(collide ? 0xff0000 : (tcollide ? 0xffff00 : 0x00ff00)).drawCircle(checkspot.x + debugoffset.x, checkspot.y + debugoffset.y, 4).endFill();
-
-            log('checkspot', checkspot, dist, collide, tcollide, outside);*/
-            
-            if (count > 50) {
-                //if we've exceeded the maximum spots to check then set it to the original spot
-                spot = pos;
-                break;
+        // Find the array of spots that are available, remove ones that are blocked by a wall
+        for (let x = rect.x; x < rect.x + Math.abs(rect.width); x += scene.dimensions.size) {
+            for (let y = rect.y; y < rect.y + Math.abs(rect.height); y += scene.dimensions.size) {
+                let spot = { x: x + offset.x, y: y + offset.y };
+                let wallRes = wallCollide(new Ray({ x: pos.x, y: pos.y }, { x: spot.x + (tokenWidth / 2), y: spot.y + (tokenHeight / 2) }));
+                let tileRes = outsideTile(spot);
+                if (!wallRes && !tileRes)
+                    positions.push(spot);
             }
         }
 
-        //log("Found spot", spot, count, scene.tokens.contents.length);
+        // Run through and mark the ones that are already taken by a token
+        for (let position of positions) {
+            let taken = tokenCollide(position);
+            position.tokens = taken;
+        }
 
-        //gr.lineStyle(2, 0x00ff00).drawCircle(spot.x + debugoffset.x, spot.y + debugoffset.y, 4);
+        // Sort by tokens this token will cover, then by distance to pos
+        positions = positions.sort((a, b) => {
+            if (a.tokens == b.tokens)
+                return (Math.abs(a.x - pos.x) + Math.abs(a.y - pos.y)) - (Math.abs(b.x - pos.x) + Math.abs(b.y - pos.y));
+            return a.tokens - b.tokens;
+        });
 
-        return spot;
+        log("Positions", positions);
+
+        if (positions.length == 0)
+            return pos;
+
+        return positions[0];
     }
 
     static async inlineRoll(value, rgx, chatMessage = true, rollMode = "selfroll", token) {
@@ -2467,7 +2446,7 @@ export class MonksActiveTiles {
 
                                 if (docs.length) {
                                     docs = docs.sort((a, b) => {
-                                        return a.tile.z - b.tile.z;
+                                        return a.z - b.z;
                                     });
                                     let results = {};
                                     for (let doc of docs) {
@@ -3156,6 +3135,17 @@ export class MonksActiveTiles {
 
     static async onMessage(data) {
         switch (data.action) {
+            case 'runtriggers': {
+                if (game.user.isTheGM) {
+                    MonksActiveTiles.runTriggers(data.triggers, data.senderId);
+                }
+            } break;
+            case 'cancelruler': {
+                if (game.user.id == data.userid) {
+                    let ruler = canvas.controls.getRulerForUser(game.user.id);
+                    if (ruler) ruler.cancelMovement = true;
+                }
+            } break;
             case 'trigger': {
                 if (game.user.isTheGM) {
                     let tokens = data.tokens;
@@ -3304,7 +3294,7 @@ export class MonksActiveTiles {
                 }
             } break;
             case 'playsound': {
-                if (data.users.includes(game.user.id)) {
+                if (data.users.includes(game.user.id) && (data.sceneid == null || data.sceneid == canvas.scene.id)) {
                     let tile = await fromUuid(data.tileid);
                     if (tile) {
                         if (tile.soundeffect != undefined && tile.soundeffect[data.actionid] != undefined) {
@@ -4341,7 +4331,7 @@ export class MonksActiveTiles {
             this._textureBorderPoints = points;
             this._texturePolygon = new PIXI.Polygon(this._textureBorderPoints);
             if (CONFIG.debug.tiletriggers) {
-                if (this._debugBorder)
+                if (this._debugBorder && this._debugBorder.parent)
                     this._debugBorder.destroy();
                 this._debugBorder = this.addChild(new PIXI.Graphics());
                 this._debugBorder.lineStyle(2, 0xff0000).drawPolygon(this._texturePolygon);
@@ -4633,7 +4623,8 @@ export class MonksActiveTiles {
             //return (stoppage.length == 0 ? { stop: false } : (stoppage.find(a => a.data?.snap) ? 'snap' : true));
         }
 
-        TileDocument.prototype.trigger = async function ({ tokens = [], userid = game.user.id, method, pt, stopCallback, options = {} } = {}) {
+        TileDocument.prototype.trigger = async function (args) {
+            let { tokens = [], userid = game.user.id, method, pt, stopdata, options = {} } = args;
             if (MonksActiveTiles.allowRun) {
                 let triggerData = this.flags["monks-active-tiles"];
 
@@ -4668,6 +4659,7 @@ export class MonksActiveTiles {
                     pt: pt,
                     darkness: canvas.darknessLevel,
                     time: MonksActiveTiles.getWorldTime(),
+                    stopdata
                 }, options);
                 if (options.event)
                     context.event = options.event;
@@ -4755,7 +4747,7 @@ export class MonksActiveTiles {
                 }
                 this._matt_triggertime = Date.now();
 
-                let actionResult = await this.runActions(context, Math.max(start, 0), null, stopCallback);
+                let actionResult = await this.runActions(context, Math.max(start, 0), null);
 
                 for (let tkn of tokens) {
                     setProperty(tkn, "flags.monks-active-tiles.triggerPt", null);
@@ -4773,7 +4765,7 @@ export class MonksActiveTiles {
             }
         }
 
-        TileDocument.prototype.runActions = async function (context, start = 0, resume = null, stopCallback = null) {
+        TileDocument.prototype.runActions = async function (context, start = 0, resume = null) {
             if (context._id == undefined)
                 context._id = makeid();
             let actions = this.flags["monks-active-tiles"]?.actions || [];
@@ -4820,8 +4812,10 @@ export class MonksActiveTiles {
                                 delete context.value.goto;
                                 context.values.push(mergeObject(result, { action: action }));
                                 context.stopmovement = context.stopmovement || result.stopmovement;
-                                if (!!context.stopmovement && stopCallback)
-                                    stopCallback(context.stopmovement);
+                                if (!!context.stopmovement && context.stopdata?.callback) {
+                                    context.stopdata.stopmovement = context.stopmovement;
+                                    context.stopdata.callback(context.stopdata);
+                                }
 
                                 if (result.pause) {
                                     debug("Pausing actions");
@@ -4864,8 +4858,10 @@ export class MonksActiveTiles {
                                                     if (actionResult?.stoptriggers)
                                                         context.stoptriggers = true;
                                                     context.stopmovement = context.stopmovement || result.stopmovement;
-                                                    if (!!context.stopmovement && stopCallback)
-                                                        stopCallback(context.stopmovement);
+                                                    if (!!context.stopmovement && context.stopdata?.callback) {
+                                                        context.stopdata.stopmovement = context.stopmovement;
+                                                        context.stopdata.callback(context.stopdata);
+                                                    }
                                                 }
                                             } else {
                                                 debug("Skipping landing due to Tile being inactive", goto.tag);
@@ -4923,6 +4919,8 @@ export class MonksActiveTiles {
                 log(`Unable to find save state: ${saveid}`);
                 return;
             }
+
+            delete savestate.value.pause;
 
             this.runActions(savestate, savestate.index, Object.assign({}, result));
         }
@@ -5197,6 +5195,94 @@ export class MonksActiveTiles {
         }
         );
     }
+
+    static async runTriggers(triggeringList, userId) {
+        let clearRemainingTriggers = function () {
+            for (let trigger of triggeringList) {
+                if (trigger.timerID) {
+                    window.clearTimeout(trigger.timerID);
+                }
+                trigger.stop = true;
+            }
+        }
+
+        let stopMovement = async function (data) {
+            let document = data.document;
+            let endPt = data.pt;
+            if (data.stopmovement == "snap") {
+                let snapPoint = Ray.towardsPoint(endPt, data.dest, document.parent.dimensions.size / 3);
+                endPt = mergeObject(endPt, canvas.grid.getSnappedPosition(snapPoint.B.x, snapPoint.B.y));
+                log("Snapping to", endPt);
+            }
+            if (game.modules.get("drag-ruler")?.active) {
+                if (game.user.id == userId) {
+                    let ruler = canvas.controls.getRulerForUser(game.user.id);
+                    if (ruler) ruler.cancelMovement = true;
+                } else {
+                    MonksActiveTiles.emit('cancelruler', { userId: userId });
+                }
+            }
+            let animation = CanvasAnimation.getAnimation(document._object?.animationName);
+            if (animation) {
+                log("Found animation");
+                let x = animation.attributes.find(a => a.attribute == "x");
+                if (x)
+                    x.to = endPt.x;
+                let y = animation.attributes.find(a => a.attribute == "y");
+                if (y)
+                    y.to = endPt.y;
+            }
+
+            await document.update(endPt, { bypass: true, animate: true });
+        }
+
+        for (let triggerObject of triggeringList) {
+            let tile = await fromUuid(triggerObject.tileId);
+            triggerObject.tile = tile;
+            let document = await fromUuid(triggerObject.documentId);
+            triggerObject.document = document;
+
+            triggerObject.args.tokens = [document];
+
+            if (!getProperty(tile, "flags.monks-active-tiles.active") || triggerObject.stop)
+                continue;
+
+            if (triggerObject.duration > 0) {
+                triggerObject.timerId = window.setTimeout(async function () {
+                    //log('Tile is triggering', when, document);
+                    if (getProperty(tile, "flags.monks-active-tiles.active")) {
+                        triggerObject.args.stopdata = {
+                            tile: triggerObject.tile,
+                            document: triggerObject.document,
+                            pt: triggerObject.end,
+                            dest: triggerObject.dest,
+                            when: triggerObject.when,
+                            callback: async (data) => {
+                                if (!!data.stopmovement) {
+                                    clearRemainingTriggers();
+                                    await stopMovement(data);
+                                }
+                            }
+                        }
+                        let triggerResult = await triggerObject.tile.trigger(triggerObject.args);
+                        if (triggerResult?.value.stoptriggers)
+                            clearRemainingTriggers();
+                    }
+                }, triggerObject.duration);
+            }
+
+            if (!triggerObject.timerId) {
+                let triggerResult = await tile.trigger(triggerObject.args);
+                let isBreak = false;
+                if (triggerResult?.stoptriggers) {
+                    isBreak = true;
+                    clearRemainingTriggers();
+                }
+                if (isBreak)
+                    break;
+            }
+        }
+    }
 }
 
 Hooks.on('init', async () => {
@@ -5326,43 +5412,7 @@ Hooks.once('ready', () => {
             options.animate = false;
         }*/
         let triggeringList = [];
-        let clearRemainingTriggers = function () {
-            for (let trigger of triggeringList) {
-                if (trigger.timerID) {
-                    window.clearTimeout(trigger.timerID);
-                }
-                trigger.stop = true;
-            }
-        }
-
-        let stopMovement = async function (stopmovement = false, data) {
-            let endPt = data.pt;
-            if (stopmovement == "snap") {
-                let snapPoint = Ray.towardsPoint(endPt, data.dest, document.parent.dimensions.size / 3);
-                endPt = mergeObject(endPt, canvas.grid.getSnappedPosition(snapPoint.B.x, snapPoint.B.y));
-                log("Snapping to", endPt);
-            }
-            if (game.modules.get("drag-ruler")?.active) {
-                let ruler = canvas.controls.getRulerForUser(game.user.id);
-                if (ruler) ruler.cancelMovement = true;
-                options.animate = false;
-
-            }
-            let animation = CanvasAnimation.getAnimation(document._object?.animationName);
-            if (animation) {
-                log("Found animation");
-                let x = animation.attributes.find(a => a.attribute == "x");
-                if (x)
-                    x.to = endPt.x;
-                let y = animation.attributes.find(a => a.attribute == "y");
-                if (y)
-                    y.to = endPt.y;
-            }
-            update.x = endPt.x;
-            update.y = endPt.y;
-
-            await document.update(endPt, { bypass: true, animate: true });
-        }
+        
 
         //make sure to bypass if the token is being dropped somewhere, otherwise we could end up triggering a lot of tiles
         if ((update.x != undefined || update.y != undefined || update.elevation != undefined || update.rotation != undefined) && options.bypass !== true && options.animate !== false) { //(!game.modules.get("drag-ruler")?.active || options.animate)) {
@@ -5489,7 +5539,6 @@ Hooks.once('ready', () => {
                     let original = { x: update.x || document.x, y: update.y || document.y };
                     for (let when of availableTriggers) {
                         let triggerPt = tile.getTriggerPoints(when, document, collisions, start, dest);
-                        let timerId = null;
                         if ((when == "enter" || when == "exit" || when == "stop") && (triggerPt == undefined || (triggerPt.x == tokenPos.x && triggerPt.y == tokenPos.y))) {
                             // move on to the next trigger because being on the line does not trigger an enter or exit.
                             // or it's an enter or exit, and there's not a coresponding triggering point
@@ -5498,13 +5547,13 @@ Hooks.once('ready', () => {
 
                         let dist = Math.hypot(triggerPt.x - tokenPos.x, triggerPt.y - tokenPos.y);
                         let triggerObject = {
-                            tile,
+                            tileId: tile.uuid,
+                            documentId: document.uuid,
                             when,
                             dist,
-                            timerId,
                             end: { x: triggerPt.x - tokenMidX, y: triggerPt.y - tokenMidY },
                             dest,
-                            args: { tokens: [document], method: when, pt: triggerPt, options: { original, elevation, rotation, src: start } }
+                            args: { method: when, pt: triggerPt, options: { original, elevation, rotation, src: start } }
                         };
                         triggeringList.push(triggerObject);
 
@@ -5515,30 +5564,9 @@ Hooks.once('ready', () => {
                             const speed = s * (6.2 + (when == "exit" ? 0.3 : 0));
                             const duration = (ray.distance * 1000) / speed;
                             
-
-                            //log('Tile has registered', when, duration, start, triggerPt, document);
-
                             if (duration > 0) {
                                 // We need to fire when the token gets to the trigger point
                                 triggerObject.duration = duration;
-                                triggerObject.timerId = window.setTimeout(async function () {
-                                    //log('Tile is triggering', when, document);
-                                    if (!triggerObject.stop && getProperty(triggerObject.tile, "flags.monks-active-tiles.active")) {
-                                        if (!triggerObject.stopping) {
-                                            mergeObject(triggerObject.args, {
-                                                stopCallback: async (stopmovement) => {
-                                                    if (!!stopmovement) {
-                                                        clearRemainingTriggers();
-                                                        await stopMovement(stopmovement, { tile, pt: triggerObject.end, dest: triggerObject.dest, when: triggerObject.when });
-                                                    }
-                                                }
-                                            })
-                                        }
-                                        let triggerResult = await triggerObject.tile.trigger(triggerObject.args);
-                                        if (triggerResult?.value.stoptriggers)
-                                            clearRemainingTriggers();
-                                    }
-                                }, duration);
                             }
                         }
                     }
@@ -5553,45 +5581,11 @@ Hooks.once('ready', () => {
                     if (a.when != b.when) return triggerOrder[a.when] - triggerOrder[b.when];
                     return b.tile.z - a.tile.z;
                 });
-                /*
-                let stopping = false;
-                for (let i = 0; i < sorted.length; i++) {
-                    let s = sorted[i];
 
-                    if (stopping) {
-                        s.stop = true;
-                        if (s.timerID) {
-                            window.clearTimeout(s.timerID);
-                        }
-                    } else {
-                        // check to see if any of these triggers have a confirmed stop, and clear any after that, and stop the movement
-                        if (s.when == "enter" || s.when == "exit") {
-                            let stoppage = s.tile.checkStop();
-                            if (!!stoppage) {
-                                stopping = true;
-                                //s.stopping = true;
-                                //await stopMovement(stoppage, s.end);
-                            }
-                            log('stoppage', stoppage);
-                        }
-                    }
-                }
-                */
-                log('triggeringList', sorted);
-                for (let s of sorted) {
-                    if (!getProperty(s.tile, "flags.monks-active-tiles.active") || s.stop)
-                        continue;
-
-                    if (!s.timerId) {
-                        let triggerResult = await s.tile.trigger(s.args);
-                        let isBreak = false;
-                        if (triggerResult?.stoptriggers) {
-                            isBreak = true;
-                            clearRemainingTriggers();
-                        }
-                        if (isBreak)
-                            break;
-                    }
+                if (MonksActiveTiles.allowRun) {
+                    MonksActiveTiles.runTriggers(triggeringList, game.user.id);
+                } else {
+                    MonksActiveTiles.emit('runtriggers', { triggers: triggeringList });
                 }
             }
         }

@@ -128,6 +128,7 @@
   "MonksActiveTiles.action.gametime": "Game Time",
   "MonksActiveTiles.action.shuffle": "Shuffle Collection",
   "MonksActiveTiles.action.preloadtileimage": "Preload Tile Images",
+  "MonksActiveTiles.action.runcode": "Run Code",
 
   "MonksActiveTiles.filter.distance": "Filter tokens by distance",
   "MonksActiveTiles.filter.exists": "Check entity count",
@@ -293,6 +294,8 @@
   "MonksActiveTiles.ctrl.time": "Time (min)",
   "MonksActiveTiles.ctrl.landingname": "Landing Name",
   "MonksActiveTiles.ctrl.resettype": "Reset Type",
+  "MonksActiveTiles.ctrl.triggerremote": "Trigger at Destination",
+  "MonksActiveTiles.ctrl.code": "Code",
 
   "MonksActiveTiles.mode.enter": "Enter",
   "MonksActiveTiles.mode.exit": "Exit",
