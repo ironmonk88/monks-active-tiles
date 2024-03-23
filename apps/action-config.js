@@ -89,7 +89,8 @@ export class ActionConfig extends FormApplication {
             height: 'auto',
             dragDrop: [
                 { dragSelector: ".document.actor", dropSelector: ".action-container" },
-                { dragSelector: ".document.item", dropSelector: ".action-container" }
+                { dragSelector: ".document.item", dropSelector: ".action-container" },
+                { dragSelector: ".items-list .button-list .file-row", dropSelector: ".items-list .button-list" }
             ]
         });
     }
@@ -191,6 +192,25 @@ export class ActionConfig extends FormApplication {
         return attributes;
     }
 
+    _onDragStart(event) {
+        let li = event.currentTarget.closest(".file-row");
+        let list = event.currentTarget.closest(".items-list");
+        if (list) {
+            const dragData = {
+                type: "button",
+                tileId: this.object.id,
+                collection: list.dataset.collection,
+                id: li.dataset.id
+            };
+            event.dataTransfer.setData("text/plain", JSON.stringify(dragData));
+            this._dragType = dragData.type;
+        }
+    }
+
+    _canDragStart(selector) {
+        return true;
+    }
+
     async _onDrop(event) {
         let data;
         try {
@@ -232,6 +252,24 @@ export class ActionConfig extends FormApplication {
 
             this.waitingfield = field;
             ActionConfig.updateSelection.call(this, { id: item.uuid, name: (item?.parent?.name ? item.parent.name + ": " : "") + item.name });
+        } else if (data.type == "button") {
+            // Call the drop handler
+            if (target && target.dataset.id) {
+                let items = duplicate(this.buttonlist);
+
+                if (data.id === target.dataset.id) return; // Don't drop on yourself
+
+                let from = items.findIndex(a => a.id == data.id);
+                let to = items.findIndex(a => a.id == target.dataset.id);
+                log('from', from, 'to', to);
+                items.splice(to, 0, items.splice(from, 1)[0]);
+
+                this.object.flags["monks-active-tiles"].buttonlist = items;
+                if (from < to)
+                    $('.item[data-id="' + data.id + '"]', this.element).insertAfter(target);
+                else
+                    $('.item[data-id="' + data.id + '"]', this.element).insertBefore(target);
+            }
         } else {
             //check to see if there's an entity field on the form, or an item field if it's adding an item.
             let field = $(`input[name="data.${action == "attack" ? "actor" : "entity"}"]`, this.element);

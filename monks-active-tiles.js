@@ -2616,7 +2616,8 @@ export class MonksActiveTiles {
 
         let _onRightClick = function (wrapped, ...args) {
             let event = args[0];
-            MonksActiveTiles.canvasClick.call(this, event, 'rightclick');
+            if (!MonksActiveTiles.rightClickClicked)
+                MonksActiveTiles.canvasClick.call(this, event, 'rightclick');
             wrapped(...args);
         }
 
@@ -5415,7 +5416,7 @@ Hooks.once('ready', () => {
         
 
         //make sure to bypass if the token is being dropped somewhere, otherwise we could end up triggering a lot of tiles
-        if ((update.x != undefined || update.y != undefined || update.elevation != undefined || update.rotation != undefined) && options.bypass !== true && options.animate !== false) { //(!game.modules.get("drag-ruler")?.active || options.animate)) {
+        if ((update.x != undefined || update.y != undefined || update.elevation != undefined || update.rotation != undefined) && options.bypass !== true && (options.animate !== false || options.teleport)) { //(!game.modules.get("drag-ruler")?.active || options.animate)) {
             let token = document.object;
 
             if ((document.caught || document.getFlag('monks-active-tiles', 'teleporting')) && !options.teleport) {
@@ -5550,6 +5551,7 @@ Hooks.once('ready', () => {
                             tileId: tile.uuid,
                             documentId: document.uuid,
                             when,
+                            zIndex: tile.z,
                             dist,
                             end: { x: triggerPt.x - tokenMidX, y: triggerPt.y - tokenMidY },
                             dest,
@@ -5579,13 +5581,13 @@ Hooks.once('ready', () => {
                     // sort by shortest dist, then by when using the triggerOrder, then by z
                     if (a.dist != b.dist) return a.dist - b.dist;
                     if (a.when != b.when) return triggerOrder[a.when] - triggerOrder[b.when];
-                    return b.tile.z - a.tile.z;
+                    return b.zIndex - a.zIndex;
                 });
 
                 if (MonksActiveTiles.allowRun) {
-                    MonksActiveTiles.runTriggers(triggeringList, game.user.id);
+                    MonksActiveTiles.runTriggers(sorted, game.user.id);
                 } else {
-                    MonksActiveTiles.emit('runtriggers', { triggers: triggeringList });
+                    MonksActiveTiles.emit('runtriggers', { triggers: sorted });
                 }
             }
         }

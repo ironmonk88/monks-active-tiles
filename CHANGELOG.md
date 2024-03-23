@@ -1,3 +1,17 @@
+## Version 11.23
+
+Fixed issue with open url not opening into a new tab
+
+Added support for the Celebrate module
+
+Fixed issue with additional right clicks when double-right clicking
+
+Fixed issue with triggering a tile when teleporting
+
+Fixed issue with sorting by z-index
+
+Fixed issue when running sorted actions
+
 ## Version 11.22
 
 Added tagger to teleport options

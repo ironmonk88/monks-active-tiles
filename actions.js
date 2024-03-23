@@ -2166,8 +2166,10 @@ export class ActionManager {
                                         await a.applyDamage({ damage: val, token: entity });
                                     else if (game.system.id == "pf1")
                                         await a.applyDamage(val);
-                                    else
+                                    else if (game.system.id == "dnd5e" && isNewerVersion(game.system.version, "2.9.9"))
                                         await a.applyDamage(val, { multiplier: 1 });
+                                    else
+                                        await a.applyDamage(val, 1);
                                 } else {
                                     applyDamage(a, val);
                                 }
@@ -6746,7 +6748,7 @@ export class ActionManager {
                             title: "Opening external link",
                             content: "<p>Are you sure you want to open an external link?</p><p>URL: " + url + "</p>",
                             yes: () => {
-                                window.open(url, "_target");
+                                window.open(url, "_blank");
                             }
                         });
                     }
@@ -8517,6 +8519,41 @@ Hooks.on("setupTileActions", (app) => {
 
                 const shootConfettiProps = window.confetti.getShootConfettiProps(parseInt(action.data.strength));
                 window.confetti.shootConfetti(shootConfettiProps);
+
+                return {};
+            },
+            content: async (trigger, action) => {
+                return `<span class="action-style">Shoot Confetti</span> <span class="details-style">"${i18n(trigger.values.strength[action.data?.strength])}"</span>`;
+            }
+        });
+    }
+
+    if (game.modules.get('celebrate')?.active) {
+        app.registerTileGroup('celebrate', "Celebrate");
+        app.registerTileAction('celebrate', 'shoot', {
+            name: 'Shoot Confetti',
+            ctrls: [
+                {
+                    id: "strength",
+                    name: "Confetti Strength",
+                    list: "strength",
+                    type: "list",
+                    defvalue: 2
+                }
+            ],
+            values: {
+                'strength': {
+                    0: "Low",
+                    1: "Medium",
+                    2: "High"
+                }
+            },
+            group: 'celebrate',
+            fn: async (args = {}) => {
+                const { action, userid } = args;
+
+                const shootConfettiProps = game.modules.get("celebrate").api.getShootConfettiProps(parseInt(action.data.strength));
+                game.modules.get("celebrate").api.shootConfetti(shootConfettiProps);
 
                 return {};
             },
