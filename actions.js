@@ -525,30 +525,6 @@ export class ActionManager {
 
                                 entDest.x = Math.clamped(parseInt(midDestX + deltaX2), dest.dest.x, dest.dest.x + dest.dest.width);
                                 entDest.y = Math.clamped(parseInt(midDestY + deltaY2), dest.dest.y, dest.dest.y + dest.dest.height);
-
-                                log("midDestX: " + midDestX + ", midDestY: " + midDestY + ", deltaX2: " + deltaX2 + ", deltaY2: " + deltaY2 + ", dest.dest.width: " + dest.dest.width + ", dest.dest.height: " + dest.dest.height + ", tile.width: " + tile.width + ", tile.height: " + tile.height + ", percX: " + percX + ", percY: " + percY + ", deltaX1: " + deltaX1 + ", deltaY1: " + deltaY1 + ", entDest.x: " + entDest.x + ", entDest.y: " + entDest.y);
-
-                                /*
-
-                                let destW = Math.abs(dest.dest.width);
-                                let destH = Math.abs(dest.dest.height);
-
-                                if (method == "enter" || method == "exit") {
-                                    let hW = ((scene.dimensions.size * Math.abs(tokendoc.width)) / 2);
-                                    let hH = ((scene.dimensions.size * Math.abs(tokendoc.height)) / 2);
-
-                                    destW -= (method == "enter" ? hW : -hW);
-                                    destH -= (method == "enter" ? hH : -hH);
-                                }
-
-                                deltaX = deltaX * (destW / Math.abs(tile.width));
-                                deltaY = deltaY * (destH / Math.abs(tile.height));
-
-                                
-                                
-                                entDest.x = Math.clamped(midDestX + deltaX, dest.dest.x, dest.dest.x + dest.dest.width);
-                                entDest.y = Math.clamped(midDestY + deltaY, dest.dest.y, dest.dest.y + dest.dest.height);
-                                */
                             } else {
                                 // Find a random location within this Tile
                                 entDest.x = dest.dest.x + Math.floor((Math.random() * Math.abs(dest.dest.width)));
