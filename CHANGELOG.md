@@ -1,3 +1,7 @@
+## Version 11.25
+
+Removing debug statements
+
 ## Version 11.24
 
 Fixed issues with teleporting to another tile using the relative to entry option
