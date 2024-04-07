@@ -1,3 +1,27 @@
+## Version 11.24
+
+Fixed issues with teleporting to another tile using the relative to entry option
+
+Added the option to reverse the relative to entry direction by using a negative scale
+
+Fixed issue with playing/resetting a tile's animation for players
+
+Added the option to use the same randome number ranges for tile images that delay allows
+
+Added the option to check for not having a condition when filtering by condition
+
+Added the option to set the collection when using Taggers Alter Tag action
+
+Fixed issues with avoiding tokens at destination
+
+Fixed issues with multiple trigger methods not actually stopping remaining ACTIONS
+
+Fixed issue where the person to show the dialog to wasn't saving properly.
+
+Fixed issue where stopping token movement was hiding the token until a browser refresh.
+
+Fixed issue where trigger methods that required a delay before being activated weren't stopping after stop remaining actions was run
+
 ## Version 11.23
 
 Fixed issue with open url not opening into a new tab

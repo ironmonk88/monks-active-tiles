@@ -602,7 +602,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             MonksActiveTiles.emit('stopsound', {
                 tileid: this.object.uuid,
                 type: 'tile',
-                userid: null,
+                userId: null,
                 actionid: id
             });
             this.render();

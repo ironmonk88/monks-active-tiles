@@ -296,6 +296,7 @@
   "MonksActiveTiles.ctrl.resettype": "Reset Type",
   "MonksActiveTiles.ctrl.triggerremote": "Trigger at Destination",
   "MonksActiveTiles.ctrl.code": "Code",
+  "MonksActiveTiles.ctrl.hascondition": "Has",
 
   "MonksActiveTiles.mode.enter": "Enter",
   "MonksActiveTiles.mode.exit": "Exit",
