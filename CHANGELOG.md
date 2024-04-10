@@ -1,3 +1,7 @@
+## Version 11.26
+
+Fixed issue with the Movement trigger
+
 ## Version 11.25
 
 Removing debug statements
@@ -18,7 +22,7 @@ Added the option to set the collection when using Taggers Alter Tag action
 
 Fixed issues with avoiding tokens at destination
 
-Fixed issues with multiple trigger methods not actually stopping remaining ACTIONS
+Fixed issues with multiple trigger methods not actually stopping remaining Actions
 
 Fixed issue where the person to show the dialog to wasn't saving properly.
 

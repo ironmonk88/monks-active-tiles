@@ -5289,7 +5289,7 @@ export class MonksActiveTiles {
             }
 
             if (!triggerObject.timerId) {
-                let triggerResult = await tile.trigger(triggerObject.args);
+                let triggerResult = await triggerObject.tile.trigger(triggerObject.args);
                 let isBreak = false;
                 if (triggerResult?.stoptriggers) {
                     isBreak = true;
