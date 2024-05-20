@@ -2421,6 +2421,7 @@ export class ActionManager {
                         name: "MonksActiveTiles.ctrl.volume",
                         type: "slider",
                         defvalue: "1.0",
+                        step: 0.,
                         nullable: true,
                         conditional: (app) => {
                             return $('select[name="data.play"]', app.element).val() == 'play';
@@ -2461,11 +2462,16 @@ export class ActionManager {
                             if (cmd == "next")
                                 await entity.playNext();
                             else if (cmd == "prev")
-                                await entity.playNext(null, { direction:-1 });
+                                await entity.playNext(null, { direction: -1 });
                             else if (cmd !== "play")
                                 await entity.stopAll();
-                            else
-                                await entity.playAll();
+                            else {
+                                let options = { };
+                                if (Number.isNumeric(action.data.volume.value ?? action.data.volume)) {
+                                    options.volume = Math.clamped((action.data.volume.value ?? action.data.volume ?? 1), 0, 1);
+                                }
+                                await entity.playAll(options);
+                            }
                         } else {
                             if (cmd == "stop")
                                 batch.add("update", entity, { playing: false, pausedTime: 0 });
@@ -4281,15 +4287,22 @@ export class ActionManager {
                                     }
 
                                     if (quantity == "all" || itemQuantity <= quantity) {
-                                        batch.add("delete", item);
+                                        if (item.type == "condition" && game.system.id == 'pf2e') {
+                                            await token.actor.decreaseCondition(item.slug, { forceRemove: true });
+                                        } else
+                                            batch.add("delete", item);
                                     } else {
                                         itemQuantity -= quantity;
                                         let updateData = {};
                                         updateData[quantityName] = useValue ? { value: itemQuantity } : itemQuantity;
                                         batch.add("update", item, { system: updateData });
                                     }
-                                } else
-                                    batch.add("delete", item);
+                                } else {
+                                    if (item.type == "condition" && game.system.id == 'pf2e') {
+                                        await token.actor.decreaseCondition(item.slug, { forceRemove: true });
+                                    } else
+                                        batch.add("delete", item);
+                                }
                             }
                         }
                     }
@@ -4633,7 +4646,7 @@ export class ActionManager {
                     if (entities.length == 0)
                         return;
 
-                    let user = game.users.get(userId);
+                    let user = game.user;// game.users.get(userId);
                     let rollresults = {};
                     let item;
                     let act;
@@ -5789,7 +5802,7 @@ export class ActionManager {
                 fn: async (args = {}) => {
                     let { action } = args;
 
-                    let time = await getValue(action.data.time, args);
+                    let time = await getValue(action.data.time, args, null, { prop: game.time.worldTime });
                     time = parseInt(time) * 60;
                     if (time && !isNaN(time)) {
                         game.time.advance(time);
@@ -7847,7 +7860,34 @@ export class ActionManager {
                     let { action, userId, tile } = args;
 
                     let attr = await getValue(action.data.attribute, args, tile);
-                    let val = await getValue(action.data.value, args, tile, { attr, operation: 'compare' });
+
+                    let base = tile;
+
+                    if (!attr.startsWith('flags')) {
+                        if (!hasProperty(base, attr) && entity instanceof TokenDocument) {
+                            base = entity.actor;
+                        }
+
+                        if (!hasProperty(base, attr)) {
+                            if (!attr.startsWith("system"))
+                                attr = 'system.' + attr;
+                            if (!hasProperty(base, attr)) {
+                                warn("Couldn't find attribute", entity, attr);
+                            }
+                        }
+                    }
+
+                    let prop = getProperty(base, attr);
+
+                    if (prop && typeof prop == 'object' && !(prop instanceof Array)) {
+                        if (prop.value == undefined) {
+                            debug("Attribute returned an object and the object doesn't have a value property", entity, attr, prop);
+                        }
+
+                        prop = prop.value;
+                    }
+
+                    let val = await getValue(action.data.value, args, tile, { prop, operation: 'compare' });
 
                     if (val)
                         return { continue: true };

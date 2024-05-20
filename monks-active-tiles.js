@@ -168,6 +168,24 @@ export class MonksActiveTiles {
 
     static triggerActions = ActionManager.actions;
 
+    static triggerTile = async (uuid) => {
+        let tile = await fromUuid(uuid);
+        if (tile) {
+            let tokens = canvas.tokens.controlled.map(t => t.document);
+            //check to see if this trigger is per token, and already triggered
+            let triggerData = tile.flags["monks-active-tiles"];
+
+            if (triggerData) {
+                if (triggerData.pertoken)
+                    tokens = tokens.filter(t => !tile.hasTriggered(t.id));
+
+                if (!triggerData.active) return;
+
+                tile.trigger({ tokens: tokens, method: "trigger" });
+            }
+        }
+    }
+
     /*
     static drawingPoints(drawing) {
         let points = [];
@@ -271,7 +289,7 @@ export class MonksActiveTiles {
     }*/
 
     static async getValue(val = "", args, entity, options = { operation: 'assign' }) {
-        const { tile, tokens, action, userId, value, method, change, darkness, time } = args;
+        const { tile, tokens, action, userId, value, method, change, darkness, time, pt, src } = args;
 
         let originalVal = val;
 
@@ -305,6 +323,8 @@ export class MonksActiveTiles {
                 change,
                 darkness,
                 time,
+                pt,
+                origin: src
             }, options);
 
             if (typeof val == "string" && val.includes("{{")) {
@@ -984,7 +1004,7 @@ export class MonksActiveTiles {
     }
 
     static async _executeMacro(macro, mainargs = {}) {
-        const { tile, tokens, action, userId, values, value, method, pt, change, event } = mainargs;
+        const { tile, tokens, action, userId, values, value, method, pt, change, event, original } = mainargs;
 
         for (let i = 0; i < tokens.length; i++) {
             tokens[i] = (typeof tokens[i] == 'string' ? await fromUuid(tokens[i]) : tokens[i]);
@@ -996,20 +1016,22 @@ export class MonksActiveTiles {
 
         let context = {
             actor: tkn?.actor,
-            token: tkn?.object,
+            token: tkn,
             character: user.character,
-            tile: tile.object,
+            tile: tile,
             user: user,
             canvas: canvas,
             scene: canvas.scene,
             values: values,
             value: value,
+            variable: getProperty(tile, "flags.monks-active-tiles.variables") || {},
             tokens: tokens,
             method: method,
             pt: pt,
             actionId: mainargs._id,
             change: change,
-            event: event
+            event: event,
+            original: original
         };
         let args = action.data.args;
 
@@ -1106,9 +1128,9 @@ export class MonksActiveTiles {
 
         let context = {
             actor: tkn?.actor,
-            token: tkn?.object,
+            token: tkn,
             character: user.character,
-            tile: tile.object,
+            tile: tile,
             user: user,
             canvas: canvas,
             scene: canvas.scene,
@@ -1977,9 +1999,12 @@ export class MonksActiveTiles {
                 const speaker = cls.getSpeaker({ token: token });
 
                 let mode = command?.replace(/[^A-Za-z]/g, "");
-                if (!["publicroll", "gmroll", "blindroll", "selfroll"].includes(mode)) mode = null;
+                if (!["publicroll", "gmroll", "blindroll", "selfroll"].includes(mode)) mode = rollMode;
 
-                roll.toMessage({ flavor: (label ? `${label}: ${roll.total}` : roll.total), speaker }, { rollMode: mode || rollMode });
+                mode = mode || rollMode;
+
+                let msg = await roll.toMessage({ flavor: (label ? `${label}: ${roll.total}` : roll.total), speaker }, { rollMode: mode });
+                msg.applyRollMode(mode);
             }
 
             return roll.total;
@@ -3153,6 +3178,11 @@ export class MonksActiveTiles {
                             data.options.walls[i] = await fromUuid(data.options.walls[i]);
                     }
 
+                    if (data.options?.value?.walls) {
+                        for (let i = 0; i < data.options.value.walls.length; i++)
+                            data.options.value.walls[i] = await fromUuid(data.options.value.walls[i]);
+                    }
+
                     tile.trigger({ tokens: tokens, userId: data.senderId, method: data.method, pt: data.pt, options: data.options });
                 }
             } break;
@@ -3204,9 +3234,9 @@ export class MonksActiveTiles {
 
                     let context = {
                         actor: token?.actor,
-                        token: token?.object,
+                        token: token,
                         character: user?.character,
-                        tile: tile.object,
+                        tile: tile,
                         user: user,
                         args: data.args,
                         canvas: canvas,
@@ -3417,7 +3447,7 @@ export class MonksActiveTiles {
                                 if (entity.parent)
                                     entity.parent.ownership[game.user.id] = CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER;
                             }*/
-                            entity.sheet.render(!data.permission, { pageId: data.page, anchor: data.subsection?.slugify().replace(/["']/g, "").substring(0, 64) });
+                            entity.sheet.render(true, { pageId: data.page, anchor: data.subsection?.slugify().replace(/["']/g, "").substring(0, 64) });
                             /*if (!data.permission) {
                                 if (entity._source.ownership[game.user.id] == undefined)
                                     delete entity.ownership[game.user.id];
@@ -4756,6 +4786,9 @@ export class MonksActiveTiles {
                 if (options.walls) {
                     options.walls = options.walls.map(w => (w?.document?.uuid || w?.uuid));
                 }
+                if (options.value?.walls) {
+                    options.value.walls = options.value.walls.map(w => (w?.document?.uuid || w?.uuid));
+                }
                 delete options.event;
                 MonksActiveTiles.emit('trigger', { tileid: this.uuid, userId, tokens: tokenData, method: method, pt: pt, options: options } );
             }
@@ -5289,6 +5322,8 @@ export class MonksActiveTiles {
             }
 
             if (!triggerObject.timerId) {
+                triggerObject.args.userId = userId;
+                triggerObject.args.tokens = [triggerObject.document];
                 let triggerResult = await triggerObject.tile.trigger(triggerObject.args);
                 let isBreak = false;
                 if (triggerResult?.stoptriggers) {
