@@ -522,6 +522,8 @@
   "MonksActiveTiles.drop-macro.hint": "Allow macros dropped on the canvas to be created as Active Tiles",
   "MonksActiveTiles.tile-edit.name": "Allow Tile Template Editing",
   "MonksActiveTiles.tile-edit.hint": "Allow editing of Tile Templates, I'd strongly recommend not using this unless you're sure you know what you're doing",
+  "MonksActiveTiles.show-imageless.name": "Show Imageless Tile",
+  "MonksActiveTiles.show-imageless.hint": "Show the tile on the token layer to the GM if there's no image set",
 
   "MonksActiveTiles.tabs.Setup": "Setup",
   "MonksActiveTiles.tabs.Actions": "Actions",
@@ -534,5 +536,25 @@
   "MonksActiveTiles.history.How": "How",
   "MonksActiveTiles.history.Who": "Who",
   "MonksActiveTiles.history.Name": "Name",
-  "MonksActiveTiles.history.Value": "Value"
+  "MonksActiveTiles.history.Value": "Value",
+
+  "TYPES": {
+    "RegionBehavior": {
+      "monks-active-tiles": {
+        "triggerTile": "Trigger Tile"
+      }
+    }
+  },
+  "BEHAVIOR": {
+    "TYPES": {
+      "triggerTile": {
+        "FIELDS": {
+          "uuid": {
+            "label": "Tile",
+            "hint": "Tile to trigger"
+          }
+        }
+      }
+    }
+  }
 }

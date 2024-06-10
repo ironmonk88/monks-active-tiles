@@ -18,8 +18,8 @@ export class TileVariables extends FormApplication {
     }
 
     getData(options) {
-        let variables = getProperty(this.object, "flags.monks-active-tiles.variables") || {};
-        return mergeObject(super.getData(options), {
+        let variables = foundry.utils.getProperty(this.object, "flags.monks-active-tiles.variables") || {};
+        return foundry.utils.mergeObject(super.getData(options), {
             variables: variables
         });
     }

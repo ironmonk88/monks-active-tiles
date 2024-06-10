@@ -23,8 +23,8 @@ export const WithActiveTileConfig = (TileConfig) => {
         constructor(...args) {
             super(...args);
 
-            if (getProperty(this.object, "flags.monks-active-tiles") == undefined) {
-                this.object.flags = mergeObject(this.object.flags, {
+            if (foundry.utils.getProperty(this.object, "flags.monks-active-tiles") == undefined) {
+                this.object.flags = foundry.utils.mergeObject(this.object.flags, {
                     'monks-active-tiles': {
                         active: true,
                         trigger: setting('default-trigger'),
@@ -112,7 +112,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                 let tab = $('<div>').addClass('tab').attr('data-tab', "triggers").css({ "position": "relative" }).insertAfter($('div[data-tab="animation"]', html));
 
                 let template = "modules/monks-active-tiles/templates/tile-config.html";
-                const tiledata = mergeObject({ 'data.flags.monks-active-tiles.minrequired': 0 }, data);
+                const tiledata = foundry.utils.mergeObject({ 'data.flags.monks-active-tiles.minrequired': 0 }, data);
 
                 tiledata.triggerModes = MonksActiveTiles.triggerModes;
                 tiledata.triggerRestriction = { 'all': i18n("MonksActiveTiles.restrict.all"), 'player': i18n("MonksActiveTiles.restrict.player"), 'gm': i18n("MonksActiveTiles.restrict.gm") };
@@ -161,7 +161,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                             a.marker = currentLanding;
                             a.landingStop = a.data.stop;
                         }
-                        a.landings = duplicate(landings);
+                        a.landings = foundry.utils.duplicate(landings);
                     }
                 }
 
@@ -241,12 +241,12 @@ export const WithActiveTileConfig = (TileConfig) => {
             if (data.tileId != this.object.id) {
                 if (data.collection == list.dataset.collection) {
                     let src = canvas.scene.tiles.get(data.tileId);
-                    let action = getProperty(src, "flags.monks-active-tiles.actions")?.find(a => a.id == data.id);
+                    let action = foundry.utils.getProperty(src, "flags.monks-active-tiles.actions")?.find(a => a.id == data.id);
 
                     if (action) {
-                        let newAction = duplicate(action);
+                        let newAction = foundry.utils.duplicate(action);
                         newAction.id = makeid();
-                        let items = duplicate(this[list.dataset.collection]);
+                        let items = foundry.utils.duplicate(this[list.dataset.collection]);
                         if (items.length && !target)
                             target = $(`li[data-id="${items[0].id}"]`, this.element).get(0);
                         let to = items.findIndex(a => a.id == target?.dataset.id) || 0;
@@ -267,7 +267,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             } else {
                 // Call the drop handler
                 if (target && target.dataset.id) {
-                    let items = duplicate(this[list.dataset.collection]);
+                    let items = foundry.utils.duplicate(this[list.dataset.collection]);
 
                     if (data.id === target.dataset.id) return; // Don't drop on yourself
 
@@ -324,7 +324,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             this.object._images = await MonksActiveTiles.getTileFiles(this.object.flags["monks-active-tiles"].files || []);
 
             if (!this.object.id && this.object._images.length) {
-                let fileindex = Math.clamped(this.object.flags["monks-active-tiles"].fileindex, 0, this.object._images.length - 1);
+                let fileindex = Math.clamp(this.object.flags["monks-active-tiles"].fileindex, 0, this.object._images.length - 1);
                 if (this.object._images[fileindex] != this.object.texture.src) {
                     formData["texture.src"] = this.object._images[fileindex];
                 }
@@ -336,7 +336,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             await super._updateObject(event, formData);
 
             if (this.object.id && this.object._images.length) {
-                let fileindex = Math.clamped(this.object.flags["monks-active-tiles"].fileindex, 0, this.object._images.length - 1);
+                let fileindex = Math.clamp(this.object.flags["monks-active-tiles"].fileindex, 0, this.object._images.length - 1);
                 if (this.object._images[fileindex] != this.object.texture.src) {
                     await this.object.update({ texture: { src: this.object._images[fileindex] } });
                 }
@@ -469,9 +469,9 @@ export const WithActiveTileConfig = (TileConfig) => {
                 let result = this.addFile(id, filename);
                 $(event.currentTarget).val('');
                 if (result) {
-                    let files = duplicate(this.files);
+                    let files = foundry.utils.duplicate(this.files);
                     files.push(result);
-                    mergeObject(this.object.flags, {
+                    foundry.utils.mergeObject(this.object.flags, {
                         "monks-active-tiles": { files: files }
                     });
                 }
@@ -502,7 +502,7 @@ export const WithActiveTileConfig = (TileConfig) => {
             // Retrieve wildcard content
             try {
                 const content = await FilePicker.browse(source, pattern, browseOptions);
-                let files = duplicate(this.files);
+                let files = foundry.utils.duplicate(this.files);
                 for (let file of content.files) {
                     let ext = file.substr(file.lastIndexOf('.') + 1);
                     if (CONST.IMAGE_FILE_EXTENSIONS[ext] != undefined) {
@@ -511,7 +511,7 @@ export const WithActiveTileConfig = (TileConfig) => {
                             files.push(result);
                     }
                 }
-                mergeObject(this.object.flags, {
+                foundry.utils.mergeObject(this.object.flags, {
                     "monks-active-tiles": { files: files }
                 });
                 this.setPosition({ height: 'auto' });
@@ -546,16 +546,16 @@ export const WithActiveTileConfig = (TileConfig) => {
 
             $(`input[name="flags.monks-active-tiles.fileindex"]`, this.element).val(idx);
 
-            mergeObject(this.object.flags, {
+            foundry.utils.mergeObject(this.object.flags, {
                 "monks-active-tiles": { fileindex: idx }
             });
         }
 
         removeFile(event) {
             let id = event.currentTarget.closest('.file-row').dataset["id"];
-            let files = duplicate(this.files);
+            let files = foundry.utils.duplicate(this.files);
             files.findSplice(i => i.id == id);
-            mergeObject(this.object.flags, {
+            foundry.utils.mergeObject(this.object.flags, {
                 "monks-active-tiles": { files: files }
             });
 
@@ -583,9 +583,9 @@ export const WithActiveTileConfig = (TileConfig) => {
         }
 
         deleteAction(id) {
-            let actions = duplicate(this.actions);
+            let actions = foundry.utils.duplicate(this.actions);
             actions.findSplice(i => i.id == id);
-            mergeObject(this.object.flags, {
+            foundry.utils.mergeObject(this.object.flags, {
                 "monks-active-tiles": { actions: actions }
             });
             //this.object.setFlag("monks-active-tiles", "actions", actions);
@@ -609,7 +609,7 @@ export const WithActiveTileConfig = (TileConfig) => {
         }
 
         cloneAction(id) {
-            let actions = duplicate(this.actions);
+            let actions = foundry.utils.duplicate(this.actions);
             let idx = actions.findIndex(obj => obj.id == id);
             if (idx == -1)
                 return;
@@ -618,13 +618,13 @@ export const WithActiveTileConfig = (TileConfig) => {
             if (!action)
                 return;
 
-            let clone = duplicate(action);
+            let clone = foundry.utils.duplicate(action);
             clone.id = makeid();
             actions.splice(idx + 1, 0, clone);
             //if (this.object.id) {
             //    this.object.setFlag("monks-active-tiles", "actions", actions);
             //} else {
-            setProperty(this.object, "flags.monks-active-tiles.actions", actions);
+            foundry.utils.setProperty(this.object, "flags.monks-active-tiles.actions", actions);
             this.render();
             //}
         }

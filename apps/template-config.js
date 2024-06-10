@@ -21,13 +21,13 @@ export class TemplateConfig extends FormApplication {
 
     getData(options) {
         let data = super.getData(options)
-        let tileData = duplicate(this.object);
+        let tileData = foundry.utils.duplicate(this.object);
         delete tileData._id;
         delete tileData.id;
         delete tileData.x;
         delete tileData.y;
 
-        return mergeObject(data, {
+        return foundry.utils.mergeObject(data, {
             tileData: JSON.stringify(tileData, null, 4),
             allowEditing: setting("tile-edit")
         });

@@ -1,3 +1,19 @@
+## Version 12.01
+
+v12 compatibility
+
+Added the option for the GM to see imageless tiles in v12.
+
+Updated the game time action to handle hous and minutes better, and to not break when advancing time.
+
+Fixed issue with Stop Within Tile and Movement Within Tile causing a tile to trigger even if no movement has happened.
+
+Fixed issue with tokens within Tile when triggering another tile.
+
+Added the name property to Tiles so you can give them a name, this helps when triggering them from a Region.
+
+Added Tile Triggering as a behavior in regions.
+
 ## Version 11.27
 
 Increased the precision of the playlist volume slider

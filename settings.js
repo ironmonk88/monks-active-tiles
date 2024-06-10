@@ -4,6 +4,15 @@ export const registerSettings = function () {
 	// Register any custom module settings here
 	let modulename = "monks-active-tiles";
 
+	game.settings.register(modulename, "show-imageless", {
+		name: i18n("MonksActiveTiles.show-imageless.name"),
+		hint: i18n("MonksActiveTiles.show-imageless.hint"),
+		scope: "world",
+		config: true,
+		default: true,
+		type: Boolean,
+	});
+
 	game.settings.register(modulename, "default-trigger", {
 		name: i18n("MonksActiveTiles.default-trigger.name"),
 		hint: i18n("MonksActiveTiles.default-trigger.hint"),

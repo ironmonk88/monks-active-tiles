@@ -19,7 +19,7 @@ export class TileHistory extends FormApplication {
 
     getData(options) {
         let history = this.object.getHistory();
-        return mergeObject(super.getData(options), {
+        return foundry.utils.mergeObject(super.getData(options), {
             history: history
         });
     }

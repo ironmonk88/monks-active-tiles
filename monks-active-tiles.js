@@ -50,6 +50,10 @@ export let oldObjectClass = () => {
     return MonksActiveTiles._oldObjectClass;
 };
 
+export let rectContains = (rect, x, y) => {
+    return x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height;
+};
+
 export let patchFunc = (prop, func, type = "WRAPPER") => {
     let nonLibWrapper = () => {
         const oldFunc = eval(prop);
@@ -213,8 +217,8 @@ export class MonksActiveTiles {
                     let y = ((a * b) / Math.sqrt((a ** 2) + ((b ** 2) / (Math.tan(i) ** 2))));
                     circlePts.push({ x: x, y: y });
                 }
-                circlePts = circlePts.concat(duplicate(circlePts).reverse().map(p => { return { x: -p.x, y: p.y }; }));
-                circlePts = circlePts.concat(duplicate(circlePts).reverse().map(p => { return { x: p.x, y: -p.y }; }));
+                circlePts = circlePts.concat(foundry.utils.duplicate(circlePts).reverse().map(p => { return { x: -p.x, y: p.y }; }));
+                circlePts = circlePts.concat(foundry.utils.duplicate(circlePts).reverse().map(p => { return { x: p.x, y: -p.y }; }));
                 points = MonksActiveTiles.simplify(circlePts.map(p => { return { x: p.x + pos.x, y: p.y + pos.y } }), 40);
                 break;
             case 'p': //polygon and freehand
@@ -313,7 +317,7 @@ export class MonksActiveTiles {
                 token: tokens[0],
                 tile: tile?.toObject(),
                 entity: entity,
-                variable: getProperty(tile, "flags.monks-active-tiles.variables") || {},
+                variable: foundry.utils.getProperty(tile, "flags.monks-active-tiles.variables") || {},
                 user: game.users.get(userId),
                 players: game.users,
                 value: value,
@@ -493,7 +497,7 @@ export class MonksActiveTiles {
     }
 
     static async getEntities(args, defaultType, _entry) {
-        const { tile, tokens, action, value, userId } = args;
+        const { tile, tokens, action, value, userId, method } = args;
 
         let entities = [];
         let entry = _entry || action.data?.entity;
@@ -541,10 +545,10 @@ export class MonksActiveTiles {
         else if (id == 'within') {
             let newEntities = [];
             if (action.action == "activate") {
-                newEntities = tile.entitiesWithin(defaultType);
+                newEntities = tile.entitiesWithin({ collection: defaultType });
             } else
                 //find all tokens with this Tile
-                newEntities = tile.entitiesWithin();
+                newEntities = tile.entitiesWithin({useTriggerPt: method != "trigger"});
             entities = entities.concat(newEntities);
         }
         else if (id == 'controlled') {
@@ -701,7 +705,7 @@ export class MonksActiveTiles {
 
     static async getLocation(_location, args = {}) {
         let { value, userId } = args;
-        let location = duplicate(_location);
+        let location = foundry.utils.duplicate(_location);
 
         if (location.id == 'previous' || location.id == 'current')
             location = args?.location || value?.location;
@@ -891,11 +895,28 @@ export class MonksActiveTiles {
                 }
             }
         } else {
-            name = isEmpty(_location) ? "" : `[${_location.x},${_location.y}${(_location.scale ? `, scale:${_location.scale}` : '')}]`;
+            name = foundry.utils.isEmpty(_location) ? "" : `[${_location.x},${_location.y}${(_location.scale ? `, scale:${_location.scale}` : '')}]`;
         }
 
         let scene = game.scenes.find(s => s.id == sceneId);
         return `${(scene?.id != canvas.scene.id ? 'Scene: ' + scene?.name + ', ' : '')}${name}`;
+    }
+
+    static getSnappedPosition(x, y, interval = 1) {
+        if (interval === 0) return { x: Math.round(x), y: Math.round(y) };
+        let x0 = x.toNearest(canvas.grid.size);
+        let y0 = y.toNearest(canvas.grid.size);
+        let dx = 0;
+        let dy = 0;
+        if (interval !== 1) {
+            let delta = canvas.grid.size / interval;
+            dx = Math.round((x - x0) / delta) * delta;
+            dy = Math.round((y - y0) / delta) * delta;
+        }
+        return {
+            x: Math.round(x0 + dx),
+            y: Math.round(y0 + dy)
+        };
     }
 
     static testVisibility(point, { tolerance = 2, object = null } = {}) {
@@ -1024,7 +1045,7 @@ export class MonksActiveTiles {
             scene: canvas.scene,
             values: values,
             value: value,
-            variable: getProperty(tile, "flags.monks-active-tiles.variables") || {},
+            variable: foundry.utils.getProperty(tile, "flags.monks-active-tiles.variables") || {},
             tokens: tokens,
             method: method,
             pt: pt,
@@ -1063,7 +1084,7 @@ export class MonksActiveTiles {
         context.args = args;
 
         let runasgm = (action.data.runasgm == 'player' || action.data.runasgm == 'gm' ? action.data.runasgm == 'gm' :
-            (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active ? getProperty(macro, "flags.advanced-macros.runAsGM") || getProperty(macro, "flags.furnace.runAsGM") : true));
+            (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active ? foundry.utils.getProperty(macro, "flags.advanced-macros.runAsGM") || getProperty(macro, "flags.furnace.runAsGM") : true));
 
         if (runasgm || userId == game.user.id) {
             //if (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active)
@@ -1092,7 +1113,7 @@ export class MonksActiveTiles {
 
         /*
         if (game.modules.get("advanced-macros")?.active || game.modules.get("furnace")?.active) {
-            if (getProperty(macro, "flags.advanced-macros.runAsGM") || getProperty(macro, "flags.furnace.runAsGM") || userId == game.user.id) {
+            if (foundry.utils.getProperty(macro, "flags.advanced-macros.runAsGM") || foundry.utils.getProperty(macro, "flags.furnace.runAsGM") || userId == game.user.id) {
                 //execute the macro if it's set to run as GM or it was the GM that actually moved the token.
                 return await macro.callScriptFunction(context);
             } else {
@@ -1169,7 +1190,7 @@ export class MonksActiveTiles {
             actor: token?.actor?.toObject(),
             token: token?.toObject(),
             tile: tile.toObject(),
-            variable: getProperty(tile, "flags.monks-active-tiles.variables") || {},
+            variable: foundry.utils.getProperty(tile, "flags.monks-active-tiles.variables") || {},
             user: game.user,
             players: game.users,
             value: value,
@@ -1486,7 +1507,7 @@ export class MonksActiveTiles {
         }
 
         if (from)
-            entity._animationAttributes = mergeObject(entity._animationAttributes || {}, from);
+            entity._animationAttributes = foundry.utils.mergeObject(entity._animationAttributes || {}, from);
 
         let animations = {};
         // Define attributes
@@ -1519,7 +1540,7 @@ export class MonksActiveTiles {
             hasAlpha = true;
         }
 
-        if (isEmpty(animations))
+        if (foundry.utils.isEmpty(animations))
             return;
 
         // Dispatch the animation function
@@ -1534,7 +1555,7 @@ export class MonksActiveTiles {
                         let realval = attribute.from + attribute.done;
                         if (!isNaN(attribute.done) && attribute.parent[attribute.attribute] != realval)
                             attribute.parent[attribute.attribute] = realval;
-                        setProperty(entity, `_animationAttributes.${attribute.attribute}`, realval)
+                        foundry.utils.setProperty(entity, `_animationAttributes.${attribute.attribute}`, realval)
                         if (attribute.attribute == "alpha" && to.hidden === true && !game.user.isGM && !attribute.parent.visible)
                             attribute.parent.object.visible = true;
                         if (attribute.parent instanceof AmbientLight) {
@@ -1653,14 +1674,15 @@ export class MonksActiveTiles {
             new Promise((resolve) => { resolve(); });
         }
 
-        let transitionId = randomID();
+        let transitionId = foundry.utils.randomID();
         t._transition_id = id;
         t._transition_ready = false;
         t._transition_time = time;
         t._transition_to = to;
-        const container = t._transition = canvas.primary.addChild(new TileMesh(t));
-        container.width = entity.width;
-        container.height = entity.height;
+        const container = t._transition = new PIXI.Container();
+        canvas.tiles.addChild(container);
+        //container.width = entity.width;
+        //container.height = entity.height;
         container.x = entity.x;
         container.y = entity.y;
         container.scale.x = 1;
@@ -1764,9 +1786,9 @@ export class MonksActiveTiles {
         }
 
         if (transition == "blur") {
-            fromMesh.filters = [new PIXI.filters.BlurFilter()];
+            fromMesh.filters = [new PIXI.BlurFilter()];
             fromMesh.filters[0].blur == 0;
-            toMesh.filters = [new PIXI.filters.BlurFilter()];
+            toMesh.filters = [new PIXI.BlurFilter()];
             toMesh.filters[0].blur == 200;
             toMesh.alpha = 0;
 
@@ -1834,7 +1856,7 @@ export class MonksActiveTiles {
             CanvasAnimation.terminateAnimation(animationName);
             let result = t._transition_to;
             let transitionId = t._transition_id;
-            canvas.primary.removeChild(t._transition);
+            canvas.tiles.removeChild(t._transition);
             delete t._transition;
             delete t._transition_id;
             delete t._transition_time;
@@ -1842,7 +1864,7 @@ export class MonksActiveTiles {
             t.texture.x = 0;
             t.texture.y = 0;
             t.mesh.visible = true;
-            t.mesh.refresh();
+            //t.mesh.refresh();
             //log("checking transition queue", t._transition, t._transitionQueue);
             //if (t._transitionQueue?.length) {
             //    let next = t._transitionQueue.shift();
@@ -2078,9 +2100,9 @@ export class MonksActiveTiles {
         }
     }
 
-    static canvasClick = function (event, clicktype) {
+    static selectClick = function (event) {
         let waitingType = MonksActiveTiles.waitingInput?.waitingfield?.data('type');
-        if (clicktype == "click" && (waitingType == 'location' || waitingType == 'either' || waitingType == 'position')) {
+        if (waitingType == 'location' || waitingType == 'either' || waitingType == 'position') {
             let restrict = MonksActiveTiles.waitingInput.waitingfield.data('restrict');
             if (restrict && !restrict(canvas.scene)) {
                 ui.notifications.error(i18n("MonksActiveTiles.msg.invalid-location"));
@@ -2090,7 +2112,11 @@ export class MonksActiveTiles {
             let update = { x: parseInt(pos.x), y: parseInt(pos.y), sceneId: (canvas.scene.id != MonksActiveTiles.waitingInput.options.parent.object.parent.id ? canvas.scene.id : null) };
             ActionConfig.updateSelection.call(MonksActiveTiles.waitingInput, update, event);
         }
+    }
 
+    static canvasClick = function (event, clicktype) {
+        if (clicktype == "click")
+            MonksActiveTiles.selectClick(event);
         if (canvas.activeLayer instanceof TokenLayer) {
             //check to see if there are any Tiles that can be activated with a click
             let pt = canvas.activeLayer.toLocal(event);
@@ -2113,6 +2139,92 @@ export class MonksActiveTiles {
                 }
             });
         } catch { }
+
+        CONFIG.RegionBehavior.typeIcons["monks-active-tiles.triggerTile"] = "fa-solid fa-cubes";
+
+        class ActiveTileDocumentUUIDField extends foundry.data.fields.DocumentUUIDField {
+            _toInput(config) {
+                Object.assign(config, { type: this.type, single: this.single });
+                return foundry.applications.elements.HTMLDocumentTagsElement.create(config);
+            }
+        }
+        class TriggerTileRegionBehavior extends foundry.data.regionBehaviors.RegionBehaviorType {
+            static defineSchema() {
+                return {
+                    events: this._createEventsField(),
+                    uuid: new ActiveTileDocumentUUIDField({
+                        type: "Tile",
+                        single: false,
+                        label: "BEHAVIOR.TYPES.triggerTile.FIELDS.uuid.label",
+                        hint: "BEHAVIOR.TYPES.triggerTile.FIELDS.uuid.hint"
+                    })
+                }
+            }
+            async _handleRegionEvent(event) {
+                if (!this.uuid) return;
+                const doc = await fromUuid(this.uuid);
+                if (!(doc instanceof TileDocument)) {
+                    console.error(`${this.uuid} does not exist`);
+                    return;
+                }
+                let triggerData = foundry.utils.getProperty(doc, "flags.monks-active-tiles");
+                if (triggerData?.active) {
+                    if (setting("prevent-when-paused") && game.paused && !game.user.isGM && triggerData.allowpaused !== true)
+                        return;
+
+                    //check to see if this trigger is restricted by control type
+                    if ((triggerData.controlled == 'gm' && !game.user.isGM) || (triggerData.controlled == 'player' && game.user.isGM))
+                        return;
+
+                    let tokens = canvas.tokens.controlled.map(t => t.document);
+                    //check to see if this trigger is per token, and already triggered
+                    if (triggerData.pertoken) {
+                        tokens = tokens.filter(t => !doc.hasTriggered(t.id)); //.uuid
+                        if (tokens.length == 0)
+                            return;
+                    }
+
+                    let result = await doc.trigger({ tokens: tokens, method: 'region', options: { value: { region: this.region } } }) || {};
+                    //foundry.utils.mergeObject(results, result);
+                    //if (result?.stoptriggers)
+                    //    break;
+                }
+            }
+        }
+        Object.assign(CONFIG.RegionBehavior.dataModels, {
+            "monks-active-tiles.triggerTile": TriggerTileRegionBehavior,
+        });
+
+        patchFunc("TextEditor.prototype.constructor.truncateText", function (wrapped, ...args) {
+            let [text, options] = args;
+            if (text == undefined) {
+                args[0] = "";
+            }
+            return wrapped(...args);
+        });
+
+        patchFunc("foundry.applications.elements.HTMLStringTagsElement.prototype.constructor.renderTag", function (wrapped, ...args) {
+            let [tag, label] = args;
+            if (tag.includes(".Tile.") && !label) {
+                try {
+                    let document = fromUuidSync(tag);
+                    if (document) {
+                        if (game.modules.get('tagger')?.active) {
+                            let tags = Tagger.getTags(document);
+                            if (tags.length)
+                                name = tags[0];
+                        }
+
+                        if (!name)
+                            name = document.documentName + ": " + document.id;
+
+                        args[1] = name;
+                    }
+                } catch { }
+            }
+            return wrapped(...args);
+        }, "MIXED");
+
 
         //@Tile[Scene.b77ocyto1VdgAZU5.Tile.QW3oZo39pZsf8cTX landing:test1]{Journal Click Tile}
         CONFIG.TextEditor.enrichers.push({ id: 'MonksActiveTileTrigger', pattern: new RegExp(`@(Tile)\\[([^\\]]+)\\](?:{([^}]+)})?`, 'g'), enricher: MonksActiveTiles._createTileLink });
@@ -2263,7 +2375,7 @@ export class MonksActiveTiles {
                 tileData.x = tileData.x - (tileData.width / 2);
                 tileData.y = tileData.y - (tileData.height / 2);
                 if (!event.shiftKey) {
-                    const { x, y } = canvas.grid.getSnappedPosition(tileData.x, tileData.y);
+                    const { x, y } = MonksActiveTiles.getSnappedPosition(tileData.x, tileData.y);
                     tileData.x = x;
                     tileData.y = y;
                 }
@@ -2287,8 +2399,8 @@ export class MonksActiveTiles {
         let tileCreatePreview = function (wrapped, ...args) {
             let data = args[0];
 
-            if (getProperty(data, "flags.monks-active-tiles") == undefined) {
-                data = mergeObject(data, {
+            if (foundry.utils.getProperty(data, "flags.monks-active-tiles") == undefined) {
+                data = foundry.utils.mergeObject(data, {
                     flags: {
                         'monks-active-tiles': {
                             active: true,
@@ -2478,7 +2590,7 @@ export class MonksActiveTiles {
                                     let results = {};
                                     for (let doc of docs) {
                                         if (!doc) continue;
-                                        let triggerData = getProperty(doc, "flags.monks-active-tiles");
+                                        let triggerData = foundry.utils.getProperty(doc, "flags.monks-active-tiles");
                                         if (triggerData?.active) {
                                             if (setting("prevent-when-paused") && game.paused && !game.user.isGM && triggerData.allowpaused !== true)
                                                 return;
@@ -2496,7 +2608,7 @@ export class MonksActiveTiles {
                                             }
 
                                             let result = await doc.trigger({ tokens: tokens, method: 'door', options: { value: { walls: walls }, change: wall._wallchange || "checklock" } }) || {};
-                                            mergeObject(results, result);
+                                            foundry.utils.mergeObject(results, result);
                                             if (result?.stoptriggers)
                                                 break;
                                         }
@@ -2601,7 +2713,7 @@ export class MonksActiveTiles {
 
                 if (!lastPositionContainsTile && currentPositionContainsTile && !MonksActiveTiles.hoveredTiles.has(tile)) {
                     if (game.user.isGM || !canvas?.scene?.tokenVision || !triggerData.vision || (!tile.hidden && entities.some(t => {
-                        return canvas.effects.visibility.testVisibility({ x: tile.x, y: tile.y }, { tolerance: 1, object: t });
+                        return canvas.visibility.testVisibility({ x: tile.x, y: tile.y }, { tolerance: 1, object: t });
                     }))) {
                         MonksActiveTiles.hoveredTiles.add(tile);
                         if (triggerData.pointer) {
@@ -2624,7 +2736,7 @@ export class MonksActiveTiles {
                         if (setting("prevent-when-paused") && game.paused && !game.user.isGM && triggerData.allowpaused !== true)
                             continue;
                         if (game.user.isGM || !canvas?.scene?.tokenVision || !triggerData.vision || (!tile.hidden && entities.some(t => {
-                            return canvas.effects.visibility.testVisibility({ x: tile.x, y: tile.y }, { tolerance: 1, object: t });
+                            return canvas.visibility.testVisibility({ x: tile.x, y: tile.y }, { tolerance: 1, object: t });
                         }))) {
                             tile.trigger({ tokens: tokens, method: 'hoverout', pt: currentPosition });
                         }
@@ -2634,6 +2746,12 @@ export class MonksActiveTiles {
 
             lastPosition = currentPosition;
         });
+
+        let _onSelectClick = function (wrapped, ...args) {
+            let event = args[0];
+            MonksActiveTiles.selectClick.call(this, event, 'click');
+            return wrapped(...args);
+        }
 
         let _onLeftClick = function (wrapped, ...args) {
             let event = args[0];
@@ -2663,10 +2781,26 @@ export class MonksActiveTiles {
             wrapped(...args);
         }
         
-        patchFunc("Canvas.prototype._onClickLeft", _onLeftClick, "MIXED");
-        patchFunc("Canvas.prototype._onClickRight", _onRightClick, "MIXED");
-        patchFunc("Canvas.prototype._onClickLeft2", _onLeftClick2, "MIXED");
-        patchFunc("Canvas.prototype._onClickRight2", _onRightClick2, "MIXED");
+        patchFunc("TokenLayer.prototype._onClickLeft", _onLeftClick);
+        patchFunc("TokenLayer.prototype._onClickRight", _onRightClick);
+        patchFunc("TokenLayer.prototype._onClickLeft2", _onLeftClick2);
+        patchFunc("TokenLayer.prototype._onClickRight2", _onRightClick2);
+
+        for (let layer of ["TilesLayer", "DrawingsLayer", "WallsLayer", "LightingLayer", "SoundsLayer", "RegionLayer", "NotesLayer"]) {
+            patchFunc(`${layer}.prototype._onClickLeft`, _onLeftClick, "MIXED");
+        }
+
+        patchFunc("TilesLayer.prototype._deactivate", function (wrapper, ...args) {
+            wrapper(...args);
+            const showImageless = setting("show-imageless") && game.user.isGM;
+            this.objects.visible = showImageless;
+        })
+
+        patchFunc("TilesLayer.prototype._draw", async function (wrapper, ...args) {
+            await wrapper(...args);
+            const showImageless = setting("show-imageless") && game.user.isGM;
+            this.objects.visible ||= showImageless;
+        })
 
         let clickDocumentName = async function (wrapped, ...args) {
             let event = args[0];
@@ -2826,7 +2960,7 @@ export class MonksActiveTiles {
 
                     // Commit the movement and update the final resolved destination coordinates
                     let animate = true;
-                    priorDest = duplicate(path.B);
+                    priorDest = foundry.utils.duplicate(path.B);
                     await token.document.update(path.B, { animate: animate });
                     path.B.x = token.x;
                     path.B.y = token.y;
@@ -2863,7 +2997,7 @@ export class MonksActiveTiles {
             for (let tile of _tiles) {
                 let triggerData = tile.flags["monks-active-tiles"];
                 if (triggerData && triggerData.actions?.length > 0) {
-                    let actions = duplicate(triggerData.actions);
+                    let actions = foundry.utils.duplicate(triggerData.actions);
                     let update = false;
                     for (let i = 0; i < actions.length; i++) {
                         let action = actions[i];
@@ -3271,7 +3405,7 @@ export class MonksActiveTiles {
                     let tile = (data?.tileid ? await fromUuid(data.tileid) : null);
                     let token = (data?.tokenid ? await fromUuid(data.tokenid) : null);
 
-                    let options = mergeObject(data, {tile, token});
+                    let options = foundry.utils.mergeObject(data, {tile, token});
 
                     MonksActiveTiles._showDialog(options).then((results) => {
                         MonksActiveTiles.emit("returndialog", { _id: data._id, tileid: data?.tileid, results: results });
@@ -3331,17 +3465,17 @@ export class MonksActiveTiles {
                             } catch {}
                         }
 
-                        let volume = Math.clamped(data.volume, 0, 1);
+                        let volume = Math.clamp(data.volume, 0, 1);
 
                         debug('Playing', data.src);
                         if (data.src) {
-                            AudioHelper.play({ src: data.src, volume: (data.fade > 0 ? 0 : volume), loop: data.loop }, false).then((sound) => {
+                            foundry.audio.AudioHelper.play({ src: data.src, volume: (data.fade > 0 ? 0 : volume), loop: data.loop }, false).then((sound) => {
                                 if (data.fade > 0)
                                     sound.fade(volume * getVolume(), { duration: data.fade * 1000 });
                                 if (tile.soundeffect == undefined)
                                     tile.soundeffect = {};
                                 tile.soundeffect[data.actionid] = sound;
-                                tile.soundeffect[data.actionid].on("end", () => {
+                                tile.soundeffect[data.actionid].addEventListener("end", () => {
                                     debug('Finished playing', data.src);
                                     delete tile.soundeffect[data.actionid];
                                 });
@@ -3428,8 +3562,8 @@ export class MonksActiveTiles {
                         return ui.notifications.warn(`You do not have permission to view ${entity.name}.`);
 
                     let checkEntity = entity.parent || entity;
-                    if (game.modules.get("monks-enhanced-journal")?.active && checkEntity instanceof JournalEntry && checkEntity.pages.size == 1 && !!getProperty(checkEntity.pages.contents[0], "flags.monks-enhanced-journal.type")) {
-                        let type = getProperty(checkEntity.pages.contents[0], "flags.monks-enhanced-journal.type");
+                    if (game.modules.get("monks-enhanced-journal")?.active && checkEntity instanceof JournalEntry && checkEntity.pages.size == 1 && !!foundry.utils.getProperty(checkEntity.pages.contents[0], "flags.monks-enhanced-journal.type")) {
+                        let type = foundry.utils.getProperty(checkEntity.pages.contents[0], "flags.monks-enhanced-journal.type");
                         if (type == "base" || type == "oldentry") type = "journalentry";
                         let types = game.MonksEnhancedJournal.getDocumentTypes();
                         if (types[type]) {
@@ -3648,7 +3782,7 @@ export class MonksActiveTiles {
                         let canView = game.user.isGM;
                         if (!canView) {
                             let token = canvas.tokens.controlled[0];
-                            canView = !entity.hidden && entity.parent.id == canvas.scene.id && (!canvas.scene.tokenVision || (token && canvas.effects.visibility.testVisibility({ x: token.x, y: token.y }, { tolerance: 1, object: entity })));
+                            canView = !entity.hidden && entity.parent.id == canvas.scene.id && (!canvas.scene.tokenVision || (token && canvas.visibility.testVisibility({ x: token.x, y: token.y }, { tolerance: 1, object: entity })));
                         }
                         if (canView)
                             MonksActiveTiles.transitionImage(entity, data.transitionId, data.from, data.img, data.transition, data.time);
@@ -3770,7 +3904,7 @@ export class MonksActiveTiles {
             return tile.checkClick(pt, clicktype, event);
         }).filter(t => !!t)
             .sort((a, b) => {
-                return b.tile.z - a.tile.z;
+                return (b.tile.sort ?? b.tile.z) - (a.tile.sort ?? a.tile.z);
             });
         for (let t of tiles) {
             let triggerResult = await t.tile.trigger(t.args);
@@ -3946,11 +4080,13 @@ export class MonksActiveTiles {
             console.warn("tokensWithin is deprecated and will be remove in later version.  Please use entitiesWithin instead");
             return this.entitiesWithin();
         }
-        TileDocument.prototype.entitiesWithin = function (collection = "tokens") {
+        TileDocument.prototype.entitiesWithin = function ({ collection = "tokens", useTriggerPt = true }) {
             return this.parent[collection]?.filter(t => {
                 if (t.id == this.id) return false;
 
-                let midEntity = getProperty(t, "flags.monks-active-tiles.triggerPt");
+                let midEntity;
+                if (useTriggerPt)
+                    midEntity = foundry.utils.getProperty(t, "flags.monks-active-tiles.triggerPt");
                 if (midEntity == undefined) {
                     midEntity = { x: t.x, y: t.y };
                     if (t instanceof TokenDocument) {
@@ -4418,7 +4554,7 @@ export class MonksActiveTiles {
                 //check to see if the clicked point is within the Tile
                 if (pt == undefined || this.pointWithin(pt)) {
                     if (game.user.isGM || !canvas?.scene?.tokenVision || !triggerData.vision || (entities.some(t => {
-                        return canvas.effects.visibility.testVisibility({ x: this.x, y: this.y }, { tolerance: 1, object: t });
+                        return canvas.visibility.testVisibility({ x: this.x, y: this.y }, { tolerance: 1, object: t });
                     }))) {
                         return { tile: this, args: { tokens: tokens, method: clicktype, pt: pt, options: { event: event } } };
                     }
@@ -4630,7 +4766,7 @@ export class MonksActiveTiles {
         }*/
 
         TileDocument.prototype.checkStop = function () {
-            let triggers = MonksActiveTiles.getTrigger(getProperty(this, "flags.monks-active-tiles.trigger"));
+            let triggers = MonksActiveTiles.getTrigger(foundry.utils.getProperty(this, "flags.monks-active-tiles.trigger"));
             //if (triggers.includes('movement'))
             //    return false;
             let hasLanding = false;
@@ -4668,14 +4804,16 @@ export class MonksActiveTiles {
                 if (triggerData.minrequired && this.countTriggered() < triggerData.minrequired)
                     return;
 
-                for (let tkn of tokens) {
-                    setProperty(tkn, "flags.monks-active-tiles.triggerPt", pt);
+                if (method != "trigger") {
+                    for (let tkn of tokens) {
+                        foundry.utils.setProperty(tkn, "flags.monks-active-tiles.triggerPt", pt);
+                    }
                 }
 
                 //A token has triggered this tile, what actions do we need to do
                 let values = [];
                 let value = { tokens: tokens };
-                let context = mergeObject({
+                let context = foundry.utils.mergeObject({
                     tile: this,
                     tokens: tokens,
                     userId: userId,
@@ -4776,7 +4914,7 @@ export class MonksActiveTiles {
                 let actionResult = await this.runActions(context, Math.max(start, 0), null);
 
                 for (let tkn of tokens) {
-                    setProperty(tkn, "flags.monks-active-tiles.triggerPt", null);
+                    foundry.utils.setProperty(tkn, "flags.monks-active-tiles.triggerPt", null);
                 }
 
                 return actionResult;
@@ -4832,14 +4970,14 @@ export class MonksActiveTiles {
                                 if (Array.isArray(result)) {
                                     for (let res of result) {
                                         if (typeof res == 'object') {
-                                            context.value = mergeObject(context.value, res);
+                                            context.value = foundry.utils.mergeObject(context.value, res);
                                         }
                                     }
                                 } else {
-                                    context.value = mergeObject(context.value, result);
+                                    context.value = foundry.utils.mergeObject(context.value, result);
                                 }
                                 delete context.value.goto;
-                                context.values.push(mergeObject(result, { action: action }));
+                                context.values.push(foundry.utils.mergeObject(result, { action: action }));
                                 context.stopmovement = context.stopmovement || result.stopmovement;
                                 if (!!context.stopmovement && context.stopdata?.callback) {
                                     context.stopdata.stopmovement = context.stopmovement;
@@ -4919,8 +5057,8 @@ export class MonksActiveTiles {
                                 result = result.continue;
                             }
                             let cancontinue = await Hooks.call("triggerTile", this, this, context.tokens, context.action, context.userId, context.value);
-                            if (getProperty(this, "flags.monks-active-tiles.allowdisabled") != undefined) {
-                                context.value.allowdisabled = getProperty(this, "flags.monks-active-tiles.allowdisabled");
+                            if (foundry.utils.getProperty(this, "flags.monks-active-tiles.allowdisabled") != undefined) {
+                                context.value.allowdisabled = foundry.utils.getProperty(this, "flags.monks-active-tiles.allowdisabled");
                                 this.unsetFlag("monks-active-tiles", "allowdisabled");
                             }
                             if (result === false || cancontinue === false || (this.getFlag('monks-active-tiles', 'active') === false && context.value.allowdisabled !== true) || this.getFlag('monks-active-tiles', 'continue') === false) {
@@ -5007,10 +5145,10 @@ export class MonksActiveTiles {
             else
                 tileHistory[tokenid].triggered.push(data);
 
-            //this.flags = mergeObject(this.flags, { "monks-active-tiles.history": tileHistory }); //Due to a race condition we need to set the actual value before trying to save it
+            //this.flags = foundry.utils.mergeObject(this.flags, { "monks-active-tiles.history": tileHistory }); //Due to a race condition we need to set the actual value before trying to save it
 
             try {
-                await this.setFlag("monks-active-tiles", "history", duplicate(this.flags["monks-active-tiles"]?.history || tileHistory));
+                await this.setFlag("monks-active-tiles", "history", foundry.utils.duplicate(this.flags["monks-active-tiles"]?.history || tileHistory));
                 canvas.perception.update({
                     refreshLighting: true,
                     refreshSounds: true,
@@ -5022,11 +5160,11 @@ export class MonksActiveTiles {
         }
 
         TileDocument.prototype.removeHistory = async function (id) {
-            let tileHistory = duplicate(this.flags["monks-active-tiles"]?.history || {});
+            let tileHistory = foundry.utils.duplicate(this.flags["monks-active-tiles"]?.history || {});
             for (let [k, v] of Object.entries(tileHistory)) {
                 let item = v.triggered.findSplice(h => h.id == id);
                 if (item != undefined) {
-                    this.flags = mergeObject(this.flags, { "monks-active-tiles.history": tileHistory }); //Due to a race condition we need to set the actual value before trying to save it
+                    this.flags = foundry.utils.mergeObject(this.flags, { "monks-active-tiles.history": tileHistory }); //Due to a race condition we need to set the actual value before trying to save it
                     await this.setFlag("monks-active-tiles", "history", tileHistory);
                     break;
                 }
@@ -5034,7 +5172,7 @@ export class MonksActiveTiles {
         }
 
         TileDocument.prototype.resetHistory = async function (tokenid) {
-            //let tileHistory = duplicate(this.flags["monks-active-tiles"]?.history || {});
+            //let tileHistory = foundry.utils.duplicate(this.flags["monks-active-tiles"]?.history || {});
             if (tokenid == undefined) {
                 this.flags["monks-active-tiles"].history = {};
                 await this.update({ [`flags.monks-active-tiles.-=history`]: null }, { render: false });
@@ -5074,7 +5212,7 @@ export class MonksActiveTiles {
                         });
 
                         let user = game.users.find(p => p.id == data.who);
-                        stats.list.push(mergeObject(data, {
+                        stats.list.push(foundry.utils.mergeObject(data, {
                             tokenid: k,
                             name: token?.name || (k == "" ? "" : 'Unknown'),
                             username: user?.name || 'Unknown',
@@ -5084,9 +5222,9 @@ export class MonksActiveTiles {
                     }
 
                     if (tknstat.first && (stats.first == undefined || tknstat.first.when < stats.first.when))
-                        stats.first = mergeObject(tknstat.first, { tokenid: k });
+                        stats.first = foundry.utils.mergeObject(tknstat.first, { tokenid: k });
                     if (tknstat.last && (stats.last == undefined || tknstat.last.when > stats.last.when))
-                        stats.last = mergeObject(tknstat.last, { tokenid: k });
+                        stats.last = foundry.utils.mergeObject(tknstat.last, { tokenid: k });
 
                     stats.count += tknstat.count;
                 }
@@ -5207,7 +5345,7 @@ export class MonksActiveTiles {
 
                     let templates = setting("tile-templates") || [];
                     let data = this.object.toObject();
-                    data._id = data.id = randomID();
+                    data._id = data.id = foundry.utils.randomID();
                     data.name = fd.object.name;
                     data.visible = true;
                     delete data.img;
@@ -5244,10 +5382,10 @@ export class MonksActiveTiles {
             let document = data.document;
             let endPt = data.pt;
             if (data.stopmovement == "snap") {
-                let snapPoint = { B: duplicate(endPt) };
+                let snapPoint = { B: foundry.utils.duplicate(endPt) };
                 if (endPt.x != data.dest.x || endPt.y != data.dest.y) 
                     snapPoint = Ray.towardsPoint(endPt, data.dest, document.parent.dimensions.size / 3);
-                endPt = canvas.grid.getSnappedPosition(snapPoint.B.x, snapPoint.B.y);
+                endPt = MonksActiveTiles.getSnappedPosition(snapPoint.B.x, snapPoint.B.y);
                 if (isNaN(endPt.x)) endPt.x = data.pt.x;
                 if (isNaN(endPt.y)) endPt.y = data.pt.y;
                 log("Snapping to", endPt);
@@ -5279,7 +5417,7 @@ export class MonksActiveTiles {
 
         for (let triggerObject of triggeringList) {
             triggerObject.tile = await fromUuid(triggerObject.tileId);
-            if (!getProperty(triggerObject.tile, "flags.monks-active-tiles.active") || triggerObject.stop)
+            if (!foundry.utils.getProperty(triggerObject.tile, "flags.monks-active-tiles.active") || triggerObject.stop)
                 continue;
             triggerObject.document = await fromUuid(triggerObject.documentId);
 
@@ -5292,7 +5430,7 @@ export class MonksActiveTiles {
                     for (let i = 0; i < triggers.length; i++) {
                         let trigger = triggers[i];
                         //log('Tile is triggering', when, document);
-                        if (getProperty(trigger.tile, "flags.monks-active-tiles.active") && !trigger.stop) {
+                        if (foundry.utils.getProperty(trigger.tile, "flags.monks-active-tiles.active") && !trigger.stop) {
                             trigger.args.stopdata = {
                                 tile: trigger.tile,
                                 document: trigger.document,
@@ -5352,6 +5490,12 @@ Hooks.on('ready', () => {
 
     MonksActiveTiles._oldSheetClass = CONFIG.Tile.sheetClasses.base['core.TileConfig'].cls;
     CONFIG.Tile.sheetClasses.base['core.TileConfig'].cls = WithActiveTileConfig(CONFIG.Tile.sheetClasses.base['core.TileConfig'].cls);
+
+    Object.defineProperty(CONFIG.Tile.documentClass.prototype, "name", {
+        get: function () {
+            return this.getFlag("monks-active-tiles", "name");
+        }
+    });
 
     if (game.modules.get("item-piles")?.active && setting('drop-item')) {
         game.settings.set('monks-active-tiles', 'drop-item', false);
@@ -5429,7 +5573,7 @@ Hooks.on('ready', () => {
 
 Hooks.on('createToken', async (document, options, userId) => {
     let tiles = document.parent.tiles.map((tile) => {
-        let triggerData = getProperty(tile, "flags.monks-active-tiles") || {};
+        let triggerData = foundry.utils.getProperty(tile, "flags.monks-active-tiles") || {};
         let triggers = MonksActiveTiles.getTrigger(triggerData?.trigger);
         if (triggerData?.active && triggerData.actions?.length > 0 && triggers.includes('create')) {
             let token = document.object;
@@ -5444,7 +5588,7 @@ Hooks.on('createToken', async (document, options, userId) => {
             }
         }
         return null;
-    }).filter(t => !!t).sort((a, b) => b.tile.z - a.tile.z);
+    }).filter(t => !!t).sort((a, b) => (b.tile.sort ?? b.tile.z) - (a.tile.sort ?? a.tile.z));
     for (let t of tiles) {
         let triggerResult = await t.tile.trigger(t.args);
         if (triggerResult?.stoptriggers)
@@ -5467,7 +5611,7 @@ Hooks.once('ready', () => {
         
 
         //make sure to bypass if the token is being dropped somewhere, otherwise we could end up triggering a lot of tiles
-        if ((update.x != undefined || update.y != undefined || update.elevation != undefined || update.rotation != undefined) && options.bypass !== true && (options.animate !== false || options.teleport)) { //(!game.modules.get("drag-ruler")?.active || options.animate)) {
+        if (((update.x != undefined && update.x != document.x) || (update.y != undefined && update.y != document.y) || update.elevation != undefined || update.rotation != undefined) && options.bypass !== true && (options.animate !== false || options.teleport)) { //(!game.modules.get("drag-ruler")?.active || options.animate)) {
             let token = document.object;
 
             if ((document.caught || document.getFlag('monks-active-tiles', 'teleporting')) && !options.teleport) {
@@ -5599,11 +5743,11 @@ Hooks.once('ready', () => {
 
                         let dist = Math.hypot(triggerPt.x - tokenPos.x, triggerPt.y - tokenPos.y);
                         let triggerObject = {
-                            id: randomID(),
+                            id: foundry.utils.randomID(),
                             tileId: tile.uuid,
                             documentId: document.uuid,
                             when,
-                            zIndex: tile.z,
+                            zIndex: tile.sort ?? tile.z,
                             dist,
                             end: { x: triggerPt.x - tokenMidX, y: triggerPt.y - tokenMidY },
                             dest,
@@ -5657,7 +5801,7 @@ Hooks.on("preUpdateCombat", async function (combat, delta) {
                 return { tile, args: { tokens: tokens, method: 'turnend', options: { turn: delta.turn } } };
             }
             return null;
-        }).filter(t => !!t).sort((a, b) => b.tile.z - a.tile.z);
+        }).filter(t => !!t).sort((a, b) => (b.tile.sort ?? b.tile.z) - (a.tile.sort ?? a.tile.z));
         for (let t of tiles) {
             let triggerResult = await t.tile.trigger(t.args);
             if (triggerResult?.stoptriggers)
@@ -5686,7 +5830,7 @@ Hooks.on("updateCombat", async function (combat, delta) {
                 }
             }
             return null;
-        }).filter(t => !!t).sort((a, b) => b.tile.z - a.tile.z);
+        }).filter(t => !!t).sort((a, b) => (b.tile.sort ?? b.tile.z) - (a.tile.sort ?? a.tile.z));
         for (let t of tiles) {
             let triggerResult = await t.tile.trigger(t.args);
             if (triggerResult?.stoptriggers)
@@ -5704,7 +5848,7 @@ Hooks.on("deleteCombat", async function (combat, delta) {
                 let tokens = combat.combatants.map(c => c.token);
                 return { tile, args: { tokens: tokens, method: 'combatend' } };
             }
-        }).filter(t => !!t).sort((a, b) => b.tile.z - a.tile.z);
+        }).filter(t => !!t).sort((a, b) => (b.tile.sort ?? b.tile.z) - (a.tile.sort ?? a.tile.z));
         for (let t of tiles) {
             let triggerResult = await t.tile.trigger(t.args);
             if (triggerResult?.stoptriggers)
@@ -5715,7 +5859,7 @@ Hooks.on("deleteCombat", async function (combat, delta) {
 
 Hooks.on('preCreateChatMessage', async (document, data, options, userId) => {
     if (document.getFlag('monks-active-tiles', 'language')) {
-        setProperty(data, "flags.polyglot.language", document.getFlag('monks-active-tiles', 'language'));
+        foundry.utils.setProperty(data, "flags.polyglot.language", document.getFlag('monks-active-tiles', 'language'));
         //document.update({ "flags.polyglot.language": document.getFlag('monks-active-tiles', 'language') });
     }
 });
@@ -5794,7 +5938,7 @@ Hooks.on("renderWallConfig", async (app, html, options) => {
         let tilename = "";
         if (entity.id)
             tilename = entity.id == "within" ? i18n("MonksActiveTiles.WithinWall") : await MonksActiveTiles.entityName(entity);
-        let triggerData = mergeObject({ tilename: tilename, showtagger: game.modules.get('tagger')?.active }, (app.object.flags['monks-active-tiles'] || {}));
+        let triggerData = foundry.utils.mergeObject({ tilename: tilename, showtagger: game.modules.get('tagger')?.active }, (app.object.flags['monks-active-tiles'] || {}));
         triggerData.entity = JSON.stringify(entity);
         let wallHtml = await renderTemplate("modules/monks-active-tiles/templates/wall-config.html", triggerData);
 
@@ -5849,7 +5993,7 @@ Hooks.on("dropCanvasData", async (canvas, data, options, test) => {
         let size = canvas.scene.dimensions.size * setting("drop-item-size");
         let dest = { x: data.x - (size / 2), y: data.y - (size / 2) };
 
-        let td = mergeObject(dest, {
+        let td = foundry.utils.mergeObject(dest, {
             img: item.img,
             width: size,
             height: size,
@@ -5888,7 +6032,7 @@ Hooks.on("dropCanvasData", async (canvas, data, options, test) => {
         let size = canvas.scene.dimensions.size;
         let dest = { x: data.x - (size / 2), y: data.y - (size / 2) };
 
-        let td = mergeObject(dest, {
+        let td = foundry.utils.mergeObject(dest, {
             img: scene.background?.src,
             width: size,
             height: size,
@@ -5917,7 +6061,7 @@ Hooks.on("dropCanvasData", async (canvas, data, options, test) => {
         let size = canvas.scene.dimensions.size;
         let dest = { x: data.x - (size / 2), y: data.y - (size / 2) };
 
-        let td = mergeObject(dest, {
+        let td = foundry.utils.mergeObject(dest, {
             img: macro.img || "icons/svg/dice-target.svg",
             width: size,
             height: size,
@@ -5951,6 +6095,18 @@ Hooks.on("renderTileConfig", (app, html, data) => {
 
     if ($("save-template-button", html).length == 0)
         $("<button>").addClass("save-template-button").attr("type", "button").attr("title", i18n("MonksActiveTiles.SaveAsTemplate")).css({ "flex": "0 0 34px" }).html('<i class="fas fa-save" style="margin-right: 0px;"></i>').insertBefore($('button[type="submit"]', html)).on("click", MonksActiveTiles.saveTemplate.bind(app));
+
+    $('[name="texture.src"]', html).closest('.form-group')
+        .before(
+            $('<div>')
+                .addClass('form-group')
+                .append($('<label>').html("Name"))
+                .append($("<div>")
+                    .addClass("form-fields")
+                    .append($('<input>').attr('type', 'text').attr('name', 'flags.monks-active-tiles.name').val(app.object.getFlag('monks-active-tiles', 'name'))))
+          );
+
+    app.setPosition();
 });
 
 Hooks.on("canvasReady", async () => {
@@ -5967,7 +6123,7 @@ Hooks.on("canvasReady", async () => {
             return { tile, args: { method: "ready" } };
         }
         return null;
-    }).filter(t => !!t).sort((a, b) => b.tile.z - a.tile.z);
+    }).filter(t => !!t).sort((a, b) => (b.tile.sort ?? b.tile.z) - (a.tile.sort ?? a.tile.z));
     for (let t of tiles) {
         let triggerResult = await t.tile.trigger(t.args);
         if (triggerResult?.stoptriggers)
@@ -5985,7 +6141,7 @@ Hooks.on("openJournalEntry", (document, options, userId) => {
 });
 
 Hooks.on('updateTile', async (document, update, options, userId) => {
-    if (update?.texture?.src != undefined || getProperty(update, "flags.monks-active-tiles.usealpha") != undefined) {
+    if (update?.texture?.src != undefined || foundry.utils.getProperty(update, "flags.monks-active-tiles.usealpha") != undefined) {
         let triggerData = document.flags["monks-active-tiles"];
         if (triggerData?.usealpha) {
             window.setTimeout(function () {
@@ -6008,9 +6164,9 @@ Hooks.on('preUpdateWall', async (document, update, options, userId) => {
             document._wallchange = "open";
     }
 
-    let entity = getProperty(update, "flags.monks-active-tiles.entity");
+    let entity = foundry.utils.getProperty(update, "flags.monks-active-tiles.entity");
     if (!!entity && typeof entity == "string") {
-        setProperty(update, "flags.monks-active-tiles.entity", JSON.parse(entity));
+        foundry.utils.setProperty(update, "flags.monks-active-tiles.entity", JSON.parse(entity));
     }
 });
 
@@ -6040,11 +6196,18 @@ Hooks.on("refreshTile", (tile) => {
     if (tile.bg && !tile.bg._destroyed) {
         const aw = Math.abs(tile.document.width);
         const ah = Math.abs(tile.document.height);
-        const r = Math.toRadians(tile.document.rotation);
+        const x = tile.document.width < 0 ? -aw : 0;
+        const y = tile.document.height < 0 ? -ah : 0;
+        //const r = Math.toRadians(tile.document.rotation);
 
         tile.bg.position.set(aw / 2, ah / 2);
-        tile.bg.clear().beginFill(0xFFFFFF, 0.5).drawRect(-(aw / 2), -(ah / 2), aw, ah).endFill();
-        tile.bg.rotation = r;
+        tile.bg.pivot.set(aw / 2, ah / 2);
+        tile.bg.clear().beginFill(0xFFFFFF, 0.5).drawRect(x, y, aw, ah).endFill();
+        //tile.bg.rotation = r;
+
+        if (setting("show-imageless") && game.user.isGM) {
+            tile.bg.visible = true;
+        }
     }
 
     if (tile._transition && tile.mesh.visible) {
@@ -6056,6 +6219,7 @@ Hooks.on("refreshTile", (tile) => {
     }
 });
 
+
 Hooks.on("refreshToken", (token) => {
     if (token._showhide) {
         token.mesh.alpha = this._showhide;
@@ -6065,7 +6229,7 @@ Hooks.on("refreshToken", (token) => {
 });
 
 Hooks.on("updateScene", async (scene, data, options) => {
-    if (data.darkness != undefined) {
+    if (data.environment?.darknessLevel != undefined) {
         let tiles = (scene?.tiles || []).map(tile => {
             let triggerData = tile.flags["monks-active-tiles"];
             let triggers = MonksActiveTiles.getTrigger(triggerData?.trigger);
@@ -6082,7 +6246,7 @@ Hooks.on("updateScene", async (scene, data, options) => {
                 return { tile, args: { tokens: tokens, method: 'darkness', options: { darkness: data.darkness } } };
             }
             return null;
-        }).filter(t => !!t).sort((a, b) => b.tile.z - a.tile.z);
+        }).filter(t => !!t).sort((a, b) => (b.tile.sort ?? b.tile.z) - (a.tile.sort ?? a.tile.z));
         for (let t of tiles) {
             let triggerResult = await t.tile.trigger(t.args);
             if (triggerResult?.stoptriggers)
@@ -6108,7 +6272,7 @@ Hooks.on('updateWorldTime', async (worldTime) => {
             return { tile, args: { tokens: tokens, method: 'time', options: { time: MonksActiveTiles.getWorldTime(worldTime) } } };
         }
         return null;
-    }).filter(t => !!t).sort((a, b) => b.tile.z - a.tile.z);
+    }).filter(t => !!t).sort((a, b) => (b.tile.sort ?? b.tile.z) - (a.tile.sort ?? a.tile.z));
     for (let t of tiles) {
         let triggerResult = await t.tile.trigger(t.args);
         if (triggerResult?.stoptriggers)

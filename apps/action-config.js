@@ -130,7 +130,7 @@ export class ActionConfig extends FormApplication {
             return result;
         }, {});*/
 
-        return mergeObject(super.getData(options), {
+        return foundry.utils.mergeObject(super.getData(options), {
             availableActions: availableActions
         });
     }
@@ -255,7 +255,7 @@ export class ActionConfig extends FormApplication {
         } else if (data.type == "button") {
             // Call the drop handler
             if (target && target.dataset.id) {
-                let items = duplicate(this.buttonlist);
+                let items = foundry.utils.duplicate(this.buttonlist);
 
                 if (data.id === target.dataset.id) return; // Don't drop on yourself
 
@@ -508,7 +508,7 @@ export class ActionConfig extends FormApplication {
     }
 
     static async addTag(event) {
-        let data = expandObject(this._getSubmitData());
+        let data = foundry.utils.expandObject(this._getSubmitData());
         let prop = event.currentTarget.dataset["target"]
         let entity = $(`input[name="${prop}"]`).data("value") || {};
         entity["tag-name"] = entity?.id?.substring(7);
@@ -563,7 +563,7 @@ export class ActionConfig extends FormApplication {
                             if (!temporaryIds?.[tag]) {
                                 temporaryIds[tag] = []
                             }
-                            id = randomID();
+                            id = foundry.utils.randomID();
                             temporaryIds[tag].push(id);
                         }
                         return tag.replace(regx, id);
@@ -626,7 +626,7 @@ export class ActionConfig extends FormApplication {
     }
 
     async editEntityId(event) {
-        let data = expandObject(super._getSubmitData());
+        let data = foundry.utils.expandObject(super._getSubmitData());
         let entity = JSON.parse(data?.data?.entity || "{}");
 
         const html = await renderTemplate(`modules/monks-active-tiles/templates/entity-dialog.html`, {
@@ -663,7 +663,7 @@ export class ActionConfig extends FormApplication {
             sceneList[scene.id] = scene.name;
         }
 
-        let data = expandObject(super._getSubmitData());
+        let data = foundry.utils.expandObject(super._getSubmitData());
         let location = JSON.parse(data?.data?.location || "{}");
 
         const html = await renderTemplate(`modules/monks-active-tiles/templates/location-dialog.html`, {
@@ -706,7 +706,7 @@ export class ActionConfig extends FormApplication {
 
     /*
     async editEntityId(event) {
-        let data = expandObject(super._getSubmitData());
+        let data = foundry.utils.expandObject(super._getSubmitData());
         new EntityEdit($(event.currentTarget).prev(), { action: data.action }).render(true);
     }
 
@@ -749,7 +749,7 @@ export class ActionConfig extends FormApplication {
 
                     let buttons = JSON.parse($('input[name="data.buttons"', this.element).val() || "[]");
                     if (!data.id) {
-                        data.id = randomID();
+                        data.id = foundry.utils.randomID();
                         buttons.push(data);
                     } else {
                         let button = buttons.find(b => b.id == data.id);
@@ -819,7 +819,7 @@ export class ActionConfig extends FormApplication {
     }
 
     _getSubmitData(updateData = {}) {
-        let data = expandObject(super._getSubmitData(updateData));
+        let data = foundry.utils.expandObject(super._getSubmitData(updateData));
 
         let files = null;
         if (data.files) {
@@ -844,10 +844,10 @@ export class ActionConfig extends FormApplication {
         */
 
         $('input.range-value', this.element).each(function () {
-            if ($(this).val() == "") setProperty(data, $(this).prev().attr("name"), "");
+            if ($(this).val() == "") foundry.utils.setProperty(data, $(this).prev().attr("name"), "");
         });
 
-        return flattenObject(data);
+        return foundry.utils.flattenObject(data);
     }
 
     async _updateObject(event, formData) {
@@ -872,15 +872,15 @@ export class ActionConfig extends FormApplication {
             formData['data.attack'] = { id: formData['data.attack'], name: $('select[name="data.attack"] option:selected', this.element).text()};
 
         if (this.object.id == undefined) {
-            mergeObject(this.object, formData);
+            foundry.utils.mergeObject(this.object, formData);
             this.object.id = makeid();
-            let actions = duplicate(this.options.parent.object.getFlag("monks-active-tiles", "actions") || []);
+            let actions = foundry.utils.duplicate(this.options.parent.object.getFlag("monks-active-tiles", "actions") || []);
             let append = this.options.index === -1 || this.options.index === actions.length;
             if (append)
                 actions.push(this.object);
             else
                 actions.splice(this.options.index, 0, this.object);
-            mergeObject(this.options.parent.object.flags, {
+            foundry.utils.mergeObject(this.options.parent.object.flags, {
                 "monks-active-tiles": { actions: actions }
             });
             //add this row to the parent
@@ -905,7 +905,7 @@ export class ActionConfig extends FormApplication {
 
             this.options.parent.setPosition({height: 'auto'});
         } else {
-            let actions = duplicate(this.options.parent.object.getFlag("monks-active-tiles", "actions") || []);
+            let actions = foundry.utils.duplicate(this.options.parent.object.getFlag("monks-active-tiles", "actions") || []);
             let action = actions.find(a => a.id == this.object.id);
             if (action) {
                 //clear out these before saving the new information so we don't get data bleed through
@@ -918,7 +918,7 @@ export class ActionConfig extends FormApplication {
                 if (this.options.parent.object._sounds) {
                     this.options.parent.object._sounds[this.object.id] = [];
                 }
-                mergeObject(action, formData);
+                foundry.utils.mergeObject(action, formData);
                 this.options.parent.object.flags["monks-active-tiles"].actions = actions;
                 //update the text for this row
                 let trigger = MonksActiveTiles.triggerActions[action.action];
@@ -965,7 +965,7 @@ export class ActionConfig extends FormApplication {
         //$('.gmonly', this.element).toggle(action.requiresGM);
 
         for (let ctrl of (action?.ctrls || [])) {
-            let options = mergeObject({ hide: [], show: [] }, ctrl.options);
+            let options = foundry.utils.mergeObject({ hide: [], show: [] }, ctrl.options);
             let field = $('<div>').addClass('form-fields').data('ctrl', ctrl);
             if (ctrl["class"]) field.addClass(ctrl["class"]);
             let id = 'data.' + ctrl.id + (ctrl.variation ? '.value' : '');

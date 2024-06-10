@@ -23,7 +23,7 @@ export class EntityEdit extends FormApplication {
     }
 
     getData(options) {
-        return mergeObject(super.getData(options), {
+        return foundry.utils.mergeObject(super.getData(options), {
             action: this.options.action,
             entities: this.entityList
         });

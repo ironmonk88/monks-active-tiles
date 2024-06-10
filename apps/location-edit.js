@@ -24,7 +24,7 @@ export class LocationEdit extends FormApplication {
             sceneList[scene.id] = scene.name;
         }
 
-        return mergeObject(super.getData(options), {
+        return foundry.utils.mergeObject(super.getData(options), {
             action: this.options.action,
             locations: this.locationList,
             sceneList

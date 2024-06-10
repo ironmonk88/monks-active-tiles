@@ -1,4 +1,4 @@
-import { MonksActiveTiles, log, error, actiontext, debug, warn, setting, i18n, makeid, rollDice, getVolume, getValue, asyncFilter } from './monks-active-tiles.js';
+import { MonksActiveTiles, log, error, actiontext, debug, warn, setting, i18n, makeid, rollDice, getVolume, getValue, asyncFilter, rectContains } from './monks-active-tiles.js';
 import { BatchManager } from "./classes/BatchManager.js";
 
 export class ActionManager {
@@ -14,7 +14,7 @@ export class ActionManager {
             return arr[0];
         else {
             let results = arr.filter(d => d.dest == undefined || d.dest.id != id);
-            let idx = Math.clamped(parseInt(Math.random() * results.length), 0, results.length - 1);
+            let idx = Math.clamp(parseInt(Math.random() * results.length), 0, results.length - 1);
             return results[idx];
         }
     }
@@ -222,7 +222,7 @@ export class ActionManager {
                             dest.x = parseInt(await getValue(dest.x, args, dest, { prop: canvas.scene._viewPosition.x, explicit: true }));
                             dest.y = parseInt(await getValue(dest.y, args, dest, { prop: canvas.scene._viewPosition.y, explicit: true }));
 
-                            let panUsers = duplicate(showUsers);
+                            let panUsers = foundry.utils.duplicate(showUsers);
                             let runForMe = panUsers.includes(game.user.id);
                             panUsers = panUsers.filter(u => u != game.user.id);
 
@@ -434,7 +434,7 @@ export class ActionManager {
                     let tokenTransfers = {};
 
                     for (let tokendoc of entities) {
-                        let loc = duplicate(action.data.location);
+                        let loc = foundry.utils.duplicate(action.data.location);
                         loc.sceneId = loc.sceneId || tokendoc.parent.id;
                         let dests = await MonksActiveTiles.getLocation.call(tile, loc, args);
 
@@ -447,10 +447,10 @@ export class ActionManager {
                         }
 
                         let dest = ActionManager.pickRandom(dests, tile.id);
-                        let entDest = duplicate(dest);
+                        let entDest = foundry.utils.duplicate(dest);
                         if (!entDest) {
                             console.warn("monks-active-tiles | Could not find a teleport destination", loc);
-                            let newPos = canvas.grid.getSnappedPosition(original.x, original.y);
+                            let newPos = MonksActiveTiles.getSnappedPosition(original.x, original.y);
 
                             let ray = new Ray({ x: tokendoc.x, y: tokendoc.y }, { x: newPos.x, y: newPos.y });
 
@@ -497,9 +497,9 @@ export class ActionManager {
                                 entDest.x = dest.dest.x + (dest.dest.width / 2);
                                 entDest.y = dest.dest.y + (dest.dest.height / 2);
                             } else if (destpos == "relative") {
-                                let usePt = duplicate(pt);
+                                let usePt = foundry.utils.duplicate(pt);
                                 if (!["enter", "exit", "click", "dblclick", "rightclick", "dblrightclick"].includes(method) && tile.pointWithin(pt))
-                                    usePt = duplicate(oldPos);
+                                    usePt = foundry.utils.duplicate(oldPos);
 
                                 let deltaX1 = (usePt.x - oldTile.x);
                                 let deltaY1 = (usePt.y - oldTile.y);
@@ -523,8 +523,8 @@ export class ActionManager {
                                 if (parseInt(midDestY + deltaY2).toNearest(dest.dest.parent.dimensions.size) == parseInt(midDestY + deltaY2) && deltaY2 > 0)
                                     deltaY2 *= 0.99;
 
-                                entDest.x = Math.clamped(parseInt(midDestX + deltaX2), dest.dest.x, dest.dest.x + dest.dest.width);
-                                entDest.y = Math.clamped(parseInt(midDestY + deltaY2), dest.dest.y, dest.dest.y + dest.dest.height);
+                                entDest.x = Math.clamp(parseInt(midDestX + deltaX2), dest.dest.x, dest.dest.x + dest.dest.width);
+                                entDest.y = Math.clamp(parseInt(midDestY + deltaY2), dest.dest.y, dest.dest.y + dest.dest.height);
                             } else {
                                 // Find a random location within this Tile
                                 entDest.x = dest.dest.x + Math.floor((Math.random() * Math.abs(dest.dest.width)));
@@ -562,7 +562,7 @@ export class ActionManager {
 
                         if (samescene) {
                             await tokendoc._object?.stopAnimation();   //+++ need to stop the animation for everyone, even if they're not on the same scene
-                            if (!tokendoc.parent.dimensions.rect.contains(newPos.x, newPos.y)) {
+                            if (!rectContains(tokendoc.parent.dimensions.rect, newPos.x, newPos.y)) {
                                 //+++find the closest spot on the edge of the scene
                                 ui.notifications.error(i18n("MonksActiveTiles.msg.prevent-teleport"));
                                 return;
@@ -625,7 +625,7 @@ export class ActionManager {
                                 newPos.y -= ((scene.dimensions.size * Math.abs(tokendoc.height)) / 2);
                             }
 
-                            let td = mergeObject(await tokendoc.toObject(), { x: newPos.x, y: newPos.y, 'flags.monks-active-tiles.teleporting': true, 'flags.monks-active-tiles.current': true });
+                            let td = foundry.utils.mergeObject(await tokendoc.toObject(), { x: newPos.x, y: newPos.y, 'flags.monks-active-tiles.teleporting': true, 'flags.monks-active-tiles.current': true });
                             if (newtoken) {
                                 batch.add("update", newtoken, (action.data.preservesettings ?
                                     { x: newPos.x, y: newPos.y, img: tokendoc.texture.src, hidden: tokendoc.hidden, 'flags.monks-active-tiles.teleporting': true, 'flags.monks-active-tiles.current': true } : td),
@@ -822,11 +822,11 @@ export class ActionManager {
                                 y: entity.y + midY
                             }
 
-                            let location = duplicate(action.data.location);
+                            let location = foundry.utils.duplicate(action.data.location);
                             let dests = await MonksActiveTiles.getLocation.call(tile, location, Object.assign({}, args, { pt: { x: pt?.x - midX, y: pt?.y - midY } }));
                             let dest = ActionManager.pickRandom(dests);
 
-                            let entDest = duplicate(dest);
+                            let entDest = foundry.utils.duplicate(dest);
                             if (!entDest)
                                 continue;
 
@@ -869,9 +869,9 @@ export class ActionManager {
                                     entDest.x = dest.dest.x + (dest.dest.width / 2);
                                     entDest.y = dest.dest.y + (dest.dest.height / 2);
                                 } else if (action.data.position == "relative") {
-                                    let usePt = duplicate(pt);
+                                    let usePt = foundry.utils.duplicate(pt);
                                     if (!["enter", "exit", "click", "dblclick", "rightclick", "dblrightclick"].includes(method) && tile.pointWithin(pt))
-                                        usePt = duplicate(oldPos);
+                                        usePt = foundry.utils.duplicate(oldPos);
 
                                     let deltaX = (usePt.x - oldTile.x);
                                     let deltaY = (usePt.y - oldTile.y);
@@ -893,8 +893,8 @@ export class ActionManager {
                                     let midDestX = dest.dest.x + (Math.abs(dest.dest.width) / 2);
                                     let midDestY = dest.dest.y + (Math.abs(dest.dest.height) / 2);
 
-                                    entDest.x = Math.clamped(midDestX + deltaX, dest.dest.x, dest.dest.x + dest.dest.width);
-                                    entDest.y = Math.clamped(midDestY + deltaY, dest.dest.y, dest.dest.y + dest.dest.height);
+                                    entDest.x = Math.clamp(midDestX + deltaX, dest.dest.x, dest.dest.x + dest.dest.width);
+                                    entDest.y = Math.clamp(midDestY + deltaY, dest.dest.y, dest.dest.y + dest.dest.height);
                                 } else {
                                     // Find a random location within this Tile
                                     entDest.x = dest.dest.x + Math.floor((Math.random() * Math.abs(dest.dest.width)));
@@ -907,7 +907,7 @@ export class ActionManager {
                                 y: entDest.y
                             };
 
-                            if (!entity.parent.dimensions.rect.contains(newPos.x, newPos.y)) {
+                            if (!rectContains(entity.parent.dimensions.rect, newPos.x, newPos.y)) {
                                 //+++find the closest spot on the edge of the scene
                                 ui.notifications.error(i18n("MonksActiveTiles.msg.prevent-teleport"));
                                 return;
@@ -1282,8 +1282,8 @@ export class ActionManager {
                                 entity = entity.actor;
                             }
                             if (entity instanceof JournalEntry) {
-                                if (game.modules.get("monks-enhanced-journal")?.active && entity.pages.size == 1 && (getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.actors") || []).length) {
-                                    let eaactors = getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.actors");
+                                if (game.modules.get("monks-enhanced-journal")?.active && entity.pages.size == 1 && (foundry.utils.getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.actors") || []).length) {
+                                    let eaactors = foundry.utils.getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.actors");
                                     for (let ea of eaactors) {
                                         let actor;
                                         if (ea.pack) {
@@ -1313,7 +1313,7 @@ export class ActionManager {
                                                 let tdests = (ea.location ? dests.filter(d => d.dest ? Tagger.hasTags(d.dest, ea.location) : d) : dests);
                                                 let dest = ActionManager.pickRandom(tdests, tile.id);
 
-                                                let entDest = duplicate(dest);
+                                                let entDest = foundry.utils.duplicate(dest);
                                                 if (!entDest)
                                                     continue;
 
@@ -1387,7 +1387,7 @@ export class ActionManager {
                             } else if (entity instanceof Actor) {
                                 let dest = dests[Math.floor(Math.random() * dests.length)];
 
-                                let entDest = duplicate(dest);
+                                let entDest = foundry.utils.duplicate(dest);
                                 if (entDest) {
                                     if (dest.dest instanceof TileDocument) {
                                         // Find a random location within this Tile
@@ -1442,11 +1442,11 @@ export class ActionManager {
 
                             // Prepare the Token data
                             const td = await actor.getTokenDocument();
-                            mergeObject(td, ad.data);
+                            foundry.utils.mergeObject(td, ad.data);
 
                             if (!ad.lockpos) {
                                 if (action.data.avoidtokens) {
-                                    let dt = mergeObject(ad.data, MonksActiveTiles.findVacantSpot(ad.data, { data: td }, scene, newTokens, ad.dest, action.data.snap));
+                                    let dt = foundry.utils.mergeObject(ad.data, MonksActiveTiles.findVacantSpot(ad.data, { data: td }, scene, newTokens, ad.dest, action.data.snap));
                                     td.x = dt.x;
                                     td.y = dt.y;
                                 }
@@ -1460,17 +1460,17 @@ export class ActionManager {
                                 else {
                                     const hw = canvas.grid.w / 2;
                                     const hh = canvas.grid.h / 2;
-                                    let pos = canvas.grid.getSnappedPosition(td.x - (td.width * hw), td.y - (td.height * hh))
+                                    let pos = MonksActiveTiles.getSnappedPosition(td.x - (td.width * hw), td.y - (td.height * hh))
                                     td.x = pos.x;
                                     td.y = pos.y;
                                 }
                             }
 
                             // Validate the final position
-                            if (!canvas.dimensions.rect.contains(td.x, td.y)) continue;
+                            if (!rectContains(canvas.dimensions.rect, td.x, td.y)) continue;
 
                             //if (td.hidden)
-                            //    setProperty(td, "flags.monks-active-tiles.hide", true);
+                            //    foundry.utils.setProperty(td, "flags.monks-active-tiles.hide", true);
 
                             // Submit the Token creation request and activate the Tokens layer (if not already active)
                             batch.add("create", cls, td, { parent: scene });
@@ -1486,7 +1486,7 @@ export class ActionManager {
                         tokens = batch.mergeResults(tokens);
 
                         //for (let token of tokens) {
-                        //    if (getProperty(token, "flags.monks-active-tiles.hidden")) {
+                        //    if (foundry.utils.getProperty(token, "flags.monks-active-tiles.hidden")) {
                         //        batch.add("update", token, { "hidden": true, "flags.monks-active-tiles.-=hidden": null });
                         //    }
                         //}
@@ -1597,13 +1597,13 @@ export class ActionManager {
 
                                 // Snap to Grid
                                 if (action.data.snap) {
-                                    let snap = canvas.grid.getSnappedPosition(data.x, data.y, canvas.notes.gridPrecision);
+                                    let snap = MonksActiveTiles.getSnappedPosition(data.x, data.y, 2);
                                     data.x = snap.x;
                                     data.y = snap.y;
                                 }
 
                                 // Validate the final position
-                                if (!canvas.dimensions.rect.contains(data.x, data.y)) return;
+                                if (!rectContains(canvas.dimensions.rect, data.x, data.y)) return;
 
 
                                 batch.add("create", cls, data, { parent: tile.parent });
@@ -1803,27 +1803,27 @@ export class ActionManager {
                         for (let entity of entities) {
                             if (entity) {
                                 let base = entity;
-                                let val = duplicate(_val);
-                                let attr = duplicate(_attr);
+                                let val = foundry.utils.duplicate(_val);
+                                let attr = foundry.utils.duplicate(_attr);
 
                                 let update = {};
 
                                 if (!attr.startsWith('flags')) {
-                                    if (!hasProperty(base, attr) && entity instanceof TokenDocument) {
+                                    if (!foundry.utils.hasProperty(base, attr) && entity instanceof TokenDocument) {
                                         base = entity.actor;
                                     }
 
-                                    if (!hasProperty(base, attr)) {
+                                    if (!foundry.utils.hasProperty(base, attr)) {
                                         if (!attr.startsWith("system"))
                                             attr = 'system.' + attr;
-                                        if (!hasProperty(base, attr)) {
+                                        if (!foundry.utils.hasProperty(base, attr)) {
                                             warn("Couldn't find attribute", entity, attr);
                                             continue;
                                         }
                                     }
                                 }
 
-                                let prop = getProperty(base, attr);
+                                let prop = foundry.utils.getProperty(base, attr);
 
                                 if (prop && typeof prop == 'object' && !(prop instanceof Array)) {
                                     if (prop.value == undefined) {
@@ -2074,7 +2074,7 @@ export class ActionManager {
                         let updates = {};
                         amount = Math.floor(parseInt(amount));
                         let resourcename = game.system.primaryTokenAttribute || 'attributes.hp';
-                        let resource = getProperty(actor, "system." + resourcename);
+                        let resource = foundry.utils.getProperty(actor, "system." + resourcename);
                         if (resource instanceof Object) {
                             // Deduct damage from temp HP first
                             let dt = 0;
@@ -2090,7 +2090,7 @@ export class ActionManager {
                             }
 
                             // Update the Actor
-                            const dh = Math.clamped(resource.value - (amount - dt), (game.system.id == 'D35E' || game.system.id == 'pf1' ? -2000 : 0), (resource.max == 0 ? 4000 : resource.max + tmpMax));
+                            const dh = Math.clamp(resource.value - (amount - dt), (game.system.id == 'D35E' || game.system.id == 'pf1' ? -2000 : 0), (resource.max == 0 ? 4000 : resource.max + tmpMax));
                             updates["system." + resourcename + ".value"] = dh;
                         } else {
                             let value = Math.floor(parseInt(resource));
@@ -2120,7 +2120,7 @@ export class ActionManager {
                                 token: entity.toObject(false),
                                 tile: tile.toObject(false),
                                 entity: entity,
-                                variable: getProperty(tile, "flags.monks-active-tiles.variables") || {},
+                                variable: foundry.utils.getProperty(tile, "flags.monks-active-tiles.variables") || {},
                                 user: game.users.get(userId),
                                 value: value,
                                 scene: canvas.scene,
@@ -2168,7 +2168,7 @@ export class ActionManager {
                                         await a.applyDamage({ damage: val, token: entity });
                                     else if (game.system.id == "pf1")
                                         await a.applyDamage(val);
-                                    else if (game.system.id == "dnd5e" && isNewerVersion(game.system.version, "2.9.9"))
+                                    else if (game.system.id == "dnd5e" && foundry.utils.isNewerVersion(game.system.version, "2.9.9"))
                                         await a.applyDamage(val, { multiplier: 1 });
                                     else
                                         await a.applyDamage(val, 1);
@@ -2302,7 +2302,7 @@ export class ActionManager {
                         return tile._sounds[action.id];
                     }
 
-                    let volume = Math.clamped((action.data.volume.value ?? action.data.volume ?? 1), 0, 1);
+                    let volume = Math.clamp((action.data.volume.value ?? action.data.volume ?? 1), 0, 1);
 
                     let audiofiles = await getTileSounds(tile);
                     const audiofile = audiofiles[Math.floor(Math.random() * audiofiles.length)];
@@ -2334,13 +2334,13 @@ export class ActionManager {
                             return;
 
                         let fade = action.data.fade ?? 0;
-                        AudioHelper.play({ src: audiofile, volume: (fade > 0 ? 0 : volume * getVolume()), loop: action.data.loop }, false).then((sound) => {
+                        foundry.audio.AudioHelper.play({ src: audiofile, volume: (fade > 0 ? 0 : volume * getVolume()), loop: action.data.loop }, false).then((sound) => {
                             if (fade > 0)
                                 sound.fade(volume * getVolume(), { duration: fade * 1000 });
                             if (tile.soundeffect == undefined)
                                 tile.soundeffect = {};
                             tile.soundeffect[action.id] = sound;
-                            tile.soundeffect[action.id].on("stop", () => {
+                            tile.soundeffect[action.id].addEventListener("stop", () => {
                                 MonksActiveTiles.emit('stopsound', {
                                     tileid: tile.uuid,
                                     actionid: action.id,
@@ -2349,7 +2349,7 @@ export class ActionManager {
                                 });
                                 delete tile.soundeffect[action.id];
                             });
-                            tile.soundeffect[action.id].on("end", () => {
+                            tile.soundeffect[action.id].addEventListener("end", () => {
                                 debug('Finished playing', audiofile);
                                 delete tile.soundeffect[action.id];
                             });
@@ -2468,7 +2468,7 @@ export class ActionManager {
                             else {
                                 let options = { };
                                 if (Number.isNumeric(action.data.volume.value ?? action.data.volume)) {
-                                    options.volume = Math.clamped((action.data.volume.value ?? action.data.volume ?? 1), 0, 1);
+                                    options.volume = Math.clamp((action.data.volume.value ?? action.data.volume ?? 1), 0, 1);
                                 }
                                 await entity.playAll(options);
                             }
@@ -2480,7 +2480,7 @@ export class ActionManager {
                             else {
                                 let update = { playing: true, repeat: action.data.loop };
                                 if (Number.isNumeric(action.data.volume.value ?? action.data.volume)) {
-                                    update.volume = Math.clamped((action.data.volume.value ?? action.data.volume ?? 1), 0, 1);
+                                    update.volume = Math.clamp((action.data.volume.value ?? action.data.volume ?? 1), 0, 1);
                                 }
 
                                 batch.add("update", entity, update);
@@ -3044,7 +3044,7 @@ export class ActionManager {
 
                             if (action.data.chatbubble !== "false") {
                                 if (tkn instanceof Token) {
-                                    let su = duplicate(showUsers);
+                                    let su = foundry.utils.duplicate(showUsers);
                                     if (su.includes(game.user.id) && canvas.scene.id == tkn.document.parent.id) {
                                         canvas.hud.bubbles.say(tkn, content);
                                         su = su.filter(u => u != game.user.id);
@@ -3062,7 +3062,7 @@ export class ActionManager {
                                 let messageData = {
                                     user: userId,
                                     speaker: speaker,
-                                    type: (action.data.incharacter ? CONST.CHAT_MESSAGE_TYPES.IC : CONST.CHAT_MESSAGE_TYPES.OOC),
+                                    style: (action.data.incharacter ? CONST.CHAT_MESSAGE_STYLES.IC : CONST.CHAT_MESSAGE_STYLES.OOC),
                                     content: content
                                 };
 
@@ -3080,7 +3080,7 @@ export class ActionManager {
                                 if (action.data.language != '' && game.modules.get("polyglot")?.active) {
                                     let language = action.data.language.indexOf(":") > -1 ? action.data.language.split(":")[1] : action.data.language;
                                     if (!!language)
-                                        mergeObject(messageData, { flags: { 'monks-active-tiles': { language } }, lang: language });
+                                        foundry.utils.mergeObject(messageData, { flags: { 'monks-active-tiles': { language } }, lang: language });
                                 }
 
                                 await ChatMessage.create(messageData, { chatBubble: false });
@@ -3369,7 +3369,7 @@ export class ActionManager {
                                     flavor: `Draws ${nr} from the ${rolltable.name} table.`,
                                     user: userId,
                                     speaker: speaker,
-                                    type: CONST.CHAT_MESSAGE_TYPES.ROLL,
+                                    style: CONST.CHAT_MESSAGE_STYLES.ROLL,
                                     roll: tblResults.roll,
                                     sound: tblResults.roll ? CONFIG.sounds.dice : null,
                                     flags: { "core.RollTable": rolltable.id }
@@ -3379,7 +3379,7 @@ export class ActionManager {
                                 let description = await TextEditor.enrichHTML(rolltable.description, { documents: true, entities: true, async: true })
                                 messageData.content = await renderTemplate(CONFIG.RollTable.resultTemplate, {
                                     description: description,
-                                    results: duplicate(tblResults.results).map(r => {
+                                    results: foundry.utils.duplicate(tblResults.results).map(r => {
                                         let original = tblResults.results.find(res => res.id == r._id);
                                         r.text = original?.getChatText() || r.text;
                                         r.icon = r.icon || r.img;
@@ -3858,7 +3858,7 @@ export class ActionManager {
                                     if (/^JournalEntry.[a-zA-Z0-9]{16}$/.test(value) || /^Compendium.+[a-zA-Z0-9]{16}$/.test(value)) {
                                         let entity = await fromUuid(value);
 
-                                        if (entity && !(entity.pages.size == 1 && !!getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type"))) {
+                                        if (entity && !(entity.pages.size == 1 && !!foundry.utils.getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type"))) {
                                             let list = { "": "" };
                                             for (let p of entity.pages)
                                                 list[p._id] = p.name;
@@ -3879,7 +3879,7 @@ export class ActionManager {
                                     if (/^JournalEntry.[a-zA-Z0-9]{16}$/.test(value.id) || /^Compendium.+[a-zA-Z0-9]{16}$/.test(value.id)) {
                                         let entity = await fromUuid(value.id);
                                         if (entity)
-                                            return !(entity && entity.pages.size == 1 && !!getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type"));
+                                            return !(entity && entity.pages.size == 1 && !!foundry.utils.getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type"));
                                     }
                                 } catch { }
                             }
@@ -3899,7 +3899,7 @@ export class ActionManager {
                                     if (/^JournalEntry.[a-zA-Z0-9]{16}$/.test(value.id) || /^Compendium.+[a-zA-Z0-9]{16}$/.test(value.id)) {
                                         let entity = await fromUuid(value.id);
                                         if (entity)
-                                            return !(entity && entity.pages.size == 1 && !!getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type"));
+                                            return !(entity && entity.pages.size == 1 && !!foundry.utils.getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type"));
                                     }
                                 } catch { }
                             }
@@ -3973,8 +3973,8 @@ export class ActionManager {
                         let showUsers = MonksActiveTiles.getForPlayers(showto, args);
 
                         if (showUsers.includes(game.user.id)) {
-                            if (game.modules.get("monks-enhanced-journal")?.active && entity instanceof JournalEntry && entity.pages.size == 1 && !!getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type")) {
-                                let type = getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type");
+                            if (game.modules.get("monks-enhanced-journal")?.active && entity instanceof JournalEntry && entity.pages.size == 1 && !!foundry.utils.getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type")) {
+                                let type = foundry.utils.getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type");
                                 if (type == "base" || type == "oldentry") type = "journalentry";
                                 let types = game.MonksEnhancedJournal.getDocumentTypes();
                                 if (types[type]) {
@@ -3983,7 +3983,7 @@ export class ActionManager {
                                 }
                             }
 
-                            if (action.data.asimage && (entity.type == "image" || getProperty(entity, "flags.monks-enhanced-journal.type") == "picture")) {
+                            if (action.data.asimage && (entity.type == "image" || foundry.utils.getProperty(entity, "flags.monks-enhanced-journal.type") == "picture")) {
                                 new ImagePopout(entity.src).render(true);
                             } else {
                                 let anchor = action.data.subsection?.slugify().replace(/["']/g, "").substring(0, 64);
@@ -4177,9 +4177,9 @@ export class ActionManager {
                                             let quantityName = item.system.quantity != undefined ? "quantity" : item.system.value != undefined ? "value" : item.system.eqt != undefined ? "eqt.count" : null;
                                             if (quantityName) {
                                                 let valueName = `system.${quantityName}.value`;
-                                                let useValue = getProperty(item, valueName) != undefined;
+                                                let useValue = foundry.utils.getProperty(item, valueName) != undefined;
 
-                                                setProperty(itemData, `system.${quantityName}`, useValue ? { value: quantity } : quantity);
+                                                foundry.utils.setProperty(itemData, `system.${quantityName}`, useValue ? { value: quantity } : quantity);
                                             }
                                         }
                                         let hasAdded = false;
@@ -4369,7 +4369,7 @@ export class ActionManager {
                                     if (/^JournalEntry.[a-zA-Z0-9]{16}$/.test(value)) {
                                         let entity = await fromUuid(value);
 
-                                        if (entity && !(entity.pages.size == 1 && !!getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type"))) {
+                                        if (entity && !(entity.pages.size == 1 && !!foundry.utils.getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type"))) {
                                             let list = { "": "" };
                                             for (let p of entity.pages)
                                                 list[p._id] = p.name;
@@ -4800,7 +4800,7 @@ export class ActionManager {
                         if (!(entity instanceof TileDocument))
                             continue;
 
-                        if (getProperty(entity, "flags.monks-active-tiles.active") === false && action.data?.allowdisabled !== true)
+                        if (foundry.utils.getProperty(entity, "flags.monks-active-tiles.active") === false && action.data?.allowdisabled !== true)
                             continue;
 
                         let landing = await getValue(action.data?.landing, args, entity);
@@ -4810,7 +4810,7 @@ export class ActionManager {
                                 actor: tokens[0]?.actor?.toObject(false),
                                 token: tokens[0]?.toObject(false),
                                 tile: tile.toObject(false),
-                                variable: getProperty(tile, "flags.monks-active-tiles.variables") || {},
+                                variable: foundry.utils.getProperty(tile, "flags.monks-active-tiles.variables") || {},
                                 entity: entity,
                                 user: game.users.get(userId),
                                 value: value,
@@ -4838,7 +4838,7 @@ export class ActionManager {
 
                         let value = {};
                         for (let result of results) {
-                            mergeObject(value, result.value);
+                            foundry.utils.mergeObject(value, result.value);
                         }
                         return value;
                     });
@@ -5082,7 +5082,7 @@ export class ActionManager {
                             if (!(entity instanceof TokenDocument))
                                 continue;
 
-                            let prop = getProperty(entity, 'elevation');
+                            let prop = foundry.utils.getProperty(entity, 'elevation');
 
                             if (prop == undefined) {
                                 warn("Couldn't find attribute", entity);
@@ -5097,7 +5097,7 @@ export class ActionManager {
                                 actor: tokens[0]?.actor?.toObject(false),
                                 token: tokens[0]?.toObject(false),
                                 tile: tile.toObject(false),
-                                variable: getProperty(tile, "flags.monks-active-tiles.variables") || {},
+                                variable: foundry.utils.getProperty(tile, "flags.monks-active-tiles.variables") || {},
                                 entity: entity,
                                 user: game.users.get(userId),
                                 value: value,
@@ -5345,7 +5345,7 @@ export class ActionManager {
                     let entities = await MonksActiveTiles.getEntities(args, 'tiles');
 
                     let getPosition = async function (entity) {
-                        let fileindex = getProperty(entity, 'flags.monks-active-tiles.fileindex') || 0;
+                        let fileindex = foundry.utils.getProperty(entity, 'flags.monks-active-tiles.fileindex') || 0;
                         let position = await getValue(action.data?.select ?? "next", args, entity, {
                             fileindex: fileindex,
                             files: entity._images
@@ -5377,7 +5377,7 @@ export class ActionManager {
                         } else
                             position = parseInt(position);
 
-                        position = Math.clamped(position, 1, entity._images.length);
+                        position = Math.clamp(position, 1, entity._images.length);
 
                         return position;
                     }
@@ -5476,7 +5476,7 @@ export class ActionManager {
                                     entityid: entity.uuid,
                                     from: entity.texture.src,
                                     transition: getTransition(),
-                                    transitionId: randomID(),
+                                    transitionId: foundry.utils.randomID(),
                                     img: entity._images[position - 1],
                                     time: time,
                                     position: position - 1
@@ -5509,7 +5509,7 @@ export class ActionManager {
                                         data.img = entity._images[data.position];
                                         data.time = new Date().getTime() + (action.data?.speed * 1000);
 
-                                        setProperty(entity, 'flags.monks-active-tiles.fileindex', data.position);
+                                        foundry.utils.setProperty(entity, 'flags.monks-active-tiles.fileindex', data.position);
 
                                         return doNextPromise(data);
                                     } else {
@@ -5802,10 +5802,38 @@ export class ActionManager {
                 fn: async (args = {}) => {
                     let { action } = args;
 
-                    let time = await getValue(action.data.time, args, null, { prop: game.time.worldTime });
-                    time = parseInt(time) * 60;
-                    if (time && !isNaN(time)) {
-                        game.time.advance(time);
+                    let time = action.data.time;
+                    // strip off a leading + or - sign
+                    let relative = false;
+                    if (action.data.time.startsWith('+') || action.data.time.startsWith('-')) {
+                        relative = action.data.time.substring(0, 1);
+                        time = action.data.time.substring(1).trim();
+                    }
+
+                    time = await getValue(time, args, null, { prop: game.time.worldTime });
+                    time = time + "";
+
+                    // convert string time to seconds
+                    let seconds = 0;
+                    if (time.includes(':')) {
+                        let parts = time.split(':');
+                        seconds = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + (parts.length > 2 ? parseInt(parts[2]) : 0);
+                    } else {
+                        seconds = parseInt(time) * 60;
+                    }
+
+                    if (seconds && !isNaN(seconds)) {
+                        if (!relative) {
+                            // get the world time, and set the time part to the new time
+                            let worldTime = MonksActiveTiles.getWorldTime();
+                            // get the difference between the new time and the current time
+                            let diff = seconds - (worldTime * 60);
+                            // advance the game time to the difference
+                            game.time.advance(diff);
+                        } else {
+                            // relative time
+                            game.time.advance(seconds * (relative == "-" ? -1 : 1));
+                        }
                     }
                 },
                 content: async (trigger, action) => {
@@ -5951,7 +5979,7 @@ export class ActionManager {
                             actor: tokens[0]?.actor?.toObject(),
                             token: tokens[0]?.toObject(),
                             tile: tile,
-                            variable: getProperty(tile, "flags.monks-active-tiles.variables") || {},
+                            variable: foundry.utils.getProperty(tile, "flags.monks-active-tiles.variables") || {},
                             user: game.users.get(userId),
                             players: game.users,
                             value: value,
@@ -6306,7 +6334,7 @@ export class ActionManager {
                                     if (/^JournalEntry.[a-zA-Z0-9]{16}$/.test(value)) {
                                         let entity = await fromUuid(value);
 
-                                        if (entity && !(entity.pages.size == 1 && !!getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type"))) {
+                                        if (entity && !(entity.pages.size == 1 && !!foundry.utils.getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type"))) {
                                             let list = { "": "" };
                                             for (let p of entity.pages)
                                                 list[p._id] = p.name;
@@ -6526,7 +6554,7 @@ export class ActionManager {
                         if (entity instanceof TileDocument) {
                             let name = await getValue(action.data.name, args, entity, { timestamp: new Date().toLocaleString() });
 
-                            let variables = getProperty(entity, "flags.monks-active-tiles.variables") || {};
+                            let variables = foundry.utils.getProperty(entity, "flags.monks-active-tiles.variables") || {};
                             let w = name.replace(/[.+^${}()|[\]\\]/g, '\\$&');
                             const re = new RegExp(`^${w.replace(/\*/g, '.*').replace(/\?/g, '.')}$`, 'i');
                             let keys = name.includes("*") || name.includes("?") ? Object.keys(variables).filter(k => {
@@ -6537,10 +6565,10 @@ export class ActionManager {
                                 let val = await getValue(action.data.value, args, entity, { timestamp: new Date().toLocaleString(), prop });
 
                                 if (val == "_null") {
-                                    setProperty(entity, `flags.monks-active-tiles.variables.${key}`, null);
+                                    foundry.utils.setProperty(entity, `flags.monks-active-tiles.variables.${key}`, null);
                                     await entity.unsetFlag("monks-active-tiles", `variables.${key}`);
                                 } else {
-                                    setProperty(entity, `flags.monks-active-tiles.variables.${key}`, val);
+                                    foundry.utils.setProperty(entity, `flags.monks-active-tiles.variables.${key}`, val);
                                     await entity.setFlag("monks-active-tiles", `variables.${key}`, val);
                                 }
                             }
@@ -7002,7 +7030,7 @@ export class ActionManager {
                             return false;
 
                         const tolerance = Math.min(t.w, t.h) / 4;
-                        return canvas.effects.visibility.testVisibility({ x: midTarget.x, y: midTarget.y }, { tolerance, object: t });
+                        return canvas.visibility.testVisibility({ x: midTarget.x, y: midTarget.y }, { tolerance, object: t });
                     });
 
                     let cont = (action.data?.continue == 'always'
@@ -7092,7 +7120,7 @@ export class ActionManager {
                         actor: tokens[0]?.actor?.toObject(false),
                         token: tokens[0]?.toObject(false),
                         tile: tile.toObject(false),
-                        variable: getProperty(tile, "flags.monks-active-tiles.variables") || {},
+                        variable: foundry.utils.getProperty(tile, "flags.monks-active-tiles.variables") || {},
                         user: game.users.get(userId),
                         value: value,
                         scene: canvas.scene,
@@ -7174,7 +7202,7 @@ export class ActionManager {
                             actor: tokens[0]?.actor?.toObject(false),
                             token: tokens[0]?.toObject(false),
                             tile: tile.toObject(false),
-                            variable: getProperty(tile, "flags.monks-active-tiles.variables") || {},
+                            variable: foundry.utils.getProperty(tile, "flags.monks-active-tiles.variables") || {},
                             user: game.users.get(userId),
                             value: value,
                             scene: canvas.scene,
@@ -7348,7 +7376,7 @@ export class ActionManager {
                             else
                                 position = position - 1;
 
-                            position = Math.clamped(position, 0, entities.length - 1);
+                            position = Math.clamp(position, 0, entities.length - 1);
                             entity = entities[position];
                         }
 
@@ -7443,8 +7471,8 @@ export class ActionManager {
                         let found = false;
 
                         if (!attr.startsWith('flags')) {
-                            if (!hasProperty(base, attr) && entity instanceof TokenDocument) {
-                                if (hasProperty(base, "system." + attr) && entity instanceof TokenDocument) {
+                            if (!foundry.utils.hasProperty(base, attr) && entity instanceof TokenDocument) {
+                                if (foundry.utils.hasProperty(base, "system." + attr) && entity instanceof TokenDocument) {
                                     attr = "system." + attr;
                                     found = true;
                                 } else
@@ -7452,14 +7480,14 @@ export class ActionManager {
                             }
 
                             if (!found) {
-                                if (!hasProperty(base, attr)) {
-                                    if (hasProperty(base, "system." + attr))
+                                if (!foundry.utils.hasProperty(base, attr)) {
+                                    if (foundry.utils.hasProperty(base, "system." + attr))
                                         attr = "system." + attr;
                                 }
                             }
                         }
 
-                        prop = getProperty(base, attr) || prop;
+                        prop = foundry.utils.getProperty(base, attr) || prop;
 
                         if (prop && (typeof prop == 'object') && !(prop instanceof Array) && !(prop instanceof Set)) {
                             if (prop.value == undefined) {
@@ -7774,7 +7802,7 @@ export class ActionManager {
                         if (entity instanceof TileDocument) {
                             count++;
                             let name = await getValue(action.data?.name, args, entity, { operation: 'compare' });
-                            let cando = await getValue(action.data?.value, args, entity, { prop: getProperty(entity, `flags.monks-active-tiles.variables.${name}`), operation: 'compare' });
+                            let cando = await getValue(action.data?.value, args, entity, { prop: foundry.utils.getProperty(entity, `flags.monks-active-tiles.variables.${name}`), operation: 'compare' });
                             if (cando)
                                 success++;
                         }
@@ -7819,7 +7847,7 @@ export class ActionManager {
                     const { tile, tokens, action, userId, value, method, change } = args;
 
                     let name = await getValue(action.data?.name, args, null, { operation: 'compare' });
-                    let prop = !!name ? getProperty(value, name) ?? getProperty(args, name) : "";
+                    let prop = !!name ? foundry.utils.getProperty(value, name) ?? foundry.utils.getProperty(args, name) : "";
                     let cando = await getValue(action.data?.value, args, null, { prop, operation: 'compare' });
 
                     if (cando)
@@ -7864,20 +7892,20 @@ export class ActionManager {
                     let base = tile;
 
                     if (!attr.startsWith('flags')) {
-                        if (!hasProperty(base, attr) && entity instanceof TokenDocument) {
+                        if (!foundry.utils.hasProperty(base, attr) && entity instanceof TokenDocument) {
                             base = entity.actor;
                         }
 
-                        if (!hasProperty(base, attr)) {
+                        if (!foundry.utils.hasProperty(base, attr)) {
                             if (!attr.startsWith("system"))
                                 attr = 'system.' + attr;
-                            if (!hasProperty(base, attr)) {
+                            if (!foundry.utils.hasProperty(base, attr)) {
                                 warn("Couldn't find attribute", entity, attr);
                             }
                         }
                     }
 
-                    let prop = getProperty(base, attr);
+                    let prop = foundry.utils.getProperty(base, attr);
 
                     if (prop && typeof prop == 'object' && !(prop instanceof Array)) {
                         if (prop.value == undefined) {
@@ -8176,7 +8204,7 @@ export class ActionManager {
                     let _tag = action.data?.tag;
 
                     let goto = await Promise.all(entities.map(async (e) => {
-                        let tag = await getValue(duplicate(_tag), args, null, { prop: e });
+                        let tag = await getValue(foundry.utils.duplicate(_tag), args, null, { prop: e });
                         return {
                             tag: tag,
                             entities: [e]
@@ -8549,7 +8577,7 @@ Hooks.on("setupTileActions", (app) => {
                         actor: tokens[0]?.actor?.toObject(false),
                         token: tokens[0]?.toObject(false),
                         tile: tile.toObject(),
-                        variable: getProperty(tile, "flags.monks-active-tiles.variables") || {},
+                        variable: foundry.utils.getProperty(tile, "flags.monks-active-tiles.variables") || {},
                         user: game.users.get(userId),
                         value: value,
                         scene: canvas.scene,

@@ -53,19 +53,19 @@ export class TileTemplates extends DocumentDirectory {
                 label: "Tiles"
             },
             deleteDocuments: async (ids) => {
-                let templates = duplicate(setting("tile-templates") || []);
+                let templates = foundry.utils.duplicate(setting("tile-templates") || []);
                 for (let id of ids)
                     templates.findSplice(t => t._id == id);
                 await game.settings.set("monks-active-tiles", "tile-templates", templates);
                 new TileTemplates().render(true);
             },
             createDocuments: async (items) => {
-                let templates = duplicate(setting("tile-templates") || []);
+                let templates = foundry.utils.duplicate(setting("tile-templates") || []);
                 for (let data of items) {
-                    let _data = duplicate(data);
+                    let _data = foundry.utils.duplicate(data);
                     let doc = new TileDocument(_data);
                     let template = doc.toObject();
-                    template._id = template.id = randomID();
+                    template._id = template.id = foundry.utils.randomID();
                     template.name = data.name;
                     template.visible = true;
                     template.folder = data.folder;
@@ -87,9 +87,9 @@ export class TileTemplates extends DocumentDirectory {
             let tile = data.find(t => t._id === id);
             if (!tile) return null;
             tile.canUserModify = () => { return true; };
-            tile.toObject = () => { return duplicate(tile); };
+            tile.toObject = () => { return foundry.utils.duplicate(tile); };
             tile.toCompendium = () => {
-                let data = deepClone(tile);
+                let data = foundry.utils.deepClone(tile);
                 delete data._id;
                 delete data.folder;
                 delete data.sort;
@@ -301,7 +301,7 @@ export class TileTemplates extends DocumentDirectory {
     }*/
 
     async updateTile(data) {
-        let templates = duplicate(this.collection);
+        let templates = foundry.utils.duplicate(this.collection);
 
         if (!data.id)
             return;
@@ -310,7 +310,7 @@ export class TileTemplates extends DocumentDirectory {
         if (!template)
             return;
 
-        mergeObject(template, data);
+        foundry.utils.mergeObject(template, data);
 
         await game.settings.set("monks-active-tiles", "tile-templates", templates);
         this.render(true);
@@ -361,17 +361,17 @@ export class TileTemplates extends DocumentDirectory {
                 foundry.utils.mergeObject(data, fd.object, { inplace: true });
                 if (!data.folder) delete data.folder;
 
-                let templates = duplicate(this.collection);
+                let templates = foundry.utils.duplicate(this.collection);
 
                 if (data.id) {
                     templates.findSplice(t => t._id == data.id, data);
                 } else {
                     data.width = canvas.grid.size;
                     data.height = canvas.grid.size;
-                    let _data = duplicate(data);
+                    let _data = foundry.utils.duplicate(data);
                     let doc = new TileDocument(_data);
                     let template = doc.toObject();
-                    template._id = template.id = data.id || randomID();
+                    template._id = template.id = data.id || foundry.utils.randomID();
                     template.name = data.name;
                     template.visible = true;
                     template.folder = data.folder;
@@ -413,7 +413,7 @@ export class TileTemplates extends DocumentDirectory {
         fc._updateObject = async (event, formData) => {
             if (!formData.name?.trim()) formData.name = Folder.implementation.defaultName();
             let folders = this.folders;
-            formData._id = randomID();
+            formData._id = foundry.utils.randomID();
             formData.id = formData._id;
             formData.visible = true;
             formData.folder = formData.folder == "" ? null : formData.folder;
@@ -511,7 +511,7 @@ export class TileTemplates extends DocumentDirectory {
         let folder = closestFolder ? this.folders.find(f => f._id == closestFolder.dataset.folderId)?._id : null;
 
         // Obtain the dropped Document
-        const collection = duplicate(this.collection);
+        const collection = foundry.utils.duplicate(this.collection);
         let document = data.data;
         if (!document) document = this.collection.get(data.uuid.replace("Tile.", "")); // Should technically be fromUuid
         if (!document) return;
@@ -553,7 +553,7 @@ export class TileTemplates extends DocumentDirectory {
         if (data.documentName !== this.constructor.documentName) return;
         const folder = data.data;
 
-        let folders = duplicate(this.folders);
+        let folders = foundry.utils.duplicate(this.folders);
 
         // Determine the closest folder ID
         const closestFolder = target ? target.closest(".folder") : null;
@@ -622,7 +622,7 @@ export class TileTemplates extends DocumentDirectory {
     }
 
     async deleteFolder(folders, folder, options, userId) {
-        const templates = duplicate(this.collection || []);
+        const templates = foundry.utils.duplicate(this.collection || []);
         const parentFolder = folder.folder;
         const { deleteSubfolders, deleteContents } = options;
 
@@ -659,16 +659,16 @@ export class TileTemplates extends DocumentDirectory {
                 condition: game.user.isGM,
                 callback: header => {
                     const li = header.parent()[0];
-                    const folders = duplicate(this.folders);
+                    const folders = foundry.utils.duplicate(this.folders);
                     let folder = folders.find(t => t._id == li.dataset.folderId);
                     const options = { top: li.offsetTop, left: window.innerWidth - 310 - FolderConfig.defaultOptions.width };
-                    let fld = new Folder(mergeObject(folder, { type: "JournalEntry" }, { inplace: false }));
+                    let fld = new Folder(foundry.utils.mergeObject(folder, { type: "JournalEntry" }, { inplace: false }));
                     let config = new FolderConfig(fld, options).render(true);
                     config._updateObject = async (event, formData) => {
                         if (!formData.name?.trim()) formData.name = Folder.implementation.defaultName();
                         delete formData.type;
                         if (formData.folder == "") formData.folder = null;
-                        folder = mergeObject(folder, formData);
+                        folder = foundry.utils.mergeObject(folder, formData);
                         await game.settings.set("monks-active-tiles", "tile-template-folders", folders);
                         this.render();
                     }
@@ -680,7 +680,7 @@ export class TileTemplates extends DocumentDirectory {
                 condition: game.user.isGM,
                 callback: header => {
                     const li = header.parent()[0];
-                    const folders = duplicate(this.folders);
+                    const folders = foundry.utils.duplicate(this.folders);
                     const folder = folders.find(t => t._id == li.dataset.folderId);
                     return Dialog.confirm({
                         title: `${game.i18n.localize("FOLDER.Remove")} ${folder.name}`,
@@ -705,7 +705,7 @@ export class TileTemplates extends DocumentDirectory {
                 condition: game.user.isGM,
                 callback: header => {
                     const li = header.parent()[0];
-                    const folders = duplicate(this.folders);
+                    const folders = foundry.utils.duplicate(this.folders);
                     const folder = folders.find(t => t._id == li.dataset.folderId);
                     return Dialog.confirm({
                         title: `${game.i18n.localize("FOLDER.Delete")} ${folder.name}`,
@@ -737,7 +737,7 @@ export class TileTemplates extends DocumentDirectory {
                     return game.user.isGM && !!document?.folder;
                 },
                 callback: li => {
-                    const templates = duplicate(this.collection);
+                    const templates = foundry.utils.duplicate(this.collection);
                     const document = templates.find(t => t._id == li.data("documentId"));
                     document.folder = null;
                     game.settings.set("monks-active-tiles", "tile-templates", templates);
@@ -748,7 +748,7 @@ export class TileTemplates extends DocumentDirectory {
                 icon: '<i class="fas fa-trash"></i>',
                 condition: () => game.user.isGM,
                 callback: li => {
-                    const templates = duplicate(this.collection);
+                    const templates = foundry.utils.duplicate(this.collection);
                     const id = li.data("documentId");
                     const document = templates.find(t => t._id == id || (t._id == undefined && id == ""));
                     if (!document) return;
@@ -775,7 +775,7 @@ export class TileTemplates extends DocumentDirectory {
                     const templates = this.collection;
                     const document = templates.find(t => t._id == li.data("documentId"));
                     if (!document) return;
-                    const data = deepClone(document);
+                    const data = foundry.utils.deepClone(document);
                     delete data._id;
                     delete data.folder;
                     delete data.sort;
@@ -795,7 +795,7 @@ export class TileTemplates extends DocumentDirectory {
                 icon: '<i class="fas fa-file-import"></i>',
                 condition: li => game.user.isGM,
                 callback: async (li) => {
-                    const templates = duplicate(this.collection);
+                    const templates = foundry.utils.duplicate(this.collection);
                     const replaceId = li.data("documentId");
                     const document = templates.find(t => t._id == replaceId);
                     if (!document) return;
@@ -834,7 +834,7 @@ export class TileTemplates extends DocumentDirectory {
                                             foundry.utils.mergeObject(data, preserve);
 
                                             if (importData instanceof Array)
-                                                data._id = randomID();
+                                                data._id = foundry.utils.randomID();
 
                                             data.visible = true;
                                             delete data.img;
