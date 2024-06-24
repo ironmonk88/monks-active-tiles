@@ -1,5 +1,4 @@
-## Version 11.20 will change the way the `Movement` trigger will function.  There was an error in the code that was causing it to work like the `Enter` and `Exit` triggers and it shouldn't have been doing that.  Movement is triggered when movement is *started* within the Tile
-## In adition to the movement trigger changes, there's now a change to how the triggers are handled.  Previously `Stop Movement` would stop regardless of if it was activated within a landing.  Therefore you'd need to use the Token move action to get the token to resume its journey.  That will no longer be needed.
+## Version 12.01 If you are seeing a "Error: Module validation errors: documentTypes: is not a valid sub-types configuration: 'RegionBehavior' is not a valid document type" issue.  That is an error in Foundry.  There's nothing much I can do about that.  Foundry checks the validation of a manifest before it checks the version of a manifest.  In this case, the manifest checks out correctly in v12, but doesn't in v11 because it fails to consider the version.
 
 # Monk's Active Tile Triggers
 Add-On Module for Foundry VTT
