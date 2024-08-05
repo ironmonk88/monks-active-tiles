@@ -197,7 +197,7 @@
   "MonksActiveTiles.ctrl.loop": "Loop",
   "MonksActiveTiles.ctrl.audiotype": "Audio Type",
   "MonksActiveTiles.ctrl.activate": "Activate",
-  "MonksActiveTiles.ctrl.usepermission": "Check Permission",
+  "MonksActiveTiles.ctrl.usepermission": "Permissions",
   "MonksActiveTiles.ctrl.distance": "Distance",
   "MonksActiveTiles.ctrl.name": "Name",
   "MonksActiveTiles.ctrl.chatbubble": "Chat Bubble",
@@ -322,6 +322,7 @@
   "MonksActiveTiles.mode.create": "Token Create",
   "MonksActiveTiles.mode.door": "Door Trigger",
   "MonksActiveTiles.mode.darkness": "Lighting Change",
+  "MonksActiveTiles.mode.darknesschange": "Lighting Animation",
   "MonksActiveTiles.mode.time": "Time Change",
 
   "MonksActiveTiles.restrict.all": "Allow All Tokens",
@@ -459,6 +460,12 @@
   "MonksActiveTiles.resettype.everything": "Everything",
   "MonksActiveTiles.resettype.token": "Token",
 
+  "MonksActiveTiles.permission.check": "Check Permission",
+  "MonksActiveTiles.permission.ignore": "Ignore Permissions",
+  "MonksActiveTiles.permission.limited": "Assign Limited Permission",
+  "MonksActiveTiles.permission.observer": "Assign Observer Permission",
+  "MonksActiveTiles.permission.owner": "Assign Owner Permission",
+
   "MonksActiveTiles.msg.prevent-teleport": "Teleporting off the map has been prevented",
   "MonksActiveTiles.msg.prevent-movement": "Moving off the map has been prevented",
   "MonksActiveTiles.msg.invalid-entity": "Invalid Entity Type",
@@ -552,6 +559,10 @@
           "uuid": {
             "label": "Tile",
             "hint": "Tile to trigger"
+          },
+          "usetiletrigger": {
+            "label": "Trigger using event",
+            "hint": "Trigger the tile using the region event data"
           }
         }
       }

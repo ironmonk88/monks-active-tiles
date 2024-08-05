@@ -1,3 +1,45 @@
+## Version 12.02
+
+Allowing rotation action to pick Ambient lights
+
+Fixing issues Foundry introduced with changing colour from a string to an Object.
+
+Fixing issues with referencing Permission constants instead of Ownership constants.
+
+Allowing Roll Table quantity to use Handlebar notation.
+
+Allow open journal to set the ownership of the journal
+
+Fixed setting permissions for a user to include players that aren't logged in.
+
+Fixed setting a scene's background action to actually set the background image.
+
+Fixed set tile image to allow using `1-4` notation
+
+Fixed Dialog so that it can use html files again.
+
+Fixed scene preload action
+
+Added trigger caching, so instead of having to search through all tiles every time a trigger is requested, the tiles are already cached and the trigger knows exactly which tiles would apply.
+
+Added a new trigger, when lighting change animates
+
+Fixed issue with rotating an ambient Light
+
+Fixed issue with temporary Images
+
+Updated the Region Trigger to allow triggering the tile with appropriate data filled in.
+
+Fixed issue with adding an item to a character that D&D 5e introduced.
+
+Fixed issue with tile history not being recorded properly.
+
+Fixed issues with Burning Wheel system
+
+Fixed issue with Tile image when dropping an item on the canvas.
+
+Fixed issue with door trigger when turning into a secret door
+
 ## Version 12.01
 
 v12 compatibility

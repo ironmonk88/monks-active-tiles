@@ -1016,7 +1016,8 @@ export class ActionManager {
                             return (
                                 entity instanceof Token ||
                                 entity instanceof Tile ||
-                                entity instanceof Drawing
+                                entity instanceof Drawing ||
+                                entity instanceof AmbientLight
                             );
                         }
                     },
@@ -1825,7 +1826,7 @@ export class ActionManager {
 
                                 let prop = foundry.utils.getProperty(base, attr);
 
-                                if (prop && typeof prop == 'object' && !(prop instanceof Array)) {
+                                if (prop && typeof prop == 'object' && !(prop instanceof Array) && !(prop instanceof Color)) {
                                     if (prop.value == undefined) {
                                         debug("Attribute returned an object and the object doesn't have a value property", entity, attr, prop);
                                         continue;
@@ -1835,7 +1836,13 @@ export class ActionManager {
                                     prop = prop.value;
                                 }
 
-                                update[attr] = await getValue(val, args, entity, { prop });
+                                let updateValue = await getValue(val, args, entity, { prop });
+                                console.log("UpdateValue: ", updateValue, args.darkness);
+                                if (prop instanceof Color) {
+                                    update[attr] = Color.fromString(updateValue);
+                                } else {
+                                    update[attr] = updateValue;
+                                }
 
                                 MonksActiveTiles.batch.add('update', base, update);
                                 MonksActiveTiles.addToResult(entity, result);
@@ -2570,7 +2577,7 @@ export class ActionManager {
                         for (let token of tokens) {
                             if (token.actor) {
                                 for (let [user, perm] of Object.entries(token.actor.ownership)) {
-                                    if (perm >= CONST.DOCUMENT_PERMISSION_LEVELS.OWNER && !owners.includes(user))
+                                    if (perm >= CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER && !owners.includes(user))
                                         owners.push(user);
                                 }
                             }
@@ -3258,10 +3265,8 @@ export class ActionManager {
                     {
                         id: "quantity",
                         name: "MonksActiveTiles.ctrl.quantity",
-                        type: "number",
-                        defvalue: 1,
-                        min: 1,
-                        step: 1,
+                        type: "text",
+                        defvalue: "1",
                         help: "Set this to blank to use the roll table quantity"
                     },
                     {
@@ -3353,7 +3358,16 @@ export class ActionManager {
                             if (!available.length && action?.data?.reset)
                                 await rolltable.resetResults();
 
-                            let numRolls = action.data?.quantity || 1;
+                            let numRolls = await MonksActiveTiles.getValue(action.data?.quantity || 1, args, rolltable);
+                            if (isNaN(numRolls)) {
+                                try {
+                                    numRolls = parseInt(numRolls);
+                                } catch {
+                                    numRolls = 1;
+                                }
+                            }
+                            if (numRolls < 1) numRolls = 1;
+
                             let tblResults = await rolltable.drawMany(numRolls, { rollMode: action.data.rollmode, displayChat: false });
                             //Check to see what the privacy rules are
 
@@ -3923,7 +3937,9 @@ export class ActionManager {
                     {
                         id: "permission",
                         name: "MonksActiveTiles.ctrl.usepermission",
-                        type: "checkbox"
+                        list: "permission",
+                        type: "list",
+                        defvalue: "false"
                     },
                     {
                         id: "enhanced",
@@ -3941,6 +3957,13 @@ export class ActionManager {
                         "token": "MonksActiveTiles.for.token",
                         "owner": "MonksActiveTiles.for.owner",
                         "previous": "MonksActiveTiles.for.current"
+                    },
+                    'permission': {
+                        "true": "MonksActiveTiles.permission.check",
+                        "false": "MonksActiveTiles.permission.ignore",
+                        "LIMITED": "MonksActiveTiles.permission.limited",
+                        "OBSERVER": "MonksActiveTiles.permission.observer",
+                        "OWNER": "MonksActiveTiles.permission.owner",
                     }
                 },
                 fn: async (args = {}) => {
@@ -3965,12 +3988,30 @@ export class ActionManager {
 
                     let showto = action.data.showto || "everyone";
 
+                    const levels = CONST.DOCUMENT_OWNERSHIP_LEVELS;
+
                     for (let entity of entities) {
                         //open journal
                         if (!entity || !(entity instanceof JournalEntry || entity instanceof JournalEntryPage))
                             continue;
 
                         let showUsers = MonksActiveTiles.getForPlayers(showto, args);
+
+                        if (action.data.permission != "true" && action.data.permission != "false") {
+                            const ownership = entity.ownership;
+                            if (showto == "everyone") {
+                                //If everyone, then set the ownership to the default
+                                ownership.default = levels[action.data.permission];
+                            }
+                            showUsers.forEach(id => {
+                                //If any users are less than the default, boost them up, and if greater and force is true, then bring them down.
+                                let user = game.users.get(id);
+                                if (!user?.isGM) {
+                                    ownership[id] = levels[action.data.permission];
+                                }
+                            });
+                            await entity.update({ ownership });
+                        }
 
                         if (showUsers.includes(game.user.id)) {
                             if (game.modules.get("monks-enhanced-journal")?.active && entity instanceof JournalEntry && entity.pages.size == 1 && !!foundry.utils.getProperty(entity.pages.contents[0], "flags.monks-enhanced-journal.type")) {
@@ -4474,7 +4515,7 @@ export class ActionManager {
                             lvl = CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER;
                         const perms = entity.ownership || entity.actor?.ownership;
 
-                        let showUsers = MonksActiveTiles.getForPlayers(showto, args);
+                        let showUsers = MonksActiveTiles.getForPlayers(showto, args, {notactive: true});
 
                         if (showto == 'everyone') {
                             if (action.data.permission == 'default') {
@@ -4967,7 +5008,7 @@ export class ActionManager {
                     let entities = await MonksActiveTiles.getEntities(args, 'scenes', action.data.sceneid);
                     for (let scene of entities) {
                         let img = await getValue(action.data?.img, args, scene);
-                        await scene.update({ img });
+                        await scene.update({ "background.src": img });
                     }
                 },
                 content: async (trigger, action) => {
@@ -5369,10 +5410,10 @@ export class ActionManager {
                                 let parts = pos.split('-');
                                 let lower = parseInt(parts[0]);
                                 let upper = parseInt(parts[1]);
-                                pos = Math.floor((Math.random() * (upper - lower)) + lower);
+                                position = Math.floor((Math.random() * (upper - lower)) + lower);
                             } else {
                                 let roll = await rollDice(pos);
-                                pos = parseInt(roll.value);
+                                position = parseInt(roll.value);
                             }
                         } else
                             position = parseInt(position);
@@ -5987,12 +6028,12 @@ export class ActionManager {
                             method: method,
                             change: change
                         };
-                        if (!_templateCache.hasOwnProperty(action.data.file) && action.data.file.startsWith("http")) {
+                        if (!Handlebars.partials.hasOwnProperty(action.data.file) && action.data.file.startsWith("http")) {
                             let html = await fetch(action.data.file);
                             let text = await html.text();
                             const compiled = Handlebars.compile(text);
                             Handlebars.registerPartial(action.data.file, compiled);
-                            _templateCache[action.data.file] = compiled;
+                            Handlebars.partials[action.data.file] = compiled;
                             content = compiled(context, {
                                 allowProtoMethodsByDefault: true,
                                 allowProtoPropertiesByDefault: true
@@ -6240,7 +6281,7 @@ export class ActionManager {
                 name: "MonksActiveTiles.action.preload",
                 ctrls: [
                     {
-                        id: "sceneid",
+                        id: "entity",
                         name: "MonksActiveTiles.ctrl.scene",
                         type: "select",
                         subtype: "entity",
@@ -6277,7 +6318,7 @@ export class ActionManager {
                     let showfor = action.data.for || "trigger";
                     let showUsers = MonksActiveTiles.getForPlayers(showfor, args);
 
-                    let entities = await MonksActiveTiles.getEntities(args, 'scene');
+                    let entities = await MonksActiveTiles.getEntities(args, 'scene', action.data?.sceneid);
                     for (let entity of entities) {
                         if (showUsers.includes(game.user.id)) {
                             await game.scenes.preload(entity.id);

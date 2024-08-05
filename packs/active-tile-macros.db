@@ -37,7 +37,7 @@
   "author": "NoP0yFyEU0MJHD4O",
   "img": "icons/svg/dice-target.svg",
   "scope": "global",
-  "command": "/*\nSo if you forget to set the Tile to active while you're creating them\nor if you want to reset the scene you can use this macro to re-activate\nall the Active Tiles.\n*/\nlet count = 0;\nfor (let tile of canvas.scene.tiles){\n  if (!foundry.utils.getProperty(tile, \"flags.monks-active-tiles\")?.active){\n    await tile.setFlag('monks-active-tiles', 'active', true);\n    count++;\n  }\n}\nui.notifications.info(`Activated ${count} tiles`);",
+  "command": "/*\nSo if you forget to set the Tile to active while you're creating them\nor if you want to reset the scene you can use this macro to re-activate\nall the Active Tiles.\n*/\nlet count = 0;\nfor (let tile of canvas.scene.tiles.contents){\n  if (!foundry.utils.getProperty(tile, \"flags.monks-active-tiles\")?.active){\n    await tile.setFlag('monks-active-tiles', 'active', true);\n    count++;\n  }\n}\nui.notifications.info(`Activated ${count} tiles`);",
   "flags": {
     "advanced-macros": { "runAsGM": false },
     "core": { "sourceId": "Macro.sxbiqFyIjwSEgMmp" }
