@@ -2747,7 +2747,7 @@ export class MonksActiveTiles {
             }
 
             for (let tile of MonksActiveTiles.tileTriggerCache.hover) {
-                if(!tile.viewed) return;
+                if(!tile.viewed) continue;
                 let triggerData = tile.flags["monks-active-tiles"];
                 let triggers = MonksActiveTiles.getTrigger(triggerData?.trigger);
 
