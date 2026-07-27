@@ -820,6 +820,18 @@ export class MonksActiveTiles {
 
                 if (dest) {
                     let found = false;
+                    if(dest instanceof foundry.documents.TileDocument) {
+                        const bounds = dest.shape.bounds;
+                        location[i] = {
+                            x: bounds.center.x,
+                            y: bounds.center.y,
+                            width: bounds.width,
+                            height: bounds.height,
+                            scene: dest.parent.id,
+                            dest: dest
+                        };
+                        found = true;
+                    }
                     /*
                     if (dest instanceof DrawingDocument) {
                         //drawing
@@ -2735,6 +2747,7 @@ export class MonksActiveTiles {
             }
 
             for (let tile of MonksActiveTiles.tileTriggerCache.hover) {
+                if(!tile.viewed) continue;
                 let triggerData = tile.flags["monks-active-tiles"];
                 let triggers = MonksActiveTiles.getTrigger(triggerData?.trigger);
 
@@ -4076,76 +4089,26 @@ export class MonksActiveTiles {
     }
 
     static getTileSegments(tile, usealpha = false) {
-        let width = Math.abs(tile.width);
-        let height = Math.abs(tile.height);
+        if (usealpha && tile.object) {
+            let segments = [];
 
-        let segments = [
-            { a: { x: 0, y: 0 }, b: { x: width, y: 0 } },
-            { a: { x: width, y: 0 }, b: { x: width, y: height } },
-            { a: { x: width, y: height }, b: { x: 0, y: height } },
-            { a: { x: 0, y: height }, b: { x: 0, y: 0 } }
-        ];
-
-        if (usealpha) {
-            segments = [];
-            for (let i = 0; i < tile.object._textureBorderPoints.length - 2; i += 2) {
-                segments.push({ a: { x: tile.object._textureBorderPoints[i], y: tile.object._textureBorderPoints[i + 1] }, b: { x: tile.object._textureBorderPoints[i + 2], y: tile.object._textureBorderPoints[i + 3] } });
+            const points = tile.object._texturePolygon.points;
+            for (let i = 0; i < points.length - 2; i += 2) {
+                segments.push({ a: { x: points[i], y: points[i + 1] }, b: { x: points[i + 2], y: points[i + 3] } });
             }
-            segments.push({ a: { x: tile.object._textureBorderPoints[tile.object._textureBorderPoints.length - 2], y: tile.object._textureBorderPoints[tile.object._textureBorderPoints.length - 1] }, b: { x: tile.object._textureBorderPoints[0], y: tile.object._textureBorderPoints[1] } })
+            segments.push({ a: { x: points[points.length - 2], y: points[points.length - 1] }, b: { x: points[0], y: points[1] } })
+
+            return segments
         } 
 
-        /*
-        if (tile.rotation != 0) {
-            function rotate(cx, cy, x, y, angle) {
-                var realangle = angle + 90,
-                    rad = Math.toRadians(realangle),
-                    sin = Math.cos(rad),
-                    cos = Math.sin(rad),
-                    run = x - cx,
-                    rise = y - cy,
-                    tx = (cos * run) + (sin * rise) + cx,
-                    ty = (cos * rise) - (sin * run) + cy;
-                return { x: tx, y: ty };
-            }
-
-            const cX = tile.x + (Math.abs(tile.width) / 2);
-            const cY = tile.y + (Math.abs(tile.height) / 2);
-
-            let pt1 = rotate(cX, cY, tileX1, tileY1, tile.rotation);
-            let pt2 = rotate(cX, cY, tileX2, tileY1, tile.rotation);
-            let pt3 = rotate(cX, cY, tileX2, tileY2, tile.rotation);
-            let pt4 = rotate(cX, cY, tileX1, tileY2, tile.rotation);
-            */
-            /*
-            let gr = MonksActiveTiles.debugGr;
-            if (!gr) {
-                gr = new PIXI.Graphics();
-                MonksActiveTiles.debugGr = gr;
-                canvas.tokens.addChild(gr);
-            }
-
-            gr.beginFill(0x00ffff)
-                .drawCircle(tileX1, tileY1, 4)
-                .drawCircle(tileX2, tileY1, 6)
-                .drawCircle(tileX2, tileY2, 8)
-                .drawCircle(tileX1, tileY2, 10)
-                .endFill();
-
-            gr.beginFill(0xffff00)
-                .drawCircle(pt1.x, pt1.y, 4)
-                .drawCircle(pt2.x, pt2.y, 6)
-                .drawCircle(pt3.x, pt3.y, 8)
-                .drawCircle(pt4.x, pt4.y, 10)
-                .endFill();
-                */
-        /*
-            segments = [
-                { a: pt1, b: pt2 },
-                { a: pt2, b: pt3 },
-                { a: pt3, b: pt4 },
-                { a: pt4, b: pt1 }
-            ];
-        }*/
+        const [polygons] = tile.shape.polygons;
+        const [x1, y1, x2, y2, x3, y3, x4, y4] = polygons.points;
+        let segments = [
+            { a: { x: x1, y: y1 }, b: { x: x2, y: y2 } },
+            { a: { x: x2, y: y2 }, b: { x: x3, y: y3 } },
+            { a: { x: x3, y: y3 }, b: { x: x4, y: y4 } },
+            { a: { x: x4, y: y4 }, b: { x: x1, y: y1 } }
+        ];
 
         return segments;
     }
@@ -4153,56 +4116,8 @@ export class MonksActiveTiles {
     static setupTile() {
         TileDocument.prototype.pointWithin = function (point) {
             let triggerData = this.flags["monks-active-tiles"];
-
-            const w = Math.abs(this.width);
-            const h = Math.abs(this.height);
-
-            // The anchor defines the pivot in local space (0–1 range)
-            const anchorX = this.texture.anchorX * w;
-            const anchorY = this.texture.anchorY * h;
-
-            // Step 1: Translate point into local tile space.
-            // this.x/y is the world position of the anchor, so offset relative to it,
-            // then shift so local space origin is the top-left corner of the tile.
-            let lx = point.x - this.x + anchorX;
-            let ly = point.y - this.y + anchorY;
-
-            // Step 2: Rotate the local point around the anchor to undo the tile's rotation.
-            if (this.rotation !== 0) {
-                const rad = Math.toRadians(-this.rotation); // negate to un-rotate
-                const cos = Math.cos(rad);
-                const sin = Math.sin(rad);
-                const dx = lx - anchorX;
-                const dy = ly - anchorY;
-                lx = cos * dx - sin * dy + anchorX;
-                ly = sin * dx + cos * dy + anchorY;
-            }
-
-            // Step 3: Undo scale around the anchor point.
-            if (triggerData?.usealpha) {
-                lx = (lx - anchorX) / this.texture.scaleX + anchorX;
-                ly = (ly - anchorY) / this.texture.scaleY + anchorY;
-
-                if (this._object && !this._object._texturePolygon)
-                    this.object._findTextureBorder();
-            }
-
-            /*
-            let gr = MonksActiveTiles.debugGr;
-            if (!gr) {
-                gr = new PIXI.Graphics();
-                MonksActiveTiles.debugGr = gr;
-                canvas.tokens.addChild(gr);
-            }
-
-            gr.lineStyle(2, 0x800080).drawCircle(lx + this.x, ly + this.y, 4);
-            */
-
-            // Step 4: Bounds check in local tile space (0,0) to (w,h).
-            if (lx < 0 || lx > w || ly < 0 || ly > h)
-                return false;
-
-            return triggerData?.usealpha && this._object?._texturePolygon ? this._object?._texturePolygon.contains(lx, ly) : true;
+            if(!triggerData?.usealpha) return this.shape.testPoint(point);
+            return this._object?._texturePolygon ? this._object._texturePolygon.contains(point.x, point.y) : this.shape.testPoint(point);
         }
 
         TileDocument.prototype.tokensWithin = function () {
@@ -4235,180 +4150,6 @@ export class MonksActiveTiles {
                 } else
                     return this.pointWithin(midEntity);
             });
-        }
-
-        foundry.canvas.placeables.Tile.prototype._findTextureBorder_old = function () {
-            let findPoint = function (pixels, start) {
-                let pt;
-                let dest = { x: width - start.x, y: height - start.y };
-
-                //gr.lineStyle(1, 0x00ff00).moveTo(this.x + (start.x * aW), this.y + (start.y * aH)).lineTo(this.x + (dest.x * aW), this.y + (dest.y * aH));
-
-                let hypot = Math.hypot((dest.x - start.x), (dest.y - start.y));
-                let dX = (dest.x - start.x) / hypot;
-                let dY = (dest.y - start.y) / hypot;
-
-                for (let i = 0; i < hypot; i++) {
-                    let check = { x: parseInt(start.x + (dX * i)), y: parseInt(start.y + (dY * i)) };
-                    //gr.beginFill(0x00ff00).drawCircle(this.x + (check.x * aW), this.y + (check.y * aH), 1).endFill();
-                    if (!pt || check.x != pt.x || check.y != pt.y) {
-                        let idx = ((check.y * width) + check.x) * 4;
-                        if (pixels[idx + 3] != 0) {
-                            //gr.lineStyle(1, 0x00ff00).moveTo(this.x + (start.x * aW), this.y + (start.y * aH)).lineTo(this.x + (check.x * aW), this.y + (check.y * aH));
-
-                            return check;
-                        }
-                        pt = check;
-                    }
-                }
-            }
-
-            let addPoint = function (pt) {
-                if (pt) {
-                    const last = points.slice(-2);
-                    const next = [pt.x * aW, pt.y * aH];
-                    if (next.equals(last)) return;
-
-                    points = points.concat(next);
-                }
-            }
-
-            let simplify = function(points, tolerance = 20) {
-                if (points.length <= 2) return points;
-
-                let getSqSegDist = function (p, p1, p2) {
-
-                    var x = p1.x,
-                        y = p1.y,
-                        dx = p2.x - x,
-                        dy = p2.y - y;
-
-                    if (dx !== 0 || dy !== 0) {
-
-                        var t = ((p.x - x) * dx + (p.y - y) * dy) / (dx * dx + dy * dy);
-
-                        if (t > 1) {
-                            x = p2.x;
-                            y = p2.y;
-
-                        } else if (t > 0) {
-                            x += dx * t;
-                            y += dy * t;
-                        }
-                    }
-
-                    dx = p.x - x;
-                    dy = p.y - y;
-
-                    return dx * dx + dy * dy;
-                }
-
-                let simplifyDPStep = function (points, first, last, sqTolerance, simplified) {
-                    var maxSqDist = sqTolerance,
-                        index;
-
-                    for (var i = first + 1; i < last; i++) {
-                        var sqDist = getSqSegDist(
-                            { x: points[i * 2], y: points[(i * 2) + 1] },
-                            { x: points[first * 2], y: points[(first * 2) + 1] },
-                            { x: points[last * 2], y: points[(last * 2) + 1] });
-
-                        if (sqDist > maxSqDist) {
-                            index = i;
-                            maxSqDist = sqDist;
-                        }
-                    }
-
-                    if (maxSqDist > sqTolerance) {
-                        if (index - first > 1) simplifyDPStep(points, first, index, sqTolerance, simplified);
-                        simplified.push(points[index * 2], points[(index * 2) + 1]);
-                        if (last - index > 1) simplifyDPStep(points, index, last, sqTolerance, simplified);
-                    }
-                }
-
-                var last = (points.length / 2) - 1;
-
-                var simplified = points.slice(0, 2);
-                simplifyDPStep(points, 0, last, tolerance, simplified);
-                simplified.concat(points.slice(-2));
-
-                return simplified;
-            }
-
-            const accuracy = 2;
-            let width, height, aW, aH;
-
-            let points = [];
-            if (this.texture == null) {
-                points = [0, 0, this.document.width, 0, this.document.width, this.document.height, 0, this.document.height, 0, 0];
-            } else {
-                const sprite = new PIXI.Sprite(this.texture);
-                sprite.width = width = parseInt(this.texture.baseTexture.realWidth / accuracy);
-                sprite.height = height = parseInt(this.texture.baseTexture.realHeight / accuracy);
-                sprite.anchor.set(0.5, 0.5);
-                sprite.position.set(sprite.width / 2, sprite.height / 2);
-
-                aW = this.document.width / width;
-                aH = this.document.height / height;
-
-                // Create or update the alphaMap render texture
-                const tex = PIXI.RenderTexture.create({ width: sprite.width, height: sprite.height });
-
-                // Render the sprite to the texture and extract its pixels
-                // Destroy sprite and texture when they are no longer needed
-                canvas.app.renderer.render(sprite, { renderTexture: tex });
-                sprite.destroy(false);
-                const pixels = canvas.app.renderer.extract.pixels(tex);
-                tex.destroy(true);
-
-                for (let i = 0; i < width; i++) {
-                    addPoint.call(this, findPoint.call(this, pixels, { x: i, y: 0 }));
-                }
-                for (let i = 0; i < height; i++) {
-                    addPoint.call(this, findPoint.call(this, pixels, { x: width - 1, y: i }));
-                }
-                for (let i = width - 1; i > 0; i--) {
-                    addPoint.call(this, findPoint.call(this, pixels, { x: i, y: height - 1 }));
-                }
-                for (let i = height - 1; i > 0; i--) {
-                    addPoint.call(this, findPoint.call(this, pixels, { x: 0, y: i }));
-                }
-
-                points = simplify(points, 40);
-                //points = points.concat(points.slice(0, 2));
-
-                /*
-                for (let i = 0; i < width; i++) {
-                    for (let j = 0; j < height; j++) {
-                        let idx = ((j * width) + i) * 4;
-                        if (pixels[idx + 3] != 0) {
-                            gr.beginFill(0x0000ff).drawCircle(this.x + (i * aW), this.y + (j * aH), 1).endFill();
-                        }
-                    }
-                }
-                */
-            }
-
-            this._textureBorderPoints = points;
-            this._texturePolygon = new PIXI.Polygon(this._textureBorderPoints);
-            if (CONFIG.debug.tiletriggers) {
-                if (this._debugBorder)
-                    this._debugBorder.destroy();
-                this._debugBorder = this.addChild(new PIXI.Graphics());
-                this._debugBorder.lineStyle(2, 0xff0000).drawPolygon(this._texturePolygon);
-            }
-
-            /*
-            let gr = MonksActiveTiles.debugGr;
-            if (!gr) {
-                gr = new PIXI.Graphics();
-                MonksActiveTiles.debugGr = gr;
-                canvas.tokens.addChild(gr);
-                gr.x = this.x;
-                gr.y = this.y;
-                gr.lineStyle(2, 0xff0000).drawPolygon(this._textureBorderPoints);
-            }
-            */
         }
 
         foundry.canvas.placeables.Tile.prototype._findTextureBorder = function () {
@@ -4569,8 +4310,8 @@ export class MonksActiveTiles {
                 sprite.anchor.set(0.5, 0.5);
                 sprite.position.set(sprite.width / 2, sprite.height / 2);
 
-                aW = this.document.width / width;
-                aH = this.document.height / height;
+                aW = 1;
+                aH = 1;
 
                 // Create or update the alphaMap render texture
                 const tex = PIXI.RenderTexture.create({ width: sprite.width, height: sprite.height });
@@ -4619,7 +4360,7 @@ export class MonksActiveTiles {
             }
 
             this._textureBorderPoints = points;
-            this._texturePolygon = new PIXI.Polygon(this._textureBorderPoints);
+            this._genTexturePolygon();
             if (CONFIG.debug.tiletriggers) {
                 if (this._debugBorder && this._debugBorder.parent)
                     this._debugBorder.destroy();
@@ -4628,7 +4369,48 @@ export class MonksActiveTiles {
             }
         }
 
+        foundry.canvas.placeables.Tile.prototype._genTexturePolygon = function () {
+            if(!this._textureBorderPoints) return;
+
+            let { x, y, rotation, width, height, texture: { scaleX, scaleY, anchorX, anchorY, src } } = this.document;
+            if(!src) {
+                this._texturePolygon = new PIXI.Polygon(this.document.shape.polygons[0].points)
+                return;
+            }
+
+
+            const dr = Math.toRadians(rotation);
+
+            const accuracy = 2;
+            const aScaleX = (accuracy / (this.texture.width / width)) * scaleX;
+            const aScaleY = (accuracy / (this.texture.height / height)) * scaleY;
+    
+
+            const points = [...this._textureBorderPoints];
+            for(let i = 0; i < points.length; i +=2) {
+                // Scale
+                points[i] *= aScaleX;
+                points[i+1] *= aScaleY;
+
+                // Translate
+                points[i] += (x - width * anchorX * scaleX);
+                points[i+1] += (y - height * anchorY * scaleY);
+
+                // Rotation
+                if(dr !== 0) {
+                    const dx = points[i] - x;
+                    const dy = points[i+1] - y;
+                    points[i]  = x + Math.cos(dr) * dx - Math.sin(dr) * dy;
+                    points[i+1] = y + Math.sin(dr) * dx + Math.cos(dr) * dy;
+                }
+            }
+
+            this._texturePolygon = new PIXI.Polygon(points);
+        }
+
         TileDocument.prototype.checkClick = function (pt, clicktype = 'click', event) {
+            if(!this.viewed) return;
+
             let entities = game.canvas.tokens.controlled;
             if (!entities.length && !game.user.isGM) {
                 entities = game.canvas.tokens.placeables.filter(t => t.document.actorId == game.user.character?.id);
@@ -4658,11 +4440,11 @@ export class MonksActiveTiles {
 
                 if (triggerData.usealpha && !this.object._texturePolygon)
                     this.object._findTextureBorder();
-                if (CONFIG.debug.tiletriggers && triggerData.usealpha) {
+                if (CONFIG.debug.tiletriggers) {
                     if (this.object._debugBorder)
                         this.object._debugBorder.destroy();
                     this.object._debugBorder = this.object.addChild(new PIXI.Graphics());
-                    this.object._debugBorder.lineStyle(2, 0xff0000).drawPolygon(this.object._texturePolygon);
+                    this.object._debugBorder.lineStyle(2, 0xff0000).drawPolygon(triggerData.usealpha ? this.object._texturePolygon : this.shape.polygons[0]);
                 }
 
                 /*
@@ -4697,28 +4479,14 @@ export class MonksActiveTiles {
 
             if (!triggerData?.active) return [];
 
-            if (triggerData.usealpha && !this.object._texturePolygon)
+            if (triggerData.usealpha && this.object && !this.object._texturePolygon)
                 this.object._findTextureBorder();
-            if (CONFIG.debug.tiletriggers && triggerData.usealpha) {
+            if (CONFIG.debug.tiletriggers && this.object) {
                 if (this.object._debugBorder)
                     this.object._debugBorder.destroy();
                 this.object._debugBorder = this.object.addChild(new PIXI.Graphics());
-                this.object._debugBorder.lineStyle(2, 0xff0000).drawPolygon(this.object._texturePolygon);
+                this.object._debugBorder.lineStyle(2, 0xff0000).drawPolygon(triggerData.usealpha ? this.object._texturePolygon : this.shape.polygons[0]);
             }
-
-            function rotate(cx, cy, x, y, angle) {
-                var rad = Math.toRadians(angle),
-                    cos = Math.cos(rad),
-                    sin = Math.sin(rad),
-                    run = x - cx,
-                    rise = y - cy,
-                    tx = (cos * run) + (sin * rise) + cx,
-                    ty = (cos * rise) - (sin * run) + cy;
-                return { x: tx, y: ty };
-            }
-
-            const cX = (Math.abs(this.width) / 2);
-            const cY = (Math.abs(this.height) / 2);
 
             const tokenOffsetW = ((token.width ?? 0) * (token?.parent?.dimensions?.size ?? 0)) / 2;
             const tokenOffsetH = ((token.height ?? 0) * (token?.parent?.dimensions?.size ?? 0)) / 2;
@@ -4727,51 +4495,12 @@ export class MonksActiveTiles {
             const tokenX2 = destination.x + tokenOffsetW;
             const tokenY2 = destination.y + tokenOffsetH;
 
-            const tokenRay = new foundry.canvas.geometry.Ray(
-                {
-                    x: tokenX1 - (this.x + cX),
-                    y: tokenY1 - (this.y + cY)
-                },
-                {
-                    x: tokenX2 - (this.x + cX),
-                    y: tokenY2 - (this.y + cY)
-                });
+            const tokenRay = new foundry.canvas.geometry.Ray({ x: tokenX1, y: tokenY1 }, { x: tokenX2, y: tokenY2 });
 
-            if (this.rotation != 0) {
-                //rotate the point
-                tokenRay.A = rotate(0, 0, tokenRay.A.x, tokenRay.A.y, this.rotation);
-                tokenRay.B = rotate(0, 0, tokenRay.B.x, tokenRay.B.y, this.rotation);
-            }
-
-            let scaleX = triggerData?.usealpha ? this.texture.scaleX : 1;
-            let scaleY = triggerData?.usealpha ? this.texture.scaleY : 1;
-
-            tokenRay.A.x = (tokenRay.A.x / scaleX) + cX;
-            tokenRay.A.y = (tokenRay.A.y / scaleY) + cY;
-            tokenRay.B.x = (tokenRay.B.x / scaleX) + cX;
-            tokenRay.B.y = (tokenRay.B.y / scaleY) + cY;
-
-            // Check the bounding box first
-            let segments = MonksActiveTiles.getTileSegments(this).filter(s => foundry.utils.lineSegmentIntersects(tokenRay.A, tokenRay.B, s.a, s.b));
-
-            if (triggerData.usealpha) {
-                //!(tokenRay.A.x <= 0 || tokenRay.A.x >= Math.abs(this.width) || tokenRay.A.y <= 0 || tokenRay.A.y >= Math.abs(this.height))
-                // only need to check the polygon if there are segments, or if both points are within the rectangle
-                if (segments.length || 
-                    !(tokenRay.A.x < 0 || tokenRay.A.x > Math.abs(this.width) || tokenRay.A.y < 0 || tokenRay.A.y > Math.abs(this.height)) || 
-                    !(tokenRay.B.x < 0 || tokenRay.B.x > Math.abs(this.width) || tokenRay.B.y < 0 || tokenRay.B.y > Math.abs(this.height))) {
-                    segments = MonksActiveTiles.getTileSegments(this, true).filter(s => foundry.utils.lineSegmentIntersects(tokenRay.A, tokenRay.B, s.a, s.b));
-                }
-            }
-
-            let intersect = segments
+            const segments = MonksActiveTiles.getTileSegments(this, triggerData.usealpha).filter(s => foundry.utils.lineSegmentIntersects(tokenRay.A, tokenRay.B, s.a, s.b));
+            const intersect = segments
                 .map(s => {
                     let point = foundry.utils.lineSegmentIntersection(tokenRay.A, tokenRay.B, s.a, s.b);
-                    let t0 = point.t0;
-                    point = { x: (point.x - cX) * scaleX, y: (point.y - cY) * scaleY }
-                    point = rotate(0, 0, point.x, point.y, this.rotation * -1);
-                    point = { x: point.x + (this.x + cX), y: point.y + (this.y + cY) }
-                    point.t0 = t0;
                     return point;
                 });
 
@@ -5700,6 +5429,7 @@ Hooks.on('createToken', async (document, options, userId) => {
 Hooks.once('ready', () => {
     // If this is added during the ready function then hopefully it will get added last
     Hooks.on('preUpdateToken', async (document, update, options, userId) => {
+        if(!game.user.id === userId) return;
         //log('preupdate token', document, update, options);
 
         /*
@@ -5739,6 +5469,8 @@ Hooks.once('ready', () => {
 
             //Does this cross a tile
             for (let tile of document.parent.tiles) {
+                if(!tile.levels.has(document.level) && tile.levels.size) continue;
+
                 if (options.originaltile === tile.id)
                     continue;
 
@@ -6323,9 +6055,11 @@ Hooks.on('updateTile', async (document, update, options, userId) => {
         let triggerData = document.flags["monks-active-tiles"];
         if (triggerData?.usealpha) {
             window.setTimeout(function () {
-                document.object._findTextureBorder();
+                document.object?._findTextureBorder();
             }, 500);
         }
+    } else if (update.x != undefined || update.y != undefined || update.rotation != undefined || update.width != undefined || update.height != undefined || update.texture != undefined) {
+        document.object?._genTexturePolygon();
     }
 });
 
