@@ -2747,6 +2747,7 @@ export class MonksActiveTiles {
             }
 
             for (let tile of MonksActiveTiles.tileTriggerCache.hover) {
+                if(!tile.viewed) return;
                 let triggerData = tile.flags["monks-active-tiles"];
                 let triggers = MonksActiveTiles.getTrigger(triggerData?.trigger);
 
@@ -4088,7 +4089,7 @@ export class MonksActiveTiles {
     }
 
     static getTileSegments(tile, usealpha = false) {
-        if (usealpha) {
+        if (usealpha && tile.object) {
             let segments = [];
 
             const points = tile.object._texturePolygon.points;
@@ -4116,7 +4117,7 @@ export class MonksActiveTiles {
         TileDocument.prototype.pointWithin = function (point) {
             let triggerData = this.flags["monks-active-tiles"];
             if(!triggerData?.usealpha) return this.shape.testPoint(point);
-            return this._object?._texturePolygon ? this._object?._texturePolygon.contains(point.x, point.y) : true;
+            return this._object?._texturePolygon ? this._object._texturePolygon.contains(point.x, point.y) : this.shape.testPoint(point);
         }
 
         TileDocument.prototype.tokensWithin = function () {
@@ -4149,180 +4150,6 @@ export class MonksActiveTiles {
                 } else
                     return this.pointWithin(midEntity);
             });
-        }
-
-        foundry.canvas.placeables.Tile.prototype._findTextureBorder_old = function () {
-            let findPoint = function (pixels, start) {
-                let pt;
-                let dest = { x: width - start.x, y: height - start.y };
-
-                //gr.lineStyle(1, 0x00ff00).moveTo(this.x + (start.x * aW), this.y + (start.y * aH)).lineTo(this.x + (dest.x * aW), this.y + (dest.y * aH));
-
-                let hypot = Math.hypot((dest.x - start.x), (dest.y - start.y));
-                let dX = (dest.x - start.x) / hypot;
-                let dY = (dest.y - start.y) / hypot;
-
-                for (let i = 0; i < hypot; i++) {
-                    let check = { x: parseInt(start.x + (dX * i)), y: parseInt(start.y + (dY * i)) };
-                    //gr.beginFill(0x00ff00).drawCircle(this.x + (check.x * aW), this.y + (check.y * aH), 1).endFill();
-                    if (!pt || check.x != pt.x || check.y != pt.y) {
-                        let idx = ((check.y * width) + check.x) * 4;
-                        if (pixels[idx + 3] != 0) {
-                            //gr.lineStyle(1, 0x00ff00).moveTo(this.x + (start.x * aW), this.y + (start.y * aH)).lineTo(this.x + (check.x * aW), this.y + (check.y * aH));
-
-                            return check;
-                        }
-                        pt = check;
-                    }
-                }
-            }
-
-            let addPoint = function (pt) {
-                if (pt) {
-                    const last = points.slice(-2);
-                    const next = [pt.x * aW, pt.y * aH];
-                    if (next.equals(last)) return;
-
-                    points = points.concat(next);
-                }
-            }
-
-            let simplify = function(points, tolerance = 20) {
-                if (points.length <= 2) return points;
-
-                let getSqSegDist = function (p, p1, p2) {
-
-                    var x = p1.x,
-                        y = p1.y,
-                        dx = p2.x - x,
-                        dy = p2.y - y;
-
-                    if (dx !== 0 || dy !== 0) {
-
-                        var t = ((p.x - x) * dx + (p.y - y) * dy) / (dx * dx + dy * dy);
-
-                        if (t > 1) {
-                            x = p2.x;
-                            y = p2.y;
-
-                        } else if (t > 0) {
-                            x += dx * t;
-                            y += dy * t;
-                        }
-                    }
-
-                    dx = p.x - x;
-                    dy = p.y - y;
-
-                    return dx * dx + dy * dy;
-                }
-
-                let simplifyDPStep = function (points, first, last, sqTolerance, simplified) {
-                    var maxSqDist = sqTolerance,
-                        index;
-
-                    for (var i = first + 1; i < last; i++) {
-                        var sqDist = getSqSegDist(
-                            { x: points[i * 2], y: points[(i * 2) + 1] },
-                            { x: points[first * 2], y: points[(first * 2) + 1] },
-                            { x: points[last * 2], y: points[(last * 2) + 1] });
-
-                        if (sqDist > maxSqDist) {
-                            index = i;
-                            maxSqDist = sqDist;
-                        }
-                    }
-
-                    if (maxSqDist > sqTolerance) {
-                        if (index - first > 1) simplifyDPStep(points, first, index, sqTolerance, simplified);
-                        simplified.push(points[index * 2], points[(index * 2) + 1]);
-                        if (last - index > 1) simplifyDPStep(points, index, last, sqTolerance, simplified);
-                    }
-                }
-
-                var last = (points.length / 2) - 1;
-
-                var simplified = points.slice(0, 2);
-                simplifyDPStep(points, 0, last, tolerance, simplified);
-                simplified.concat(points.slice(-2));
-
-                return simplified;
-            }
-
-            const accuracy = 2;
-            let width, height, aW, aH;
-
-            let points = [];
-            if (this.texture == null) {
-                points = [0, 0, this.document.width, 0, this.document.width, this.document.height, 0, this.document.height, 0, 0];
-            } else {
-                const sprite = new PIXI.Sprite(this.texture);
-                sprite.width = width = parseInt(this.texture.baseTexture.realWidth / accuracy);
-                sprite.height = height = parseInt(this.texture.baseTexture.realHeight / accuracy);
-                sprite.anchor.set(0.5, 0.5);
-                sprite.position.set(sprite.width / 2, sprite.height / 2);
-
-                aW = this.document.width / width;
-                aH = this.document.height / height;
-
-                // Create or update the alphaMap render texture
-                const tex = PIXI.RenderTexture.create({ width: sprite.width, height: sprite.height });
-
-                // Render the sprite to the texture and extract its pixels
-                // Destroy sprite and texture when they are no longer needed
-                canvas.app.renderer.render(sprite, { renderTexture: tex });
-                sprite.destroy(false);
-                const pixels = canvas.app.renderer.extract.pixels(tex);
-                tex.destroy(true);
-
-                for (let i = 0; i < width; i++) {
-                    addPoint.call(this, findPoint.call(this, pixels, { x: i, y: 0 }));
-                }
-                for (let i = 0; i < height; i++) {
-                    addPoint.call(this, findPoint.call(this, pixels, { x: width - 1, y: i }));
-                }
-                for (let i = width - 1; i > 0; i--) {
-                    addPoint.call(this, findPoint.call(this, pixels, { x: i, y: height - 1 }));
-                }
-                for (let i = height - 1; i > 0; i--) {
-                    addPoint.call(this, findPoint.call(this, pixels, { x: 0, y: i }));
-                }
-
-                points = simplify(points, 40);
-                //points = points.concat(points.slice(0, 2));
-
-                /*
-                for (let i = 0; i < width; i++) {
-                    for (let j = 0; j < height; j++) {
-                        let idx = ((j * width) + i) * 4;
-                        if (pixels[idx + 3] != 0) {
-                            gr.beginFill(0x0000ff).drawCircle(this.x + (i * aW), this.y + (j * aH), 1).endFill();
-                        }
-                    }
-                }
-                */
-            }
-
-            this._textureBorderPoints = points;
-            this._texturePolygon = new PIXI.Polygon(this._textureBorderPoints);
-            if (CONFIG.debug.tiletriggers) {
-                if (this._debugBorder)
-                    this._debugBorder.destroy();
-                this._debugBorder = this.addChild(new PIXI.Graphics());
-                this._debugBorder.lineStyle(2, 0xff0000).drawPolygon(this._texturePolygon);
-            }
-
-            /*
-            let gr = MonksActiveTiles.debugGr;
-            if (!gr) {
-                gr = new PIXI.Graphics();
-                MonksActiveTiles.debugGr = gr;
-                canvas.tokens.addChild(gr);
-                gr.x = this.x;
-                gr.y = this.y;
-                gr.lineStyle(2, 0xff0000).drawPolygon(this._textureBorderPoints);
-            }
-            */
         }
 
         foundry.canvas.placeables.Tile.prototype._findTextureBorder = function () {
@@ -4582,6 +4409,8 @@ export class MonksActiveTiles {
         }
 
         TileDocument.prototype.checkClick = function (pt, clicktype = 'click', event) {
+            if(!this.viewed) return;
+
             let entities = game.canvas.tokens.controlled;
             if (!entities.length && !game.user.isGM) {
                 entities = game.canvas.tokens.placeables.filter(t => t.document.actorId == game.user.character?.id);
@@ -4650,9 +4479,9 @@ export class MonksActiveTiles {
 
             if (!triggerData?.active) return [];
 
-            if (triggerData.usealpha && !this.object._texturePolygon)
+            if (triggerData.usealpha && this.object && !this.object._texturePolygon)
                 this.object._findTextureBorder();
-            if (CONFIG.debug.tiletriggers) {
+            if (CONFIG.debug.tiletriggers && this.object) {
                 if (this.object._debugBorder)
                     this.object._debugBorder.destroy();
                 this.object._debugBorder = this.object.addChild(new PIXI.Graphics());
@@ -5600,6 +5429,7 @@ Hooks.on('createToken', async (document, options, userId) => {
 Hooks.once('ready', () => {
     // If this is added during the ready function then hopefully it will get added last
     Hooks.on('preUpdateToken', async (document, update, options, userId) => {
+        if(!game.user.id === userId) return;
         //log('preupdate token', document, update, options);
 
         /*
@@ -5639,6 +5469,8 @@ Hooks.once('ready', () => {
 
             //Does this cross a tile
             for (let tile of document.parent.tiles) {
+                if(!tile.levels.has(document.level) && tile.levels.size) continue;
+
                 if (options.originaltile === tile.id)
                     continue;
 
